@@ -1,6 +1,6 @@
 #include "casm/crystallography/io/BasicStructureIO.hh"
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 #include "casm/casm_io/Log.hh"
 #include "casm/casm_io/SafeOfstream.hh"
@@ -14,6 +14,8 @@
 #include "casm/misc/ParsingDictionary.hh"
 
 namespace CASM {
+
+namespace fs = std::filesystem;
 
 jsonParser const &from_json(xtal::SpeciesProperty &_attr,
                             jsonParser const &json) {
@@ -512,8 +514,9 @@ void write_prim(const xtal::BasicStructure &prim, jsonParser &json,
       sjson["dofs"] = prim.basis()[i].dofs();
     }
 
-    jsonParser &ojson = (sjson["occupants"] = jsonParser::array(
-                             prim.basis()[i].occupant_dof().size()));
+    jsonParser &ojson =
+        (sjson["occupants"] = jsonParser::array(
+             prim.basis()[i].occupant_dof().size(), jsonParser::null()));
 
     for (int j = 0; j < prim.basis()[i].occupant_dof().size(); j++) {
       ojson[j] = mol_names[i][j];

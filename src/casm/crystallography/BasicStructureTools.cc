@@ -27,6 +27,7 @@
 #include "casm/external/Eigen/src/Core/util/Constants.h"
 #include "casm/global/definitions.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
+#include "casm/misc/UnaryCompare.hh"
 
 namespace {
 using namespace CASM;

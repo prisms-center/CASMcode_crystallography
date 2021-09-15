@@ -1,7 +1,7 @@
 #ifndef CASM_xtal_BasicStructure_io
 #define CASM_xtal_BasicStructure_io
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -18,6 +18,8 @@ class Molecule;
 class Site;
 class BasicStructure;
 }  // namespace xtal
+
+namespace fs = std::filesystem;
 
 // --- These functions are for casm I/O -----------
 
