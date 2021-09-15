@@ -731,7 +731,7 @@ def make_lib(libname, search_root, additional_sources, **kwargs):
                                    **kwargs)
 
 
-def make_libcasm(name, additional_sources):
+def make_libcasm(name, additional_sources, libadd=[]):
     """Create Makefile for libcasm_<name> by aggregating every source
     file within src/casm. Also adds the additional sources
     (header files that this routine won't search for)
@@ -751,7 +751,7 @@ def make_libcasm(name, additional_sources):
         "libcasm_" + name,
         "src/casm",
         additional_sources,
-        LIBADD=[],
+        LIBADD=libadd,
         LDFLAGS=["-avoid-version"],
     )
     # Uncomment if you want to forcefully recompile every time to ensure the version gets baked in
@@ -813,8 +813,7 @@ def main():
         {
             "directory": "tests/unit/crystallography",
             "ldadd": [
-                "libcasm_crystallography.la"
-                "libcasm_global.la"
+                "libcasm_crystallography.la",
             ],
         }
     ])
@@ -834,7 +833,8 @@ def main():
         if "include/" in f
     ]
 
-    chunk = make_libcasm("crystallography", header_files)
+    chunk = make_libcasm("crystallography", header_files,
+                         libadd=["-lcasm_global"])
     target = os.path.join("src", "casm", "Makemodule.am")
     string_to_file(chunk, target)
 

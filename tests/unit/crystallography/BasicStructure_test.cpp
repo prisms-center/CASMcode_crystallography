@@ -6,27 +6,26 @@
 #include "casm/crystallography/BasicStructureTools.hh"
 
 /// What is being used to test it:
-#include <boost/filesystem/fstream.hpp>
 #include <fstream>
 
 #include "Common.hh"
-#include "casm/basis_set/DoF.hh"
 #include "casm/crystallography/Coordinate.hh"
 #include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/Molecule.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
 #include "casm/crystallography/Site.hh"
-#include "casm/crystallography/Structure.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymType.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
 #include "casm/crystallography/io/VaspIO.hh"
 #include "casm/external/Eigen/src/Core/Matrix.h"
+#include "casm/global/filesystem.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
 #include "crystallography/TestStructures.hh"
 
 using namespace CASM;
+using xtal::BasicStructure;
 using xtal::ScelEnumProps;
 using xtal::SuperlatticeEnumerator;
 
@@ -205,7 +204,7 @@ void pos1_read_test(xtal::BasicStructure &struc) {
 
 namespace {
 xtal::BasicStructure read_structure(const fs::path &poscar_path) {
-  std::ifstream poscar_stream(poscar_path.string());
+  std::ifstream poscar_stream(poscar_path);
   return xtal::BasicStructure::from_poscar_stream(poscar_stream);
 }
 }  // namespace
@@ -258,14 +257,14 @@ TEST_F(BasicStructureSiteTest, POS1Test) {
 
   // Write test PRIM back out
   fs::path tmp_file = tmpdir.path() / "POS1_out.txt";
-  fs::ofstream sout(tmp_file);
+  std::ofstream sout(tmp_file);
   VaspIO::PrintPOSCAR printer(make_simple_structure(struc), struc.title());
   printer.set_append_atom_names_off();
   printer.print(sout);
   sout.close();
 
   // Read new file and run tests again
-  xtal::BasicStructure struc2 = ::read_structure(datadir / "POS1_out.txt");
+  xtal::BasicStructure struc2 = ::read_structure(tmp_file);
   pos1_read_test(struc2);
 }
 
@@ -276,7 +275,7 @@ TEST_F(BasicStructureSiteTest, POS1Vasp5Test) {
 
   // Write test PRIM back out
   fs::path tmp_file = tmpdir.path() / "POS1_vasp5_out.txt";
-  fs::ofstream sout(tmp_file);
+  std::ofstream sout(tmp_file);
   VaspIO::PrintPOSCAR(make_simple_structure(struc), struc.title()).print(sout);
   sout.close();
 
@@ -307,13 +306,12 @@ TEST_F(BasicStructureSiteTest, MakeSuperstructure) {
 }
 
 TEST_F(BasicStructureSiteTest, IsPrimitiveTest) {
-  Structure prim(test::ZrO_prim());
+  BasicStructure prim(test::ZrO_prim());
 
-  const SymGroup effective_pg = prim.factor_group();
+  std::vector<xtal::SymOp> effective_pg = xtal::make_factor_group(prim);
 
   ScelEnumProps enum_props(1, 7);
-  SuperlatticeEnumerator scel_enum(effective_pg.begin(), effective_pg.end(),
-                                   prim.lattice(), enum_props);
+  SuperlatticeEnumerator scel_enum(prim.lattice(), effective_pg, enum_props);
   for (auto it = scel_enum.begin(); it != scel_enum.end(); ++it) {
     Eigen::Matrix3l transformation_matrix =
         xtal::make_transformation_matrix_to_super(prim.lattice(), *it,
@@ -322,7 +320,7 @@ TEST_F(BasicStructureSiteTest, IsPrimitiveTest) {
         xtal::make_superstructure(prim, transformation_matrix);
     EXPECT_EQ(super.lattice().is_right_handed(), true);
 
-    Structure new_prim = Structure(xtal::make_primitive(super));
+    BasicStructure new_prim = BasicStructure(xtal::make_primitive(super));
 
     auto is_trans_pair =
         xtal::is_superlattice(super.lattice(), prim.lattice(), TOL);

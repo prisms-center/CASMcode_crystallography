@@ -1,16 +1,20 @@
-#include <stdexcept>
-
-#include "gtest/gtest.h"
-
-/// What is being tested:
 #include "casm/crystallography/UnitCellCoord.hh"
 
-/// What is being used to test it:
-#include "FCCTernaryProj.hh"
-#include "casm/external/Eigen/src/Core/Matrix.h"
+#include <stdexcept>
+
+#include "casm/crystallography/BasicStructure.hh"
+#include "casm/crystallography/Lattice.hh"
+#include "casm/external/Eigen/Dense"
 #include "casm/misc/CASM_Eigen_math.hh"
+#include "crystallography/TestStructures.hh"
+#include "gtest/gtest.h"
 
 using namespace CASM;
+
+using xtal::Coordinate;
+using xtal::Lattice;
+using xtal::UnitCell;
+using xtal::UnitCellCoord;
 
 namespace {
 Eigen::Matrix3i transformation_matrix() {

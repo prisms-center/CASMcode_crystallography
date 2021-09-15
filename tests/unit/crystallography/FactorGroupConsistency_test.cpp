@@ -17,6 +17,7 @@
 #include "casm/crystallography/UnitCellCoord.hh"
 #include "casm/crystallography/io/VaspIO.hh"
 #include "casm/global/eigen.hh"
+#include "casm/misc/UnaryCompare.hh"
 #include "gtest/gtest.h"
 using namespace CASM;
 
@@ -47,7 +48,7 @@ class CrystalGroupTest : public testing::Test {
   void add_primitive_structure(std::string prim_file_in_data_dir,
                                int factor_group_size) {
     auto test_files_dir = test::data_dir("crystallography");
-    fs::ifstream s;
+    std::ifstream s;
 
     s.open(test_files_dir / prim_file_in_data_dir);
     primitive_structures.emplace_back(

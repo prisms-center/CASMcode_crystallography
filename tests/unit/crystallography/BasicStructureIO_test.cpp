@@ -94,9 +94,9 @@ TEST(SelectiveDynamicsTest, JsonIOTest1) {
     "coordinate_mode" : "Fractional",
     "description" : "Cubic ZrH_{2}",
     "lattice_vectors" : [
-      [0.       , 2.4106965, 2.4106965],
-      [2.4106965, 0.       , 2.4106965],
-      [2.4106965, 2.4106965, 0.       ]
+      [0.0      , 2.4106965, 2.4106965],
+      [2.4106965, 0.0      , 2.4106965],
+      [2.4106965, 2.4106965, 0.0      ]
     ],
     "title" : "ZrH2"
   })"));

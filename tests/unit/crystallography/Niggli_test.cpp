@@ -5,10 +5,11 @@
 #include "casm/crystallography/Niggli.hh"
 
 /// What is being used to test it:
-#include "casm/clex/ScelEnum.hh"
+#include "casm/crystallography/BasicStructure.hh"
+#include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/Lattice.hh"
-#include "casm/crystallography/Structure.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
+#include "casm/crystallography/SymTools.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
 #include "crystallography/TestStructures.hh"
 
@@ -17,6 +18,9 @@ namespace xtal {
 std::set<Eigen::Matrix3d, StandardOrientationCompare> _niggli_set(
     const Lattice &in_lat, double compare_tol, bool keep_handedness);
 }
+
+using xtal::BasicStructure;
+using xtal::Lattice;
 
 void confirm_lattice(const Lattice &known_niggli_form,
                      const Eigen::Matrix3i &skewed_unimodular) {
@@ -88,15 +92,14 @@ void symmetric_testing() {
 // https://github.com/prisms-center/CASMcode-dev/issues/153
 void single_dimension_test() {
   Lattice testlat = Lattice::fcc();
-  SymGroup pg = SymGroup::lattice_point_group(testlat);
+  std::vector<xtal::SymOp> pg = xtal::make_point_group(testlat);
 
   std::string dirs = "a";
   int minvol = 1;
   int maxvol = 10;
 
   xtal::ScelEnumProps enum_props(minvol, maxvol + 1, dirs);
-  xtal::SuperlatticeEnumerator latenumerator(pg.begin(), pg.end(), testlat,
-                                             enum_props);
+  xtal::SuperlatticeEnumerator latenumerator(testlat, pg, enum_props);
   std::vector<Lattice> enumerated_lat(latenumerator.begin(),
                                       latenumerator.end());
 
@@ -159,11 +162,15 @@ void standard_orientation_compare_test() {
   EXPECT_EQ(xtal::standard_orientation_compare(lat_mat_A2, lat_mat_A, tol),
             false);
 
-  Structure prim(test::ZrO_prim());
-  Lattice canon_A = xtal::canonical::equivalent(lat_A, prim.point_group(), tol);
-  Lattice canon_A2 =
-      xtal::canonical::equivalent(lat_A2, prim.point_group(), tol);
-  Lattice canon_B = xtal::canonical::equivalent(lat_B, prim.point_group(), tol);
+  BasicStructure prim(test::ZrO_prim());
+  std::vector<xtal::SymOp> fg = make_factor_group(prim);
+  std::vector<xtal::SymOp> pg;
+  for (auto const &symop : fg) {
+    pg.push_back(xtal::SymOp::point_operation(symop.matrix));
+  }
+  Lattice canon_A = xtal::canonical::equivalent(lat_A, pg, tol);
+  Lattice canon_A2 = xtal::canonical::equivalent(lat_A2, pg, tol);
+  Lattice canon_B = xtal::canonical::equivalent(lat_B, pg, tol);
 
   EXPECT_EQ(canon_A == canon_A2, true);
   EXPECT_EQ(canon_A2 == canon_B, true);
