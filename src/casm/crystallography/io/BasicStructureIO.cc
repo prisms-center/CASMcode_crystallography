@@ -529,6 +529,23 @@ void write_prim(const xtal::BasicStructure &prim, jsonParser &json,
   }
 }
 
+xtal::BasicStructure jsonConstructor<xtal::BasicStructure>::from_json(
+    jsonParser const &json, double xtal_tol,
+    ParsingDictionary<AnisoValTraits> const *_aniso_val_dict) {
+  xtal::BasicStructure prim;
+  CASM::from_json(prim, json, xtal_tol, _aniso_val_dict);
+  return prim;
+}
+
+std::unique_ptr<xtal::BasicStructure>
+jsonMake<xtal::BasicStructure>::make_from_json(
+    jsonParser const &json, double xtal_tol,
+    ParsingDictionary<AnisoValTraits> const *_aniso_val_dict) {
+  auto prim = std::make_unique<xtal::BasicStructure>();
+  CASM::from_json(*prim, json, xtal_tol, _aniso_val_dict);
+  return prim;
+}
+
 void from_json(xtal::BasicStructure &prim, jsonParser const &json,
                double xtal_tol,
                ParsingDictionary<AnisoValTraits> const *_aniso_val_dict) {

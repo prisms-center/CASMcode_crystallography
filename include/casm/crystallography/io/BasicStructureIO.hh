@@ -28,6 +28,8 @@ template <typename T>
 class ParsingDictionary;
 template <typename T>
 struct jsonConstructor;
+template <typename T>
+struct jsonMake;
 class jsonParser;
 
 // --------- PrimIO Declarations
@@ -109,6 +111,20 @@ void write_prim(const xtal::BasicStructure &prim, fs::path filename,
 /// \brief Write prim.json as JSON
 void write_prim(const xtal::BasicStructure &prim, jsonParser &json,
                 COORD_TYPE mode, bool include_va = false);
+
+template <>
+struct jsonConstructor<xtal::BasicStructure> {
+  static xtal::BasicStructure from_json(
+      jsonParser const &json, double xtal_tol,
+      ParsingDictionary<AnisoValTraits> const *_aniso_val_dict = nullptr);
+};
+
+template <>
+struct jsonMake<xtal::BasicStructure> {
+  static std::unique_ptr<xtal::BasicStructure> make_from_json(
+      jsonParser const &json, double xtal_tol,
+      ParsingDictionary<AnisoValTraits> const *_aniso_val_dict = nullptr);
+};
 
 void from_json(
     xtal::BasicStructure &prim, jsonParser const &json, double xtal_tol,
