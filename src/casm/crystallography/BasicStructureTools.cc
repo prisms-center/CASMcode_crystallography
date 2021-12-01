@@ -482,6 +482,8 @@ std::vector<SymOp> make_factor_group(const BasicStructure &struc) {
 /// \param tol Crystallography tolerance used for comparing lattice vectors and
 /// site coordinates. Should use `struc.lattice().tol()` for consistency.
 ///
+/// \returns The sorted factor group
+///
 /// Notes:
 /// - If the structure has no degrees of freedom affected by time reversal,
 /// time reversal is ignored. Otherwise symmetry operations are checked for
