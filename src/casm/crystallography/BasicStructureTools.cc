@@ -466,6 +466,8 @@ void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat) {
 ///
 /// \param struct BasicStructure for which the factor group is constructed
 ///
+/// \returns The sorted factor group
+///
 /// Notes:
 /// - If the structure has no degrees of freedom affected by time reversal,
 /// time reversal is ignored. Otherwise symmetry operations are checked for
@@ -523,6 +525,47 @@ std::vector<SymOp> make_factor_group(const BasicStructure &struc, double tol) {
   }
   sort_factor_group(factor_group, struc.lattice());
   return factor_group;
+}
+
+/// Construct the crystal point group from the sorted factor group
+///
+/// \param sorted_factor_group A factor group. Must be sorted, as returned by
+/// make_factor_group, or done by sort_factor_group.
+/// \param tol Tolerance used for comparing SymOp matrices.
+///
+std::vector<SymOp> make_crystal_point_group(
+    std::vector<SymOp> const &sorted_factor_group, double tol) {
+  SymOpVector point_group;
+  point_group.push_back(SymOp::identity());
+  for (SymOp const &op : sorted_factor_group) {
+    if (!almost_equal(get_matrix(op), get_matrix(point_group.back()), tol) ||
+        get_time_reversal(op) != get_time_reversal(point_group.back())) {
+      point_group.push_back(op);
+      point_group.back().translation.setZero();
+    }
+  }
+  return point_group;
+}
+
+/// Get the internal translations from the sorted factor group
+///
+/// Returns internal translations that map the parent crystal onto itself. Must
+/// contain at least (0,0,0).
+///
+/// \param factor_group A factor group, as returned by make_factor_group.
+/// \param tol Tolerance used for comparing SymOp matrices.
+///
+std::vector<Eigen::Vector3d> make_internal_translations(
+    std::vector<SymOp> const &factor_group, double tol) {
+  std::vector<Eigen::Vector3d> internal_translations;
+
+  for (SymOp const &op : factor_group) {
+    if (get_matrix(op).isIdentity(tol) && !get_time_reversal(op)) {
+      internal_translations.push_back(get_translation(op));
+    }
+  }
+
+  return internal_translations;
 }
 
 /// Create the permutation group of a structure.

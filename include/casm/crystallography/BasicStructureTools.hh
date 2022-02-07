@@ -51,6 +51,14 @@ std::vector<SymOp> make_factor_group(const BasicStructure &struc);
 /// Create the factor group of the given structure (deprecated)
 std::vector<SymOp> make_factor_group(const BasicStructure &struc, double tol);
 
+/// Construct the crystal point group from the sorted factor group
+std::vector<SymOp> make_crystal_point_group(
+    std::vector<SymOp> const &sorted_factor_group, double tol);
+
+/// Get the internal translations from the factor group
+std::vector<Eigen::Vector3d> make_internal_translations(
+    std::vector<SymOp> const &factor_group, double tol);
+
 /// Create the permutation group of a structure.
 std::vector<Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic, Index>>
 make_permutation_representation(const xtal::BasicStructure &struc,
