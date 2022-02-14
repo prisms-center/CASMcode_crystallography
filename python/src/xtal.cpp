@@ -82,6 +82,18 @@ struct DoFSetBasis {
   Eigen::MatrixXd basis;
 };
 
+std::string get_dofsetbasis_dofname(DoFSetBasis const &dofsetbasis) {
+  return dofsetbasis.dofname;
+}
+std::vector<std::string> get_dofsetbasis_axis_names(
+    DoFSetBasis const &dofsetbasis) {
+  return dofsetbasis.axis_names;
+}
+
+Eigen::MatrixXd get_dofsetbasis_basis(DoFSetBasis const &dofsetbasis) {
+  return dofsetbasis.basis;
+}
+
 /// \brief Construct DoFSetBasis
 ///
 /// \param dofname DoF name. Must be a CASM-supported DoF type.
@@ -359,20 +371,20 @@ PYBIND11_MODULE(xtal, m) {
       )pbdoc")
       .def(py::init<Eigen::Matrix3d const &, double, bool>(),
            "Construct a Lattice", py::arg("column_vector_matrix"),
-           py::arg("xtal_tol") = TOL, py::arg("force") = false, R"pbdoc(
+           py::arg("tol") = TOL, py::arg("force") = false, R"pbdoc(
 
       Parameters
       ----------
       column_vector_matrix : array_like, shape=(3,3)
           The lattice vectors, as columns of a 3x3 matrix.
-      xtal_tol : float, default=xtal.TOL
+      tol : float, default=xtal.TOL
           Tolerance to be used for crystallographic comparisons.
       )pbdoc")
       .def("column_vector_matrix", &xtal::Lattice::lat_column_mat,
            "Return the lattice vectors, as columns of a 3x3 matrix.")
       .def("tol", &xtal::Lattice::tol,
            "Return the tolerance used for crystallographic comparisons.")
-      .def("set_tol", &xtal::Lattice::set_tol, py::arg("xtal_tol"),
+      .def("set_tol", &xtal::Lattice::set_tol, py::arg("tol"),
            "Set the tolerance used for crystallographic comparisons.")
       .def("make_canonical", &make_canonical_lattice, R"pbdoc(
         Return the canonical equivalent lattice
@@ -498,7 +510,7 @@ PYBIND11_MODULE(xtal, m) {
       )pbdoc")
       .def(py::init(&make_molecule), py::arg("name"),
            py::arg("atoms") = std::vector<xtal::AtomPosition>{},
-           py::arg("divisible") = false,
+           py::arg("is_divisible") = false,
            py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{},
            R"pbdoc(
 
@@ -514,7 +526,7 @@ PYBIND11_MODULE(xtal, m) {
           same name for the Occupant and the AtomComponent. If atoms is
           an empty list (the default value), then an atom or vacancy is
           created, based on the name parameter.
-      divisible : bool, default=False
+      is_divisible : bool, default=False
           If True, indicates an Occupant that may split into components
           during kinetic Monte Carlo calculations.
       properties : Dict[str, array_like], default={}
@@ -536,7 +548,7 @@ PYBIND11_MODULE(xtal, m) {
       .def("is_atomic", &xtal::Molecule::is_atomic,
            "True if a single isotropic atom or vacancy")
       .def("is_divisible", &xtal::Molecule::is_divisible,
-           "True if divisible in kinetic Monte Carlo calculations")
+           "True if is divisible in kinetic Monte Carlo calculations")
       .def("atoms", &xtal::Molecule::atoms,
            "Return the atomic components of the occupant")
       .def("atom", &xtal::Molecule::atom, py::arg("i"),
@@ -547,12 +559,12 @@ PYBIND11_MODULE(xtal, m) {
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy
 
-      This function is equivalent to `Occupant(\"Va\")`.
+      This function is equivalent to ``casm.xtal.Occupant("Va")``.
       )pbdoc");
   m.def("make_atom", &xtal::Molecule::make_atom, py::arg("name"), R"pbdoc(
       Construct a Occupant object representing a single isotropic atom
 
-      This function is equivalent to `Occupant(name)`.
+      This function is equivalent to ``casm.xtal.Occupant(name)``.
 
       Parameters
       ----------
@@ -625,11 +637,9 @@ PYBIND11_MODULE(xtal, m) {
 
           The default value indicates the standard basis should be used.
       )pbdoc")
-      .def_readonly("dofname", &DoFSetBasis::dofname,
-                    "Return the DoF type name.")
-      .def_readonly("axis_names", &DoFSetBasis::axis_names,
-                    "Return the axis names.")
-      .def_readonly("basis", &DoFSetBasis::basis, "Return the basis matrix.");
+      .def("dofname", &get_dofsetbasis_dofname, "Return the DoF type name.")
+      .def("axis_names", &get_dofsetbasis_axis_names, "Return the axis names.")
+      .def("basis", &get_dofsetbasis_basis, "Return the basis matrix.");
 
   py::class_<xtal::BasicStructure>(m, "Prim", R"pbdoc(
       A primitive crystal structure and allowed degrees of freedom (DoF) (the `"Prim"`)
@@ -746,7 +756,6 @@ PYBIND11_MODULE(xtal, m) {
           .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
 
           )pbdoc")
-
       .def("asymmetric_unit_indices", asymmetric_unit_indices, R"pbdoc(
           Return the indices of equivalent basis sites
 
