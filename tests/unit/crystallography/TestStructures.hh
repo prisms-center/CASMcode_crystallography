@@ -165,6 +165,36 @@ inline CASM::xtal::BasicStructure FCC_ternary_GLstrain_prim() {
   return struc;
 }
 
+inline CASM::xtal::BasicStructure SimpleCubic_ising_prim() {
+  using namespace CASM;
+  using namespace CASM::xtal;
+
+  // lattice vectors as cols
+  Eigen::Matrix3d lat;
+  lat << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0;
+
+  BasicStructure struc{Lattice{lat}};
+  struc.set_title("SimpleCubic_ising");
+
+  AnisoValTraits Cmagspin("Cmagspin");
+  Eigen::VectorXd value(1);
+  value << 1.0;
+  xtal::SpeciesProperty Cmagspin_up(Cmagspin, value);
+  value << -1.0;
+  xtal::SpeciesProperty Cmagspin_down(Cmagspin, value);
+
+  Molecule A_up = Molecule::make_atom("A");
+  A_up.set_properties({{Cmagspin.name(), Cmagspin_up}});
+  Molecule A_down = Molecule::make_atom("A");
+  A_down.set_properties({{Cmagspin.name(), Cmagspin_down}});
+
+  Site site{Coordinate(Eigen::Vector3d::Zero(), struc.lattice(), CART),
+            std::vector<Molecule>{A_up, A_down}};
+  struc.push_back(site);
+
+  return struc;
+}
+
 inline CASM::xtal::BasicStructure FCC_ternary_GLstrain_disp_prim() {
   using namespace CASM;
   using namespace CASM::xtal;
