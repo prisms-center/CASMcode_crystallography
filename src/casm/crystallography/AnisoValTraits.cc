@@ -418,7 +418,7 @@ AnisoValTraits AnisoValTraits::isometry() {
 ///
 /// Required and non-default values:
 /// - name(): _prefix + "strain"
-/// - standard_var_names(): {"e_1", "e_2", "e_3", "e_4", "e_5", "e_6"}
+/// - standard_var_names(): {"E_1", "E_2", "E_3", "E_4", "E_5", "E_6"}
 /// - options(): GLOBAL
 /// - SymRepBuilderInterface: Rank2TensorSymRepBuilder()
 /// - must_apply_before(): {"atomize", "disp"}
@@ -427,7 +427,7 @@ AnisoValTraits AnisoValTraits::isometry() {
 /// - is_default(): true
 AnisoValTraits AnisoValTraits::strain(std::string const &_prefix) {
   return AnisoValTraits(
-      _prefix + "strain", {"e_1", "e_2", "e_3", "e_4", "e_5", "e_6"}, GLOBAL,
+      _prefix + "strain", {"E_1", "E_2", "E_3", "E_4", "E_5", "E_6"}, GLOBAL,
       Rank2TensorSymRepBuilder(), {}, {"atomize", "disp"}, {},
       {"Exx", "Eyy", "Ezz", "sqrt(2)Eyz", "sqrt(2)Exz", "sqrt(2)Exy"}, true);
 }
