@@ -4,7 +4,7 @@ Strain DoF
 Simple cubic with strain DoF
 ----------------------------
 
-This example constructs the prim for simple cubic crystal system with strain DoF, using the Green-Lagrange strain metric.
+This example constructs the prim for simple cubic crystal system with strain degrees of freedom (DoF), using the Green-Lagrange strain metric.
 
 To construct this prim, the following must be specified:
 

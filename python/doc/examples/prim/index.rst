@@ -1,6 +1,8 @@
 Prim Examples
 -------------
 
+Examples constructing :class:`~casm.xtal.Prim` with different types of degrees of freedom (DoF).
+
 .. toctree::
     :maxdepth: 2
 

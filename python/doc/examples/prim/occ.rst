@@ -6,7 +6,7 @@ Occupation DoF
 Simple cubic binary
 -------------------
 
-This example constructs the prim for simple cubic crystal system with binary ("A", "B") occupation DoF.
+This example constructs the prim for simple cubic crystal system with binary ("A", "B") occupation degrees of freedom (DoF).
 
 To construct this prim, the following must be specified:
 

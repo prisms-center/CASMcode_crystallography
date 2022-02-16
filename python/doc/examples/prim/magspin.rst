@@ -4,7 +4,7 @@ Magnetic spin DoF
 Simple cubic with non-collinear magnetic spin DoF and spin-orbit coupling
 -------------------------------------------------------------------------
 
-This example constructs the prim for simple cubic crystal system with non-collinear magnetic spin DoF and spin-orbit coupling.
+This example constructs the prim for simple cubic crystal system with non-collinear magnetic spin degrees of freedom (DoF) and spin-orbit coupling.
 
 To construct this prim, the following must be specified:
 

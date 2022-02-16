@@ -5,7 +5,7 @@ Coupled occupation, displacement, and strain DoF
 ------------------------------------------------
 
 
-This example constructs the prim for simple cubic crystal system with binary occupation DoF, atomic displacement DoF, and strain DoF, using the Green-Lagrange strain metric, and the symmetry-adapted strain basis.
+This example constructs the prim for simple cubic crystal system with binary occupation degrees of freedom (DoF), atomic displacement DoF, and strain DoF, using the Green-Lagrange strain metric, and the symmetry-adapted strain basis.
 
 To construct this prim, the following must be specified:
 

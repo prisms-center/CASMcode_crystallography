@@ -4,7 +4,7 @@ Atomic displacement DoF
 Simple cubic with atomic displacement DoF
 -----------------------------------------
 
-This example constructs the prim for simple cubic crystal system with atomic displacement DoF.
+This example constructs the prim for simple cubic crystal system with atomic displacement degrees of freedom (DoF).
 
 To construct this prim, the following must be specified:
 
