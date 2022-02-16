@@ -1,0 +1,381 @@
+Primitive crystal structure construction and symmetry analysis
+==============================================================
+
+The primitive crystal structure and allowed degrees of freedom (DoF) (the “prim”) specify:
+
+- lattice vectors
+- crystal basis sites
+- occupation DoF
+- continuous local (site) DoF
+- continuous global DoF
+
+The prim is the starting point for constructing a cluster expansion effective Hamiltonian. Based on the allowed DoF, it specifies what configurations are possible, and the symmetry of the prim determines the symmetry of the cluster basis functions. The :class:`~casm.xtal.Prim` class constructor documentation is :ref:`here <prim-init>`, and this section gives an introduction through examples.
+
+
+Occupation DoF
+--------------
+
+The following is an example of prim construction, including atomic occupation DoF only:
+
+.. code-block:: Python
+
+    import numpy as np
+    import casm.xtal as xtal
+
+    # Lattice vectors
+    lattice_column_vector_matrix = np.array([
+        [ 1.0, 0.0, 0.0], # a
+        [ 0.0, 1.1, 0.0], # b
+        [ 0.0, 0.0, 1.3]  # c
+        ]).transpose()    # <--- note transpose
+    lattice = xtal.Lattice(lattice_column_vector_matrix)
+
+    # Basis sites positions, as columns of a matrix,
+    # in fractional coordinates with respect to the lattice vectors
+    coordinate_frac = np.array([
+        [0., 0., 0.]   # coordinates of basis site, b=0
+        ]).transpose() # <--- note transpose
+
+    # Occupation degrees of freedom (DoF)
+    occ_dof = [
+        ["A", "B"]     # occupants allowed on basis site, b=0
+    ]
+
+    return xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
+                     title="simple_cubic_binary")
+
+The parameter `lattice` gives the primitive cell Lattice.
+
+The parameter `coordinate_frac` gives basis site positions, as columns of a matrix, in fractional coordinates with respect to the lattice vectors.
+
+The parameter `occ_dof` gives labels of occupants allowed on each basis site. The value occ_dof[b] is the list of occupants allowed on the b-th basis site. The values may either be (i) the name of an isotropic atom (i.e. “Mg”) or vacancy (“Va”), or (ii) a key in the optional parameter, `occupants`, (see below). The names are case sensitive, and “Va” is reserved for vacancies.
+
+The optional parameter, `occupants`, is a dictionary containing :class:`~casm.xtal.Occupant` allowed in the crystal. The keys are labels used in the occ_dof parameter. This may include isotropic atoms, vacancies, atoms with fixed anisotropic properties, and molecular occupants. A seperate key and value is required for all species with distinct anisotropic properties (i.e. “H2_xy”, “H2_xz”, and “H2_yz” for distinct orientations, or “A.up”, and “A.down” for distinct collinear magnetic spins, etc.). See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported property types and their definitions.
+
+**Example: Isotropic atomic occupant**
+
+.. code-block:: Python
+
+    A_occ = xtal.Occupant(name="A")
+
+Or, equivalently:
+
+.. code-block:: Python
+
+    A_occ = xtal.make_atom("A")
+
+**Example: Vacancy occupant**
+
+.. code-block:: Python
+
+    Va_occ = xtal.Occupant(name="Va")
+
+Or, equivalently:
+
+.. code-block:: Python
+
+    Va_occ = xtal.make_vacancy()
+
+**Example: Atomic occupants with fixed collinear magnetic spin**
+
+The value "Cmagspin" is string indicating the CASM supported collinear magnetic spin property type. See the `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported property types and their definitions.
+
+.. code-block:: Python
+
+    A_up_occ = xtal.Occupant(
+        name="A",                       # "chemical name" of occupant
+        properties={
+            "Cmagspin": np.array([1.])  # fixed properties of the occupant
+        }
+    )
+    A_down_occ = xtal.Occupant(
+        name="A",                       # "chemical name" of occupant
+        properties={
+            "Cmagspin": np.array([-1.]) # fixed properties of the occupant
+        }
+    )
+    occupants = {
+      "A.up": A_up_occ,     # <label> : occupant
+      "A.down": A_down_occ  # <label> : occupant
+    }
+    occ_dof = [
+      ["A.up", "A.down"]    # occupants allowed on basis site, b=0
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
+                     occupants=occupants, title="ising")
+
+The :class:`~casm.xtal.Occupant` constructor parameter `name` is a "chemical name" which must be equal for occupants to be found symmetrically equivalent.
+
+
+**Example: Molecular occupants with distinct orientations**
+
+The :class:`~casm.xtal.AtomComponent` can be used to specify the positions of individual atoms in a molecular :class:`~casm.xtal.Occupant`. The following specifies three orientations of O2, aligned along the x, y, and z axes, respectively.
+
+.. code-block:: Python
+
+    delta = 0.6   # Cartesian distance
+    O2_xx_occ = xtal.Occupant(
+        name="O2",
+        atoms=[
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([delta, 0., 0.])),
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([-delta, 0., 0.]))
+        ])
+    O2_yy_occ = xtal.Occupant(
+        name="O2",
+        atoms=[
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., delta, 0.])),
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., -delta, 0.]))
+        ])
+    O2_zz_occ = xtal.Occupant(
+        name="O2",
+        atoms=[
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., delta])),
+            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., -delta]))
+        ])
+    occupants = {
+      "O2_xx": O2_xx_occ,     # <label> : occupant
+      "O2_yy": O2_yy_occ,     # <label> : occupant
+      "O2_zz": O2_zz_occ,     # <label> : occupant
+    }
+    occ_dof = [
+      ["O2_xx", "O2_yy", "O2_zz"]    # occupants allowed on basis site, b=0
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
+                     occupants=occupants, title="ternary_orientation")
+
+
+Continuous local DoF
+--------------------
+
+The optional local_dof parameter enables constructing a :class:`~casm.xtal.Prim` which includes continuous local DoF (DoF associated with a particular site). There is no effect if local_dof is empty. If not empty, the value local_dof[b] is a list of :class:`~casm.xtal.DoFSetBasis` objects describing the continuous local DoF allowed on the b-th basis site.
+
+This section provides examples construting a prim with:
+
+- "disp": Atomic displacement DoF
+- "Cmagspin": Collinear magnetic spin DoF
+- "SOmagspin": Non-collinear magnetic spin DoF, with spin-orbit coupling
+
+See the `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported DoF types and their definitions.
+
+
+**Example: Atomic displacement DoF**
+
+Atomic displacement DoF, with the standard basis :math:`\[d_{x}, d_{y}, d_{z}]\]` can be added using:
+
+.. code-block:: Python
+
+    # Local continuous degrees of freedom (DoF)
+    disp_dof = xtal.DoFSetBasis("disp")    # Atomic displacement
+    local_dof = [
+        [disp_dof], # allow displacements on basis site b=0
+        [disp_dof]  # allow displacements on basis site b=1
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+
+
+**Example: Collinear magnetic spin DoF**
+
+Collinear magnetic spin DoF, with the standard basis :math:`\[m\]` can be added using:
+
+.. code-block:: Python
+
+    # Local continuous degrees of freedom (DoF)
+    Cmagspin_dof = xtal.DoFSetBasis("Cmagspin")    # Collinear magnetic spin
+    local_dof = [
+        [Cmagspin_dof], # allow collinear magnetic spin on basis site b=0
+        [Cmagspin_dof]  # allow collinear magnetic spin on basis site b=1
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+
+
+**Example: Non-collinear magnetic spin DoF, with spin-orbit coupling**
+
+Non-collinear magnetic spin DoF, with spin-orbit coupling, with the standard basis :math:`\[m\]` can be added using:
+
+.. code-block:: Python
+
+    # Local continuous degrees of freedom (DoF)
+    SOmagspin_dof = xtal.DoFSetBasis("SOmagspin")
+    local_dof = [
+        [SOmagspin_dof], # allow SOmagspin on basis site b=0
+        [SOmagspin_dof]  # allow SOmagspin on basis site b=1
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+
+
+**Example: Atomic displacement DoF, user-specified basis**
+
+It is possible to restrict the dimension of allowed DoF, or rotate the basis, by providing a user-specified basis. The following restricts atomic displacements to 1-dimensions displacements along the x-axis:
+
+.. code-block:: Python
+
+    # Local continuous degrees of freedom (DoF)
+    disp_dof = xtal.DoFSetBasis(
+        "disp",
+        axis_names=["d_{1}"],  # 1d displacments
+        basis=np.array([
+            [1.0, 0.0, 0.0]    # displacements along x
+        ]).transpose())
+    local_dof = [
+        [disp_dof], # basis site 1
+        [disp_dof]  # basis site 2
+    ]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+
+If a user-specified basis is provided, configurations, and the cluster expansion, are restricted to the specified space.
+
+
+Strain DoF
+----------
+
+CASM supports strain global continuous DoF, with the following choices of symmetric strain metrics, :math:`E`:
+
+- `"GLstrain"`: Green-Lagrange strain metric, with :math:`E = \frac{1}{2}(F^{\mathsf{T}} F - I)`
+- `"Hstrain"`: Hencky strain metric, with :math:`E = \frac{1}{2}\ln(F^{\mathsf{T}} F)`
+- `"EAstrain"`: Euler-Almansi strain metric, with :math:`E = \frac{1}{2}(I−(F F^{\mathsf{T}})^{-1})`
+
+Where:
+
+- :math:`L`: Lattice vectors, as columns of a matrix, shape=(3,3)
+- :math:`F`: deformation tensor, :math:`L^{strained} = F L^{ideal}`, shape=(3,3)
+- :math:`I`: identity matrix, shape=(3,3)
+- :math:`E`: symmetric strain metric, shape=(3,3)
+
+The deformation tensor, F, can be decomposed into a pure rotation matrix, :math:`R`, shape=(3,3), and pure stretch tensor, :math:`U`, shape=(3,3):
+
+.. math::
+
+    F = R U
+
+The strain metric, :math:`E`, can be represented by the vector, :math:`\vec{E}`, which is the CASM standard strain basis:
+
+.. math::
+
+    \vec{E} = [E_{xx}, E_{yy}, E_{zz}, \sqrt(2)E_{yz}, \sqrt(2)E_{xz}, \sqrt(2)E_{xy}]
+
+
+**Example: Strain DoF, using the Green-Lagrange strain metric**
+
+The following constructs a prim with strain DoF, using the Green-Lagrange strain metric, with the standard basis, :math:`\vec{E}`:
+
+.. code-block:: Python
+
+    # Global continuous degrees of freedom (DoF)
+    GLstrain_dof = xtal.DoFSetBasis("GLstrain")     # Green-Lagrange strain metric
+    global_dof = [GLstrain_dof]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+
+**Example: Strain DoF, symmetry-adapted basis**
+
+As described by :cite:t:`THOMAS201776`, the symmetry-adapted strain basis :math:`\vec{e}`,
+
+.. math::
+
+    \vec{e} = \left( \begin{array}{ccc} e_1 \\ e_2 \\ e_3 \\ e_4 \\ e_5 \\ e_6 \end{array} \right) = \left( \begin{array}{ccc} \left( E_{xx} + E_{yy} + E_{zz} \right)/\sqrt{3} \\ \left( E_{xx} - E_{yy} \right)/\sqrt{2} \\ \left( 2E_{zz} - E_{xx} - E_{yy} + \right)/\sqrt{6} \\ \sqrt{2}E_{yz} \\ \sqrt{2}E_{xz} \\ \sqrt{2}E_{xy} \end{array} \right),
+
+is a useful strain basis because it decomposes strain space into irreducible subspaces which do not mix under application of symmetry.
+
+For cubic point groups, there are three irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_2, e_3\}`, and :math:`\{e_4, e_5, e_6\}`.
+
+For hexagonal point groups, there are four irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_3\}`, :math:`\{e_2, e_6\}`, and :math:`\{e_4, e_5\}`.
+
+The following constructs a prim with strain DoF, using the Green-Lagrange strain metric, and the symmetry-adapted basis, :math:`\vec{e}`:
+
+.. code-block:: Python
+
+    from math import sqrt
+    # Global continuous degrees of freedom (DoF)
+    GLstrain_dof = xtal.DoFSetBasis(
+        dofname="GLstrain",
+        axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
+        basis=np.array([
+              [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
+              [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
+              [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+              [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]).transpose())
+    global_dof = [GLstrain_dof]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+
+
+**Example: Strain DoF, user-specified basis**
+
+It is possible to restrict the dimension of allowed strain DoF, or rotate the strain basis, by providing a user-specified basis. The following restricts strain to exclude shear strains:
+
+.. code-block:: Python
+
+    from math import sqrt
+    # Global continuous degrees of freedom (DoF)
+    GLstrain_dof = xtal.DoFSetBasis(
+        dofname="GLstrain",
+        axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
+        basis=[
+            [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
+            [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
+            [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0]])
+    global_dof = [GLstrain_dof]
+    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+
+
+Primitive cell
+--------------
+
+A :class:`~casm.xtal.Prim` object is not forced to be the primitive equivalent cell at construction. The :func:`~casm.xtal.Prim.make_primitive` method of :class:`~casm.xtal.Prim` finds and returns the primitive equivalent cell by checking for internal translations that map all basis sites onto equivalent basis sites, including allowed occupants and equivalent local degrees of freedom (DoF), if they exist.
+
+
+Canonical cell
+--------------
+
+The :func:`~casm.xtal.Prim.make_canonical` method of :class:`~casm.xtal.Prim` finds the canonical right-handed Niggli cell of the lattice, applying lattice point group operations to find the equivalent lattice in a standardized orientation. The canonical orientation prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
+
+.. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+
+
+Factor group
+------------
+
+The `crystal space group` is the set of all rigid transformations that map the infinite crystal onto itself. The crystal space group is not limited to operations that keep the origin fixed, so due to the periodicity of the crystal the crystal space group is infinite.
+
+The `factor group` is a finite description of the crystal space group in which all operations that differ only by a translation are represented by a single operation whose translation lies within the primitive unit cell.
+
+The `factor group` of the prim is the set of transformations, with translation lying within the primitive unit cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant. It is found by a check of the combination of lattice point group operations and translations between basis sites. For cluster expansions of global crystal properties, such as the energy, the cluster basis functions are constructed to have the same symmetry as the prim factor group.
+
+The factor group can be generated using the :func:`~casm.xtal.Prim.make_factor_group` method of :class:`~casm.xtal.Prim` and a description of the operations printed using :class:`~casm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
+
+.. code-block:: Python
+
+    >>> i = 1
+    >>> factor_group = prim.make_factor_group()
+    >>> for op in factor_group:
+    ...     syminfo = xtal.SymInfo(op, lattice)
+    ...     print(str(i) + ":", syminfo.brief_cart())
+    ...     i += 1
+    1: 1
+    2: 6⁺ (0.0000000 0.0000000 2.5843392) 0, 1.867143, z
+    3: 6⁻ (0.0000000 0.0000000 2.5843392) 1.616993, -0.9335716, z
+    4: 3⁺ 0, 0, z
+    5: 3⁻ 0, 0, z
+    6: 2 0.8084967+0.5*x, 0.4667858-0.8660254*x, 1.29217
+    ...
+    19: g (-0.0000000 -0.0000000  2.5843392) 0.8084967+0.5*x, 0.4667858-0.8660254*x, z
+    20: -3⁺ 1.616993, -0.9335716, z;  1.6169934 -0.9335716  1.2921696
+    21: -3⁻ 0, 1.867143, z; 0.0000000 1.8671432 1.2921696
+    22: -6⁺ 0, 0, z;  0.0000000 -0.0000000  0.0000000
+    23: -6⁻ 0, 0, z; -0.0000000 -0.0000000  0.0000000
+    24: -1 0.8084967 0.4667858 1.2921696
+
+
+Crystal point group
+-------------------
+
+The `crystal point group` is the group constructed from the prim factor group operations with translation vector set to zero. This is the appropriate point group to use for checking the equivalence of superlattices while taking into account the symmetry of the prim basis site coordinates and DoF.
+
+The crystal point group can be generated using the :func:`~casm.xtal.Prim.make_crystal_point_group` method:
+
+.. code-block:: Python
+
+    >>> crystal_point_group = prim.make_crystal_point_group()
+
+
+.. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/

@@ -4,7 +4,7 @@
 
 .. autoclass:: {{ objname }}
    :members:
-   :special-members: __call__, __add__, __mul__
+   :special-members: __call__, __add__, __sub__, __mul__, __truediv__, __iadd__, __isub__, __lt__, __le__, __gt__, __ge__, __eq__, __ne__
 
    {% block methods %}
    {% if methods %}

@@ -1,0 +1,34 @@
+{
+  "basis": [
+    {
+      "coordinate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "occupants": [
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "coordinate_mode": "Fractional",
+  "lattice_vectors": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "title": "simple_cubic_binary"
+}

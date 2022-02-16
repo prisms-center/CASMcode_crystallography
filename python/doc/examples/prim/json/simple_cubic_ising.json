@@ -1,0 +1,76 @@
+{
+  "basis": [
+    {
+      "coordinate": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "occupants": [
+        "A.up",
+        "A.down"
+      ]
+    }
+  ],
+  "coordinate_mode": "Fractional",
+  "lattice_vectors": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "species": {
+    "A.down": {
+      "atoms": [
+        {
+          "coordinate": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "A"
+        }
+      ],
+      "name": "A",
+      "properties": {
+        "Cmagspin": {
+          "value": [
+            -1.0
+          ]
+        }
+      }
+    },
+    "A.up": {
+      "atoms": [
+        {
+          "coordinate": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "name": "A"
+        }
+      ],
+      "name": "A",
+      "properties": {
+        "Cmagspin": {
+          "value": [
+            1.0
+          ]
+        }
+      }
+    }
+  },
+  "title": "simple_cubic_ising"
+}

@@ -1,17 +1,30 @@
-.. CASM documentation master file, created by
-   sphinx-quickstart on Sat Sep 16 00:49:21 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+
+casm-xtal: The Python interface for CASM crystallography
+========================================================
+
+The casm-xtal package is a Python interface to the crystallography
+classes and methods in the CASM::xtal namespace of the CASM C++ libraries.
+This includes:
+
+- Data structures for representing lattices, crystal structures, and
+  degrees of freedom (DoF).
+- Methods for enumerating superlattices, making super structures,
+  finding primitive and reduced cells, and finding symmetry
+  operations.
+
+Documentation
+=============
 
 .. toctree::
-    :hidden:
+    :maxdepth: 2
 
-    About <about>
+    Installation <installation>
+    Usage <usage>
+    Prim Examples <examples/prim/index>
     Reference <reference/casm/xtal/_autosummary/casm.xtal>
+    Bibliography <bibliography>
+    About casm-xtal <about>
 
-Welcome to the casm-xtal Python documentation!
-=================================================
+casm-xtal is available on GitHub_.
 
-CASM is available on GitHub_.
-
-.. _GitHub: https://github.com/prisms-center/CASMcode
+.. _GitHub: https://github.com/prisms-center/CASMcode_crystallography

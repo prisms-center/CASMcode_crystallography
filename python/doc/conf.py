@@ -38,8 +38,10 @@ autosummary_generate = True
 extensions = [
     'sphinx.ext.autodoc', 'sphinx.ext.autosummary', 'sphinx.ext.coverage',
     'sphinx.ext.viewcode', 'sphinx.ext.githubpages', 'sphinx.ext.napoleon',
-    'sphinxarg.ext'
+    'sphinxarg.ext', 'sphinxcontrib.bibtex'
 ]
+
+bibtex_bibfiles = ['refs.bib']
 
 # Napoleon settings
 napoleon_google_docstring = False

@@ -1,12 +1,20 @@
 #include <pybind11/eigen.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "casm/casm_io/container/json_io.hh"
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/CanonicalForm.hh"
+#include "casm/crystallography/LatticeIsEquivalent.hh"
+#include "casm/crystallography/SuperlatticeEnumerator.hh"
+#include "casm/crystallography/SymInfo.hh"
+#include "casm/crystallography/SymTools.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
+#include "casm/crystallography/io/SymInfo_json_io.hh"
+#include "casm/crystallography/io/SymInfo_stream_io.hh"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -18,7 +26,11 @@ namespace CASMpy {
 
 using namespace CASM;
 
+// xtal
+
 double default_tol() { return TOL; }
+
+// Lattice
 
 xtal::Lattice make_canonical_lattice(xtal::Lattice const &lattice) {
   return xtal::canonical::equivalent(lattice);
@@ -60,15 +72,98 @@ Eigen::MatrixXd fractional_within(xtal::Lattice const &lattice,
   return coordinate_frac;
 }
 
-// {"axis_names", "basis"}
-// typedef std::pair<std::vector<std::string>, Eigen::MatrixXd> DoFSetBasis;
+std::vector<xtal::SymOp> make_lattice_point_group(
+    xtal::Lattice const &lattice) {
+  return xtal::make_point_group(lattice);
+}
+
+std::vector<xtal::Lattice> enumerate_superlattices(
+    xtal::Lattice const &unit_lattice,
+    std::vector<xtal::SymOp> const &point_group, Index max_volume,
+    Index min_volume = 1, std::string dirs = std::string("abc")) {
+  xtal::ScelEnumProps enum_props{min_volume, max_volume + 1, dirs};
+  xtal::SuperlatticeEnumerator enumerator{unit_lattice, point_group,
+                                          enum_props};
+  std::vector<xtal::Lattice> superlattices;
+  for (auto const &superlat : enumerator) {
+    superlattices.push_back(
+        xtal::canonical::equivalent(superlat, point_group, unit_lattice.tol()));
+  }
+  return superlattices;
+}
+
+std::pair<bool, Eigen::Matrix3d> is_superlattice_of(
+    xtal::Lattice const &superlattice, xtal::Lattice const &unit_lattice) {
+  double tol = std::max(superlattice.tol(), unit_lattice.tol());
+  return xtal::is_superlattice(superlattice, unit_lattice, tol);
+}
+
+Eigen::Matrix3l make_transformation_matrix_to_super(
+    xtal::Lattice const &superlattice, xtal::Lattice const &unit_lattice) {
+  double tol = std::max(superlattice.tol(), unit_lattice.tol());
+  return xtal::make_transformation_matrix_to_super(unit_lattice, superlattice,
+                                                   tol);
+}
+
+/// \brief Check if S = point_group[point_group_index] * L * T, with integer T
+///
+/// \returns (is_equivalent, T, point_group_index)
+std::tuple<bool, Eigen::MatrixXd, Index> is_equivalent_superlattice_of(
+    xtal::Lattice const &superlattice, xtal::Lattice const &unit_lattice,
+    std::vector<xtal::SymOp> const &point_group = std::vector<xtal::SymOp>{}) {
+  double tol = std::max(superlattice.tol(), unit_lattice.tol());
+  auto result = is_equivalent_superlattice(
+      superlattice, unit_lattice, point_group.begin(), point_group.end(), tol);
+  bool is_equivalent = (result.first != point_group.end());
+  Index point_group_index = -1;
+  if (is_equivalent) {
+    point_group_index = std::distance(point_group.begin(), result.first);
+  }
+  return std::tuple<bool, Eigen::MatrixXd, Index>(is_equivalent, result.second,
+                                                  point_group_index);
+}
+
+xtal::Lattice make_superduperlattice(
+    std::vector<xtal::Lattice> const &lattices,
+    std::string mode = std::string("commensurate"),
+    std::vector<xtal::SymOp> const &point_group = std::vector<xtal::SymOp>{}) {
+  if (mode == "commensurate") {
+    return xtal::make_commensurate_superduperlattice(lattices.begin(),
+                                                     lattices.end());
+  } else if (mode == "minimal_commensurate") {
+    return xtal::make_minimal_commensurate_superduperlattice(
+        lattices.begin(), lattices.end(), point_group.begin(),
+        point_group.end());
+  } else if (mode == "fully_commensurate") {
+    return xtal::make_fully_commensurate_superduperlattice(
+        lattices.begin(), lattices.end(), point_group.begin(),
+        point_group.end());
+  } else {
+    std::stringstream msg;
+    msg << "Error in make_superduperlattice: Unrecognized mode=" << mode;
+    throw std::runtime_error(msg.str());
+  }
+}
+
+// DoFSetBasis
 
 struct DoFSetBasis {
   DoFSetBasis(
       std::string const &_dofname,
       std::vector<std::string> const &_axis_names = std::vector<std::string>{},
       Eigen::MatrixXd const &_basis = Eigen::MatrixXd(0, 0))
-      : dofname(_dofname), axis_names(_axis_names), basis(_basis) {}
+      : dofname(_dofname), axis_names(_axis_names), basis(_basis) {
+    if (Index(axis_names.size()) != basis.cols()) {
+      throw std::runtime_error(
+          "Error in DoFSetBasis::DoFSetBasis(): axis_names.size() != "
+          "basis.cols()");
+    }
+    if (axis_names.size() == 0) {
+      axis_names = CASM::AnisoValTraits(dofname).standard_var_names();
+      Index dim = axis_names.size();
+      basis = Eigen::MatrixXd::Identity(dim, dim);
+    }
+  }
 
   /// The type of DoF
   std::string dofname;
@@ -108,6 +203,8 @@ DoFSetBasis make_dofsetbasis(
   return DoFSetBasis(dofname, axis_names, basis);
 }
 
+// SpeciesProperty -> properties
+
 std::map<std::string, xtal::SpeciesProperty> make_species_properties(
     std::map<std::string, Eigen::MatrixXd> species_properties) {
   std::map<std::string, xtal::SpeciesProperty> result;
@@ -117,6 +214,8 @@ std::map<std::string, xtal::SpeciesProperty> make_species_properties(
   }
   return result;
 }
+
+// AtomComponent
 
 xtal::AtomPosition make_atom_position(
     std::string name, Eigen::Vector3d pos,
@@ -135,6 +234,8 @@ std::map<std::string, Eigen::MatrixXd> get_atom_position_properties(
   return result;
 }
 
+// Occupant
+
 xtal::Molecule make_molecule(
     std::string name, std::vector<xtal::AtomPosition> atoms = {},
     bool divisible = false,
@@ -152,6 +253,8 @@ std::map<std::string, Eigen::MatrixXd> get_molecule_properties(
   }
   return result;
 }
+
+// Prim
 
 /// \brief Construct xtal::BasicStructure from JSON string
 xtal::BasicStructure basicstructure_from_json(std::string const &prim_json_str,
@@ -337,10 +440,85 @@ std::vector<std::vector<Index>> asymmetric_unit_indices(
   // so return vector of vector, which is converted to List[List[int]]
   std::vector<std::vector<Index>> result;
   std::set<std::set<Index>> asym_unit = make_asymmetric_unit(prim);
-  for (auto const orbit : asym_unit) {
+  for (auto const &orbit : asym_unit) {
     result.push_back(std::vector<Index>(orbit.begin(), orbit.end()));
   }
   return result;
+}
+
+std::vector<xtal::SymOp> make_factor_group(xtal::BasicStructure const &prim) {
+  return xtal::make_factor_group(prim);
+}
+
+std::vector<xtal::SymOp> make_crystal_point_group(
+    xtal::BasicStructure const &prim) {
+  auto fg = xtal::make_factor_group(prim);
+  return xtal::make_crystal_point_group(fg, prim.lattice().tol());
+}
+
+// SymOp
+
+xtal::SymOp make_symop(Eigen::Matrix3d const &matrix,
+                       Eigen::Vector3d const &translation, bool time_reversal) {
+  return xtal::SymOp(matrix, translation, time_reversal);
+}
+
+std::string symop_to_json(xtal::SymOp const &op, xtal::Lattice const &lattice) {
+  jsonParser json;
+  to_json(op.matrix, json["matrix"]);
+  to_json_array(op.translation, json["translation"]);
+  to_json(op.is_time_reversal_active, json["time_reversal"]);
+
+  std::stringstream ss;
+  ss << json;
+  return ss.str();
+}
+
+// SymInfo
+
+xtal::SymInfo make_syminfo(xtal::SymOp const &op,
+                           xtal::Lattice const &lattice) {
+  return xtal::SymInfo(op, lattice);
+}
+
+std::string get_syminfo_type(xtal::SymInfo const &syminfo) {
+  return to_string(syminfo.op_type);
+}
+
+Eigen::Vector3d get_syminfo_axis(xtal::SymInfo const &syminfo) {
+  return syminfo.axis.const_cart();
+}
+
+double get_syminfo_angle(xtal::SymInfo const &syminfo) { return syminfo.angle; }
+
+Eigen::Vector3d get_syminfo_screw_glide_shift(xtal::SymInfo const &syminfo) {
+  return syminfo.screw_glide_shift.const_cart();
+}
+
+Eigen::Vector3d get_syminfo_location(xtal::SymInfo const &syminfo) {
+  return syminfo.location.const_cart();
+}
+
+std::string get_syminfo_brief_cart(xtal::SymInfo const &syminfo) {
+  return to_brief_unicode(syminfo, xtal::SymInfoOptions(CART));
+}
+
+std::string get_syminfo_brief_frac(xtal::SymInfo const &syminfo) {
+  return to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC));
+}
+
+std::string syminfo_to_json(xtal::SymInfo const &syminfo) {
+  jsonParser json;
+  to_json(syminfo, json);
+
+  to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(CART)),
+          json["brief"]["CART"]);
+  to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC)),
+          json["brief"]["FRAC"]);
+
+  std::stringstream ss;
+  ss << json;
+  return ss.str();
 }
 
 }  // namespace CASMpy
@@ -356,8 +534,8 @@ PYBIND11_MODULE(xtal, m) {
         classes and methods in the CASM::xtal namespace of the CASM C++ libraries.
         This includes:
 
-        - Data structures for representing coordinates, lattices,
-          degrees of freedom (DoF), and crystal structures.
+        - Data structures for representing lattices, crystal structures, and
+          degrees of freedom (DoF).
         - Methods for enumerating lattices, making super structures,
           finding primitive and reduced cells, and finding symmetry
           operations.
@@ -410,11 +588,13 @@ PYBIND11_MODULE(xtal, m) {
 
         The result is equal to:
 
+        .. code-block:: Python
+
             lattice.column_vector_matrix() @ coordinate_frac
 
         Parameters
         ----------
-        coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
+        coordinate_frac : array_like, shape (3, n)
             Coordinates, as columns of a matrix, in fractional coordinates
             with respect to the lattice vectors.
 
@@ -429,11 +609,13 @@ PYBIND11_MODULE(xtal, m) {
 
         The result is equal to:
 
+        .. code-block:: Python
+
             np.linalg.pinv(lattice.column_vector_matrix()) @ coordinate_cart
 
         Parameters
         ----------
-        coordinate_cart : numpy.ndarray[numpy.float64[3, n]]
+        coordinate_cart : array_like, shape (3, n)
             Coordinates, as columns of a matrix, in Cartesian coordinates.
 
         Returns
@@ -448,7 +630,7 @@ PYBIND11_MODULE(xtal, m) {
 
         Parameters
         ----------
-        init_coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
+        init_coordinate_frac : array_like, shape (3, n)
             Coordinates, as columns of a matrix, in fractional coordinates
             with respect to the lattice vectors.
 
@@ -458,7 +640,205 @@ PYBIND11_MODULE(xtal, m) {
             Coordinates, as columns of a matrix, in fractional coordinates
             with respect to the lattice vectors, translatd within the
             lattice unit cell.
-        )pbdoc");
+        )pbdoc")
+      .def("make_point_group", &make_lattice_point_group, R"pbdoc(
+          Return the lattice point group
+
+          Returns
+          -------
+          point_group : List[casm.xtal.SymOp]
+              The set of rigid transformations that keep the origin fixed
+              (i.e. have zero translation vector) and map the lattice (i.e.
+              all points that are integer multiples of the lattice vectors)
+              onto itself.
+          )pbdoc")
+      .def("is_equivalent_to", &xtal::is_equivalent, py::arg("other"), R"pbdoc(
+          Check if this lattice is equivalent to another lattice
+
+          Two lattices, L1 and L2, are equivalent (i.e. have the same
+          lattice points) if there exists U such that:
+
+          .. code-block:: Python
+
+              L1 = L2 @ U,
+
+          where L1 and L2 are the lattice vectors as matrix columns, and
+          U is a unimodular matrix (integer matrix, with abs(det(U))==1).
+
+          Parameters
+          ----------
+          other : casm.xtal.Lattice
+              The other lattice.
+
+          Returns
+          -------
+          is_equivalent: bool
+              True is this lattice is equivalent to the other lattice.
+          )pbdoc")
+      .def("is_superlattice_of", &is_superlattice_of, py::arg("other"), R"pbdoc(
+          Check if this lattice is a superlattice of another lattice
+
+          If this lattice is a superlattice of another lattice, then
+
+          .. code-block:: Python
+
+              S = L @ T
+
+          where p is the index of a point_group operation, T is an approximately integer
+          tranformation matrix T, and S and L are the lattice vectors, as columns of a matrix, of
+          this lattice and the other lattice, respectively.
+
+          Parameters
+          ----------
+          other : casm.xtal.Lattice
+              The other lattice.
+
+          Returns
+          -------
+          (is_superlattice_of, T): (bool, numpy.ndarray[numpy.float64[3, 3]])
+              Returns tuple with a boolean that is True if this lattice is a superlattice of the
+              other lattice, and the tranformation matrix T such that S = L @ T. Note: If
+              is_superlattice_of==True, numpy.rint(T).astype(int) can be used to round array
+              elements to the nearest integer.
+          )pbdoc")
+      .def("is_equivalent_superlattice_of", &is_equivalent_superlattice_of,
+           py::arg("other"),
+           py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
+          Check if this lattice is equivalent to a superlattice of another lattice
+
+          If this lattice is equivalent to a superlattice of another lattice, then
+
+          .. code-block:: Python
+
+              S = point_group[p].matrix() L @ T
+
+          where p is the index of a point_group operation, T is an approximately integer
+          tranformation matrix T, and S and L are the lattice vectors, as columns of a matrix, of
+          this lattice and the other lattice, respectively.
+
+          Parameters
+          ----------
+          other : casm.xtal.Lattice
+              The other lattice.
+          point_group : List[casm.xtal.SymOp]
+              The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.Prim.make_crystal_point_group()`, or the lattice point group, :func:`~xtal.casm.Lattice.make_point_group()`.
+
+          Returns
+          -------
+          (is_equivalent_superlattice_of, T, p): (bool, numpy.ndarray[numpy.float64[3, 3]], int)
+              Returns tuple with a boolean that is True if this lattice is equivalent to a
+              superlattice of the other lattice, and the tranformation matrix T, and point group
+              index, p, such that S = point_group[p].matrix() L @ T. Note: If
+              is_equivalent_superlattice_of==True, numpy.rint(T).astype(int) can be used to round
+              array elements to the nearest integer.
+          )pbdoc")
+      .def("make_transformation_matrix_to_super",
+           &make_transformation_matrix_to_super, py::arg("unit_lattice"),
+           R"pbdoc(
+          Return the integer transformation matrix for this lattice relative a unit lattice
+
+          Parameters
+          ----------
+          unit_lattice : casm.xtal.Lattice
+              The unit lattice.
+
+          Returns
+          -------
+          T: numpy.ndarray[numpy.int64[3, 3]]
+              Returns the integer tranformation matrix T such that S = L @ T, where S and L are the
+              lattice vectors, as columns of a matrix, of this lattice and unit_lattice,
+              respectively.
+
+          Raises
+          ------
+          RuntimeError:
+              If this lattice is not a superlattice of unit_lattice.
+          )pbdoc")
+      .def(py::self < py::self,
+           "Sorts lattices by how canonical the lattice vectors are")
+      .def(py::self <= py::self,
+           "Sort lattices by how canonical the lattice vectors are")
+      .def(py::self > py::self,
+           "Sort lattices by how canonical the lattice vectors are")
+      .def(py::self >= py::self,
+           "Sort lattices by how canonical the lattice vectors are")
+      .def(py::self == py::self,
+           "True if lattice vectors are approximately equal")
+      .def(py::self != py::self,
+           "True if lattice vectors are not approximately equal");
+
+  m.def("enumerate_superlattices", &enumerate_superlattices,
+        py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
+        py::arg("min_volume") = Index(1), py::arg("dirs") = std::string("abc"),
+        R"pbdoc(
+      Enumerate symmetrically distinct superlattices
+
+      Superlattices satify:
+
+      .. code-block:: Python
+
+          S = L @ T,
+
+      where S and L are, respectively, the superlattice and unit lattice vectors as columns of
+      (3x3) matrices, and T is an integer (3x3) transformation matrix.
+
+      Superlattices S1 and S2 are symmetrically equivalent if there exists p and U such that:
+
+      .. code-block:: Python
+
+          S2 = p.matrix() @ S1 @ U,
+
+      where p is an element in the point group, and U is a unimodular matrix (integer matrix, with
+      abs(det(U))==1).
+
+      Parameters
+      ----------
+      unit_lattice : casm.xtal.Lattice
+          The unit lattice.
+      point_group : List[casm.xtal.SymOp]
+          The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.Prim.make_crystal_point_group()`, or the lattice point group, :func:`~xtal.casm.Lattice.make_point_group()`.
+      max_volume : int
+          The maximum volume superlattice to enumerate, as a multiple of the volume of unit_lattice.
+      min_volume : int, default=1
+          The minimum volume superlattice to enumerate, as a multiple of the volume of unit_lattice.
+      dirs : str, default="abc"
+          A string indicating which lattice vectors to enumerate over. Some combination of 'a',
+          'b', and 'c', where 'a' indicates the first lattice vector of the unit cell, 'b' the
+          second, and 'c' the third.
+
+      Returns
+      -------
+      superlattices : List[casm.xtal.Lattice]
+          A list of superlattices of the unit lattice which are distinct under application of
+          point_group. The resulting lattices will be in canonical form with respect to the
+          point_group.
+      )pbdoc");
+
+  m.def("make_superduperlattice", &make_superduperlattice, py::arg("lattices"),
+        py::arg("mode") = std::string("commensurate"),
+        py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
+      Return the smallest lattice that is superlattice of the input lattices
+
+      Parameters
+      ----------
+      lattices : List[casm.xtal.Lattice]
+          List of lattices.
+      mode : str, default="commensurate"
+          One of:
+
+          - "commensurate": Returns the smallest possible superlattice of all input lattices
+          - "minimal_commensurate": Returns the lattice that is the smallest possible superlattice of an equivalent lattice to all input lattice
+          - "fully_commensurate": Returns the lattice that is a superlattice of all equivalents of
+            all input lattices
+      point_group : List[casm.xtal.symop], default=[]
+          Point group that generates the equivalent lattices for the the "minimal_commensurate" and
+          "fully_commensurate" modes.
+
+      Returns
+      -------
+      superduperlattice : casm.xtal.Lattice
+          The superduperlattice
+      )pbdoc");
 
   py::class_<xtal::AtomPosition>(m, "AtomComponent", R"pbdoc(
       An atomic component of a molecular :class:`~casm.xtal.Occupant`
@@ -618,7 +998,7 @@ PYBIND11_MODULE(xtal, m) {
       ----------
       dofname : str
           The type of DoF. Must be a CASM supported DoF type.
-      basis : numpy.ndarray[numpy.float64[m, n]], default=numpy.ndarray[numpy.float64[1, 0]]
+      basis : array_like, shape (m, n), default=numpy.ndarray[numpy.float64[1, 0]]
           User-specified DoF basis vectors, as columns of a matrix. The
           DoF values in this basis, `x_prim`, are related to the DoF
           values in the CASM standard basis, `x_standard`, according to
@@ -671,11 +1051,13 @@ PYBIND11_MODULE(xtal, m) {
            py::arg("title") = std::string("prim"),
            R"pbdoc(
 
+      .. _prim-init:
+
       Parameters
       ----------
       lattice : Lattice
           The primitive cell Lattice.
-      coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
+      coordinate_frac : array_like, shape (3, n)
           Basis site positions, as columns of a matrix, in fractional
           coordinates with respect to the lattice vectors.
       occ_dof : List[List[str]]
@@ -697,8 +1079,8 @@ PYBIND11_MODULE(xtal, m) {
           atoms, vacancies, atoms with fixed anisotropic properties, and
           molecular occupants. A seperate key and value is required for
           all species with distinct anisotropic properties (i.e. "H2_xy",
-          "H2_xz", and "H2_yz" for distinct orientations, or "Aup", and
-          "Adown" for distinct collinear magnetic spins, etc.).
+          "H2_xz", and "H2_yz" for distinct orientations, or "A.up", and
+          "A.down" for distinct collinear magnetic spins, etc.).
       title : str, default="prim"
           A title for the prim. When the prim is used to construct a
           cluster expansion, this must consist of alphanumeric characters
@@ -766,6 +1148,194 @@ PYBIND11_MODULE(xtal, m) {
               In other words, the elements of asymmetric_unit_indices[i] are the indices of the
               i-th set of basis sites which are symmetrically equivalent to each other.
 
+          )pbdoc")
+      .def("make_factor_group", &make_factor_group, R"pbdoc(
+          Return the factor group
+
+          Returns
+          -------
+          factor_group : List[casm.xtal.SymOp]
+              The the set of symmery operations, with translation lying within the primitive unit
+              cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant.
+
+          )pbdoc")
+      .def("make_crystal_point_group", &make_crystal_point_group, R"pbdoc(
+          Return the crystal point group
+
+          Returns
+          -------
+          crystal_point_group : List[casm.xtal.SymOp]
+              The crystal point group is the group constructed from the prim factor group operations
+              with translation vector set to zero.
+
+          )pbdoc");
+
+  py::class_<xtal::SymOp>(m, "SymOp", R"pbdoc(
+      A symmetry operation representation that acts on Cartesian coordinates
+
+      A SymOp, op, transforms a Cartesian coordinate according to:
+
+      .. code-block:: Python
+
+          r_after = op.matrix() @ r_before + op.translation()
+
+      where r_before and r_after are shape=(3,) arrays with the Cartesian
+      coordinates before and after transformation, respectively.
+
+      Additionally, the sign of magnetic spins is flipped according to:
+
+      .. code-block:: Python
+
+          if op.time_reversal() is True:
+              s_after = -s_before
+
+      where s_before and s_after are the spins before and after
+      transformation, respectively.
+
+      )pbdoc")
+      .def(py::init(&make_symop), py::arg("matrix"), py::arg("translation"),
+           py::arg("time_reversal"),
+           R"pbdoc(
+
+          Parameters
+          ----------
+          matrix : array_like, shape (3, 3)
+              The transformation matrix component of the symmetry operation.
+          translation : array_like, shape (3,)
+              Translation component of the symmetry operation.
+          time_reversal : bool
+              True if the symmetry operation includes time reversal (spin flip),
+              False otherwise
+          )pbdoc")
+      .def("matrix", &xtal::get_matrix,
+           "Return the transformation matrix value.")
+      .def("translation", &xtal::get_translation,
+           "Return the translation value.")
+      .def("time_reversal", &xtal::get_time_reversal,
+           "Return the time reversal value.")
+      .def("info", &make_syminfo, py::arg("lattice"),
+           R"pbdoc(
+          Return a SymInfo object describing the symmetry operation
+
+          Parameters
+          ----------
+          lattice : casm.xtal.Lattice
+              The lattice
+
+          Returns
+          -------
+          info : casm.xtal.SymInfo
+              Information about the symmetry operation, including type, axis, invariant point, etc.
+              as applicable.
+          )pbdoc");
+
+  py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
+      Symmetry operation type, axis, invariant point, etc.
+
+      )pbdoc")
+      .def(py::init<xtal::SymOp const &, xtal::Lattice const &>(),
+           py::arg("op"), py::arg("lattice"),
+           R"pbdoc(
+
+          Parameters
+          ----------
+          op : casm.xtal.SymOp
+              The symmetry operation.
+          lattice : casm.xtal.Lattice
+              The lattice
+          )pbdoc")
+      .def("op_type", &get_syminfo_type, R"pbdoc(
+          Return the symmetry operation type.
+
+          Returns
+          -------
+          op_type: str
+              One of:
+
+              - "identity"
+              - "mirror"
+              - "glide"
+              - "rotation"
+              - "screw"
+              - "inversion"
+              - "rotoinversion"
+              - "invalid"
+          )pbdoc")
+      .def("axis", get_syminfo_axis, R"pbdoc(
+          Return the symmetry operation axis.
+
+          Returns
+          -------
+          axis: numpy.ndarray[numpy.float64[3, 1]]
+              This is:
+
+              - the rotation axis, if the operation is a rotation or screw operation
+              - the rotation axis of inversion * self, if this is an improper rotation (then the axis is a normal vector for a mirror plane)
+              - zero vector, if the operation is identity or inversion
+
+              The axis is in Cartesian coordinates and normalized to length 1.
+          )pbdoc")
+      .def("angle", &get_syminfo_angle, R"pbdoc(
+          Return the symmetry operation angle.
+
+          Returns
+          -------
+          angle: float
+              This is:
+
+              - the rotation angle, if the operation is a rotation or screw operation
+              - the rotation angle of inversion * self, if this is an improper rotation (then the axis is a normal vector for a mirror plane)
+              - zero, if the operation is identity or inversion
+
+          )pbdoc")
+      .def("screw_glide_shift", &get_syminfo_screw_glide_shift, R"pbdoc(
+          Return the screw or glide translation component
+
+          Returns
+          -------
+          screw_glide_shift: numpy.ndarray[numpy.float64[3, 1]]
+              This is:
+
+              - the component of translation parallel to `axis`, if the
+                operation is a rotation
+              - the component of translation perpendicular to `axis`, if
+                the operation is a mirror
+
+              The screw_glide_shift is in Cartesian coordinates.
+          )pbdoc")
+      .def("location", &get_syminfo_location, R"pbdoc(
+          A Cartesian coordinate that is invariant to the operation (if one exists)
+
+          Returns
+          -------
+          location: numpy.ndarray[numpy.float64[3, 1]]
+              The location is in Cartesian coordinates. This does not exist for the identity
+              operation.
+          )pbdoc")
+      .def("brief_cart", &get_syminfo_brief_cart, R"pbdoc(
+          A brief description of the symmetry operation, in Cartesian coordinates
+
+          Returns
+          -------
+          brief_cart: str
+              A brief string description of the symmetry operation, in Cartesian coordinates,
+              following the conventions of (International Tables for Crystallography (2015). Vol.
+              A. ch. 1.4, pp. 50-59).
+          )pbdoc")
+      .def("brief_frac", &get_syminfo_brief_frac, R"pbdoc(
+          A brief description of the symmetry operation, in fractional coordinates
+
+          Returns
+          -------
+          brief_cart: str
+              A brief string description of the symmetry operation, in fractional coordinates,
+              following the conventions of (International Tables for Crystallography (2015). Vol.
+              A. ch. 1.4, pp. 50-59).
+          )pbdoc")
+      .def("to_json", &syminfo_to_json, R"pbdoc(
+          Represent the symmetry operation information as a JSON-formatted string.
+
+          The `Symmetry Operation Information JSON Object reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents JSON format, except conjugacy class and inverse operation are not currently included.
           )pbdoc");
 
 #ifdef VERSION_INFO
