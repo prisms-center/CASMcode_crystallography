@@ -53,3 +53,11 @@ Use `pytest` to run the tests. To run all tests, do:
 As an example of running a specific test, do:
 
     python -m pytest -rsap tests/test_prim.py::test_asymmetric_unit_indices
+
+
+Formatting
+==========
+
+Use yapf. From CASMcode_crystallography/python do:
+
+    yapf -ir . 

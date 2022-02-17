@@ -21,7 +21,6 @@
 # sys.path.insert(0, os.path.abspath('../../'))
 # sys.path.insert(0, os.path.abspath('../../src'))
 
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -153,14 +152,16 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'casm-xtal.tex', u'casm-xtal Documentation', u'CASM Developers', 'manual'),
+    (master_doc, 'casm-xtal.tex', u'casm-xtal Documentation',
+     u'CASM Developers', 'manual'),
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'casm-xtal', u'casm-xtal Documentation', [author], 1)]
+man_pages = [(master_doc, 'casm-xtal', u'casm-xtal Documentation', [author], 1)
+             ]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -168,5 +169,6 @@ man_pages = [(master_doc, 'casm-xtal', u'casm-xtal Documentation', [author], 1)]
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'casm-xtal', u'casm-xtal Documentation', author, 'casm-xtal', 'One line description of project.', 'Miscellaneous'),
+    (master_doc, 'casm-xtal', u'casm-xtal Documentation', author, 'casm-xtal',
+     'One line description of project.', 'Miscellaneous'),
 ]

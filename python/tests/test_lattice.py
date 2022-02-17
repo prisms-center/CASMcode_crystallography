@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 import casm.xtal as xtal
 
+
 def test_tol():
     lattice = xtal.Lattice(np.eye(3))
     assert math.isclose(lattice.tol(), 1e-5)
@@ -13,51 +14,63 @@ def test_tol():
     lattice.set_tol(1e-5)
     assert math.isclose(lattice.tol(), 1e-5)
 
+
 def test_conversions(tetragonal_lattice):
     lattice = tetragonal_lattice
-    assert lattice.column_vector_matrix().shape == (3,3)
+    assert lattice.column_vector_matrix().shape == (3, 3)
 
-    coordinate_frac = np.array([[0.0, 0.5, 0.5]]).transpose()
-    coordinate_cart = np.array([[0.0, 0.5, 1.0]]).transpose()
+    coordinate_frac = np.array([
+        [0.0, 0.5, 0.5],
+    ]).transpose()
+    coordinate_cart = np.array([
+        [0.0, 0.5, 1.0],
+    ]).transpose()
 
-    assert np.allclose(lattice.fractional_to_cartesian(coordinate_frac), coordinate_cart)
-    assert np.allclose(lattice.cartesian_to_fractional(coordinate_cart), coordinate_frac)
+    assert np.allclose(lattice.fractional_to_cartesian(coordinate_frac),
+                       coordinate_cart)
+    assert np.allclose(lattice.cartesian_to_fractional(coordinate_cart),
+                       coordinate_frac)
 
-    coordinate_frac_outside = np.array([[1.1, -0.1, 0.5]]).transpose()
-    coordinate_frac_within = np.array([[0.1, 0.9, 0.5]]).transpose()
-    assert np.allclose(
-        lattice.fractional_within(coordinate_frac_outside),
-        coordinate_frac_within)
+    coordinate_frac_outside = np.array([
+        [1.1, -0.1, 0.5],
+    ]).transpose()
+    coordinate_frac_within = np.array([
+        [0.1, 0.9, 0.5],
+    ]).transpose()
+    assert np.allclose(lattice.fractional_within(coordinate_frac_outside),
+                       coordinate_frac_within)
+
 
 def test_make_canonical():
     tetragonal_lattice_noncanonical = xtal.Lattice(
         np.array([
-            [0., 0., 2.], # c (along z)
-            [1., 0., 0.], # a (along x)
-            [0., 1., 0.]] # a (along y)
-        ).transpose())
+            [0., 0., 2.],  # c (along z)
+            [1., 0., 0.],  # a (along x)
+            [0., 1., 0.],  # a (along y)
+        ]).transpose())
     lattice = tetragonal_lattice_noncanonical.make_canonical()
     assert np.allclose(
         lattice.column_vector_matrix(),
         np.array([
-            [1., 0., 0.], # a
-            [0., 1., 0.], # a
-            [0., 0., 2.]] # c
-        ).transpose())
+            [1., 0., 0.],  # a
+            [0., 1., 0.],  # a
+            [0., 0., 2.],  # c
+        ]).transpose())
+
 
 def test_lattice_comparison():
     L1 = xtal.Lattice(
         np.array([
             [0., 0., 2.],
             [1., 0., 0.],
-            [0., 1., 0.]]
-        ).transpose())
+            [0., 1., 0.],
+        ]).transpose())
     L2 = xtal.Lattice(
         np.array([
             [1., 0., 0.],
             [0., 1., 0.],
-            [0., 0., 2.]]
-        ).transpose())
+            [0., 0., 2.],
+        ]).transpose())
     assert L1 < L2
     assert L1 <= L2
     assert L2 > L1
@@ -68,32 +81,34 @@ def test_lattice_comparison():
     assert (L1 != L1) == False
     assert L1.is_equivalent_to(L2) == True
 
+
 def test_is_superlattice_of():
     unit_lattice = xtal.Lattice(np.eye(3))
     lattice1 = xtal.Lattice(
         np.array([
             [1., 0., 0.],
             [0., 1., 0.],
-            [0., 0., 2.]]
-        ).transpose())
+            [0., 0., 2.],
+        ]).transpose())
 
     is_superlattice_of, T = lattice1.is_superlattice_of(unit_lattice)
     assert is_superlattice_of == True
     assert np.allclose(T, lattice1.column_vector_matrix())
 
-    lattice2 = xtal.Lattice(lattice1.column_vector_matrix()*2)
+    lattice2 = xtal.Lattice(lattice1.column_vector_matrix() * 2)
     is_superlattice_of, T = lattice2.is_superlattice_of(lattice1)
     assert is_superlattice_of == True
-    assert np.allclose(T, np.eye(3)*2)
+    assert np.allclose(T, np.eye(3) * 2)
 
     lattice3 = xtal.Lattice(
         np.array([
             [4., 0., 0.],
             [0., 1., 0.],
-            [0., 0., 1.]]
-        ).transpose())
+            [0., 0., 1.],
+        ]).transpose())
     is_superlattice_of, T = lattice3.is_superlattice_of(lattice1)
     assert is_superlattice_of == False
+
 
 def test_is_equivalent_superlattice_of():
 
@@ -102,14 +117,14 @@ def test_is_equivalent_superlattice_of():
     S1 = np.array([
         [1., 0., 0.],
         [0., 1., 0.],
-        [0., 0., 2.]]
-    ).transpose()
+        [0., 0., 2.],
+    ]).transpose()
 
     S2 = np.array([
         [4., 0., 0.],
         [0., 1., 0.],
-        [0., 0., 1.]]
-    ).transpose()
+        [0., 0., 1.],
+    ]).transpose()
 
     unit_lattice = xtal.Lattice(L)
     point_group = unit_lattice.make_point_group()
