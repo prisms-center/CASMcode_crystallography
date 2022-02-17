@@ -16,7 +16,7 @@ coordinate_frac = np.array([
 
 # Occupation degrees of freedom (DoF)
 occ_dof = [
-    ["A", "B"]  # occupants allowed on basis site, b=0
+    ["A"]  # occupants allowed on basis site, b=0
 ]
 
 # Local continuous degrees of freedom (DoF)
