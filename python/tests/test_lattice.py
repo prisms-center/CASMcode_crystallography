@@ -26,9 +26,9 @@ def test_conversions(tetragonal_lattice):
         [0.0, 0.5, 1.0],
     ]).transpose()
 
-    assert np.allclose(lattice.fractional_to_cartesian(coordinate_frac),
+    assert np.allclose(xtal.fractional_to_cartesian(lattice, coordinate_frac),
                        coordinate_cart)
-    assert np.allclose(lattice.cartesian_to_fractional(coordinate_cart),
+    assert np.allclose(xtal.cartesian_to_fractional(lattice, coordinate_cart),
                        coordinate_frac)
 
     coordinate_frac_outside = np.array([
@@ -37,8 +37,9 @@ def test_conversions(tetragonal_lattice):
     coordinate_frac_within = np.array([
         [0.1, 0.9, 0.5],
     ]).transpose()
-    assert np.allclose(lattice.fractional_within(coordinate_frac_outside),
-                       coordinate_frac_within)
+    assert np.allclose(
+        xtal.fractional_within(lattice, coordinate_frac_outside),
+        coordinate_frac_within)
 
 
 def test_make_canonical():
@@ -48,7 +49,7 @@ def test_make_canonical():
             [1., 0., 0.],  # a (along x)
             [0., 1., 0.],  # a (along y)
         ]).transpose())
-    lattice = tetragonal_lattice_noncanonical.make_canonical()
+    lattice = xtal.make_canonical(tetragonal_lattice_noncanonical)
     assert np.allclose(
         lattice.column_vector_matrix(),
         np.array([
@@ -79,7 +80,7 @@ def test_lattice_comparison():
     assert L1 != L2
     assert L1 == L1
     assert (L1 != L1) == False
-    assert L1.is_equivalent_to(L2) == True
+    assert xtal.is_equivalent_to(L1, L2) == True
 
 
 def test_is_superlattice_of():
@@ -91,12 +92,12 @@ def test_is_superlattice_of():
             [0., 0., 2.],
         ]).transpose())
 
-    is_superlattice_of, T = lattice1.is_superlattice_of(unit_lattice)
+    is_superlattice_of, T = xtal.is_superlattice_of(lattice1, unit_lattice)
     assert is_superlattice_of == True
     assert np.allclose(T, lattice1.column_vector_matrix())
 
     lattice2 = xtal.Lattice(lattice1.column_vector_matrix() * 2)
-    is_superlattice_of, T = lattice2.is_superlattice_of(lattice1)
+    is_superlattice_of, T = xtal.is_superlattice_of(lattice2, lattice1)
     assert is_superlattice_of == True
     assert np.allclose(T, np.eye(3) * 2)
 
@@ -106,7 +107,7 @@ def test_is_superlattice_of():
             [0., 1., 0.],
             [0., 0., 1.],
         ]).transpose())
-    is_superlattice_of, T = lattice3.is_superlattice_of(lattice1)
+    is_superlattice_of, T = xtal.is_superlattice_of(lattice3, lattice1)
     assert is_superlattice_of == False
 
 
@@ -127,11 +128,11 @@ def test_is_equivalent_superlattice_of():
     ]).transpose()
 
     unit_lattice = xtal.Lattice(L)
-    point_group = unit_lattice.make_point_group()
+    point_group = xtal.make_point_group(unit_lattice)
     lattice1 = xtal.Lattice(S1)
     lattice2 = xtal.Lattice(S2)
 
     is_equivalent_superlattice_of, T, p = \
-        lattice2.is_equivalent_superlattice_of(lattice1, point_group)
+        xtal.is_equivalent_superlattice_of(lattice2, lattice1, point_group)
     assert is_equivalent_superlattice_of == True
     assert np.allclose(S2, point_group[p].matrix() @ S1 @ T)

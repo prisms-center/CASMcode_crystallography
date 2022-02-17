@@ -10,15 +10,15 @@ Superlattices satisfy:
 
     S = L T,
 
-where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of :math:`3 \times 3` matrices, and :math:`T` is an integer :math:`3 \times 3` transformation matrix. The :func:`~casm.xtal.Lattice.is_superlattice_of`, and :func:`~casm.xtal.Lattice.make_transformation_matrix_to_super` methods of :class:`~casm.xtal.Lattice` can be used to check if a superlattice relationship exists between two lattices and find T.
+where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of :math:`3 \times 3` matrices, and :math:`T` is an integer :math:`3 \times 3` transformation matrix. The :func:`~casm.xtal.is_superlattice_of` and :func:`~casm.xtal.make_transformation_matrix_to_super` methods can be used to check if a superlattice relationship exists between two lattices and find T.
 
 Superlattices :math:`S_1` and :math:`S_2` may have different lattice points but be symmetrically equivalent if there exists p and :math:`U` such that:
 
 .. math::
 
-    S_2 = A_p S_1 U,
+    S_1 = A_p S_2 U,
 
-where :math:`A_p` the operation matrix of the p-th element in the relevant point group, and :math:`U` is a unimodular matrix (integer matrix, with :math:`\det(U) = \pm 1`). The :func:`~casm.xtal.Lattice.is_equivalent_superlattice_of` method of :class:`~casm.xtal.Lattice` can be used to check if a lattice is symmetrically equivalent to a superlattice of another lattice and identify p.
+where :math:`A_p` the operation matrix of the p-th element in the relevant point group, and :math:`U` is a unimodular matrix (integer matrix, with :math:`\det(U) = \pm 1`). The :func:`~casm.xtal.is_equivalent_superlattice_of` method can be used to check if a lattice is symmetrically equivalent to a superlattice of another lattice and identify p.
 
 The :func:`~casm.xtal.enumerate_superlattices` function enumerates symmetrically unique superlattices given:
 
@@ -36,7 +36,7 @@ To enumerate superlattices of a prim (casm.xtal.Prim), taking into account the s
 .. code-block:: Python
 
     >>> unit_lattice = prim.lattice()
-    >>> point_group = prim.make_crystal_point_group()
+    >>> point_group = xtal.make_crystal_point_group(prim)
     >>> superlattices = xtal.enumerate_superlattices(
     ...     unit_lattice, point_group, max_volume=4, min_volume=1, dirs="abc")
 
@@ -45,7 +45,7 @@ To enumerate superlattices of a lattice (casm.xtal.Lattice), with no basis or Do
 .. code-block:: Python
 
     >>> unit_lattice = lattice
-    >>> point_group = lattice.make_crystal_point_group()
+    >>> point_group = xtal.make_point_group(lattice)
     >>> superlattices = xtal.enumerate_superlattices(
     ...     unit_lattice, point_group, max_volume=4, min_volume=1, dirs="abc")
 

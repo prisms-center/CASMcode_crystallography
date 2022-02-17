@@ -33,7 +33,7 @@ prim = xtal.Prim(lattice=lattice,
 
 # Print the factor group
 i = 1
-factor_group = prim.make_factor_group()
+factor_group = xtal.make_factor_group(prim)
 for op in factor_group:
     syminfo = xtal.SymInfo(op, lattice)
     print(str(i) + ":", syminfo.brief_cart())

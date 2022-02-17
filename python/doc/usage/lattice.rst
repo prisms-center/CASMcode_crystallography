@@ -13,10 +13,10 @@ The :class:`~casm.xtal.Lattice` class represents a three-dimensional lattice. It
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([
-        [1., 0., 0.], # a
-        [0., 1., 0.], # a
-        [0., 0., 1.]] # a
-        ).transpose() # <--- note transpose
+        [1., 0., 0.],  # a
+        [0., 1., 0.],  # a
+        [0., 0., 1.],  # a
+    ]).transpose()  # <--- note transpose
     lattice = xtal.Lattice(lattice_column_vector_matrix)
 
 
@@ -30,14 +30,14 @@ This column-vector convention is used throughout CASM to represent basis vectors
     coordinate_cart = lattice.column_vector_matrix() @ coordinate_frac
     coordinate_frac = np.linalg.pinv(lattice.column_vector_matrix()) @ coordinate_cart
 
-For clarity and ease of use, the :class:`~casm.xtal.Lattice` class also includes equivalent methods for performing these transformations:
+For clarity and ease of use, casm-xtal also includes equivalent methods, :func:`~casm.xtal.fractional_to_cartesian()` and :func:`~casm.xtal.cartesian_to_fractional()`, for performing these transformations:
 
 .. code-block:: Python
 
-    coordinate_cart = lattice.fractional_to_cartesian(coordinate_frac)
-    coordinate_frac = lattice.cartesian_to_fractional(coordinate_cart)
+    coordinate_cart = xtal.fractional_to_cartesian(lattice, coordinate_frac)
+    coordinate_frac = xtal.cartesian_to_fractional(lattice, coordinate_cart)
 
-Additionally, the :func:`~casm.xtal.fractional_within()` method of :class:`~casm.xtal.Lattice` can be used to translate fractional coordinates with values less than 0. or greater than or equal to 1. to the equivalent values within the lattice unit cell.
+Additionally, the :func:`~casm.xtal.fractional_within()` can be used to set fractional coordinates with values less than 0. or greater than or equal to 1. to the equivalent values within the lattice unit cell.
 
 
 Symmetry operations
@@ -66,12 +66,12 @@ where s_before and s_after are the spins before and after transformation, respec
 Lattice point group generation
 ------------------------------
 
-The point group is the set of symmetry operations that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~casm.xtal.Lattice.make_point_group()` method of :class:`~casm.xtal.Lattice`. For the example of a simple cubic lattice, the lattice point group has 48 operations:
+The point group is the set of symmetry operations that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~casm.xtal.make_point_group()` method. For the example of a simple cubic lattice, the lattice point group has 48 operations:
 
 .. code-block:: Python
 
     >>> lattice = xtal.Lattice(np.eye(3))
-    >>> point_group = lattice.make_point_group()
+    >>> point_group = xtal.make_point_group(lattice)
     >>> len(point_group)
     48
 
@@ -130,7 +130,7 @@ A brief description can also be printed following the conventions of Internation
 Lattice equivalence
 -------------------
 
-A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~casm.xtal.Lattice.is_equivalent_to` method checks for the equivalence lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of the others according to :math:`L_2 = L_1 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
+A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~casm.xtal.is_equivalent_to` method checks for the equivalence lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of the others according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
 
 .. code-block:: Python
 
@@ -146,14 +146,14 @@ A lattice can be represented using any choice of lattice vectors that results in
     ... ]).transpose())
     >>> print(lattice1 == lattice2) # checks if lattice vectors are ~equal
     False
-    >>> print(lattice1.is_equivalent_to(lattice2)) # checks if lattice points are ~equal
+    >>> print(xtal.is_equivalent_to(lattice1, lattice2)) # checks if lattice points are ~equal
     True
 
 
 Lattice canonical form
 ----------------------
 
-For clarity and comparison purposes it useful to have a canonical choice of equivalent lattice vectors. The :func:`~casm.xtal.Lattice.make_canonical` method of :class:`~casm.xtal.Lattice` finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
+For clarity and comparison purposes it useful to have a canonical choice of equivalent lattice vectors. The :func:`~casm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
 
 .. code-block:: Python
 
@@ -163,7 +163,7 @@ For clarity and comparison purposes it useful to have a canonical choice of equi
     ...             [1., 0., 0.], # a (along x)
     ...             [0., 1., 0.]] # a (along y)
     ...     ).transpose())
-    >>> canonical_lattice = noncanonical_lattice.make_canonical()
+    >>> canonical_lattice = xtal.make_canonical(noncanonical_lattice)
     >>> print(canonical_lattice.column_vector_matrix().transpose())
     [[1. 0. 0.]  # a (along x)
      [0. 1. 0.]  # a (along y)

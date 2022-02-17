@@ -321,13 +321,13 @@ It is possible to restrict the dimension of allowed strain DoF, or rotate the st
 Primitive cell
 --------------
 
-A :class:`~casm.xtal.Prim` object is not forced to be the primitive equivalent cell at construction. The :func:`~casm.xtal.Prim.make_primitive` method of :class:`~casm.xtal.Prim` finds and returns the primitive equivalent cell by checking for internal translations that map all basis sites onto equivalent basis sites, including allowed occupants and equivalent local degrees of freedom (DoF), if they exist.
+A :class:`~casm.xtal.Prim` object is not forced to be the primitive equivalent cell at construction. The :func:`~casm.xtal.make_primitive` method finds and returns the primitive equivalent cell by checking for internal translations that map all basis sites onto equivalent basis sites, including allowed occupants and equivalent local degrees of freedom (DoF), if they exist.
 
 
 Canonical cell
 --------------
 
-The :func:`~casm.xtal.Prim.make_canonical` method of :class:`~casm.xtal.Prim` finds the canonical right-handed Niggli cell of the lattice, applying lattice point group operations to find the equivalent lattice in a standardized orientation. The canonical orientation prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
+The :func:`~casm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, applying lattice point group operations to find the equivalent lattice in a standardized orientation. The canonical orientation prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
 
 .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
 
@@ -341,12 +341,12 @@ The `factor group` is a finite description of the crystal space group in which a
 
 The `factor group` of the prim is the set of transformations, with translation lying within the primitive unit cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant. It is found by a check of the combination of lattice point group operations and translations between basis sites. For cluster expansions of global crystal properties, such as the energy, the cluster basis functions are constructed to have the same symmetry as the prim factor group.
 
-The factor group can be generated using the :func:`~casm.xtal.Prim.make_factor_group` method of :class:`~casm.xtal.Prim` and a description of the operations printed using :class:`~casm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
+The factor group can be generated using the :func:`~casm.xtal.make_factor_group` method, and a description of the operations printed using :class:`~casm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
 
 .. code-block:: Python
 
     >>> i = 1
-    >>> factor_group = prim.make_factor_group()
+    >>> factor_group = xtal.make_factor_group(prim)
     >>> for op in factor_group:
     ...     syminfo = xtal.SymInfo(op, lattice)
     ...     print(str(i) + ":", syminfo.brief_cart())
@@ -371,11 +371,11 @@ Crystal point group
 
 The `crystal point group` is the group constructed from the prim factor group operations with translation vector set to zero. This is the appropriate point group to use for checking the equivalence of superlattices while taking into account the symmetry of the prim basis site coordinates and DoF.
 
-The crystal point group can be generated using the :func:`~casm.xtal.Prim.make_crystal_point_group` method:
+The crystal point group can be generated using the :func:`~casm.xtal.make_crystal_point_group` method:
 
 .. code-block:: Python
 
-    >>> crystal_point_group = prim.make_crystal_point_group()
+    >>> crystal_point_group = xtal.make_crystal_point_group(prim)
 
 
 .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/

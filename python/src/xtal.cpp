@@ -564,196 +564,6 @@ PYBIND11_MODULE(xtal, m) {
            "Return the tolerance used for crystallographic comparisons.")
       .def("set_tol", &xtal::Lattice::set_tol, py::arg("tol"),
            "Set the tolerance used for crystallographic comparisons.")
-      .def("make_canonical", &make_canonical_lattice, R"pbdoc(
-        Return the canonical equivalent lattice
-
-        Finds the canonical right-handed Niggli cell of the lattice, applying
-        lattice point group operations to find the equivalent lattice in a
-        standardized orientation. The canonical orientation prefers lattice
-        vectors that form symmetric matrices with large positive values on the
-        diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
-
-        Notes
-        -----
-        The returned lattice is not canonical in the context of Prim supercell
-        lattices, in which case the crystal point group must be used in
-        determining the canonical orientation of the supercell lattice.
-
-        .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
-
-        )pbdoc")
-      .def("fractional_to_cartesian", &fractional_to_cartesian,
-           py::arg("coordinate_frac"), R"pbdoc(
-        Convert fractional coordinates to Cartesian coordinates
-
-        The result is equal to:
-
-        .. code-block:: Python
-
-            lattice.column_vector_matrix() @ coordinate_frac
-
-        Parameters
-        ----------
-        coordinate_frac : array_like, shape (3, n)
-            Coordinates, as columns of a matrix, in fractional coordinates
-            with respect to the lattice vectors.
-
-        Returns
-        -------
-        coordinate_cart : numpy.ndarray[numpy.float64[3, n]]
-            Coordinates, as columns of a matrix, in Cartesian coordinates.
-        )pbdoc")
-      .def("cartesian_to_fractional", &cartesian_to_fractional,
-           py::arg("coordinate_cart"), R"pbdoc(
-        Convert Cartesian coordinates to fractional coordinates
-
-        The result is equal to:
-
-        .. code-block:: Python
-
-            np.linalg.pinv(lattice.column_vector_matrix()) @ coordinate_cart
-
-        Parameters
-        ----------
-        coordinate_cart : array_like, shape (3, n)
-            Coordinates, as columns of a matrix, in Cartesian coordinates.
-
-        Returns
-        -------
-        coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
-            Coordinates, as columns of a matrix, in fractional coordinates
-            with respect to the lattice vectors.
-        )pbdoc")
-      .def("fractional_within", &fractional_within,
-           py::arg("init_coordinate_frac"), R"pbdoc(
-        Translate fractional coordinates within the lattice unit cell
-
-        Parameters
-        ----------
-        init_coordinate_frac : array_like, shape (3, n)
-            Coordinates, as columns of a matrix, in fractional coordinates
-            with respect to the lattice vectors.
-
-        Returns
-        -------
-        coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
-            Coordinates, as columns of a matrix, in fractional coordinates
-            with respect to the lattice vectors, translatd within the
-            lattice unit cell.
-        )pbdoc")
-      .def("make_point_group", &make_lattice_point_group, R"pbdoc(
-          Return the lattice point group
-
-          Returns
-          -------
-          point_group : List[casm.xtal.SymOp]
-              The set of rigid transformations that keep the origin fixed
-              (i.e. have zero translation vector) and map the lattice (i.e.
-              all points that are integer multiples of the lattice vectors)
-              onto itself.
-          )pbdoc")
-      .def("is_equivalent_to", &xtal::is_equivalent, py::arg("other"), R"pbdoc(
-          Check if this lattice is equivalent to another lattice
-
-          Two lattices, L1 and L2, are equivalent (i.e. have the same
-          lattice points) if there exists U such that:
-
-          .. code-block:: Python
-
-              L1 = L2 @ U,
-
-          where L1 and L2 are the lattice vectors as matrix columns, and
-          U is a unimodular matrix (integer matrix, with abs(det(U))==1).
-
-          Parameters
-          ----------
-          other : casm.xtal.Lattice
-              The other lattice.
-
-          Returns
-          -------
-          is_equivalent: bool
-              True is this lattice is equivalent to the other lattice.
-          )pbdoc")
-      .def("is_superlattice_of", &is_superlattice_of, py::arg("other"), R"pbdoc(
-          Check if this lattice is a superlattice of another lattice
-
-          If this lattice is a superlattice of another lattice, then
-
-          .. code-block:: Python
-
-              S = L @ T
-
-          where p is the index of a point_group operation, T is an approximately integer
-          tranformation matrix T, and S and L are the lattice vectors, as columns of a matrix, of
-          this lattice and the other lattice, respectively.
-
-          Parameters
-          ----------
-          other : casm.xtal.Lattice
-              The other lattice.
-
-          Returns
-          -------
-          (is_superlattice_of, T): (bool, numpy.ndarray[numpy.float64[3, 3]])
-              Returns tuple with a boolean that is True if this lattice is a superlattice of the
-              other lattice, and the tranformation matrix T such that S = L @ T. Note: If
-              is_superlattice_of==True, numpy.rint(T).astype(int) can be used to round array
-              elements to the nearest integer.
-          )pbdoc")
-      .def("is_equivalent_superlattice_of", &is_equivalent_superlattice_of,
-           py::arg("other"),
-           py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
-          Check if this lattice is equivalent to a superlattice of another lattice
-
-          If this lattice is equivalent to a superlattice of another lattice, then
-
-          .. code-block:: Python
-
-              S = point_group[p].matrix() L @ T
-
-          where p is the index of a point_group operation, T is an approximately integer
-          tranformation matrix T, and S and L are the lattice vectors, as columns of a matrix, of
-          this lattice and the other lattice, respectively.
-
-          Parameters
-          ----------
-          other : casm.xtal.Lattice
-              The other lattice.
-          point_group : List[casm.xtal.SymOp]
-              The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.Prim.make_crystal_point_group()`, or the lattice point group, :func:`~xtal.casm.Lattice.make_point_group()`.
-
-          Returns
-          -------
-          (is_equivalent_superlattice_of, T, p): (bool, numpy.ndarray[numpy.float64[3, 3]], int)
-              Returns tuple with a boolean that is True if this lattice is equivalent to a
-              superlattice of the other lattice, and the tranformation matrix T, and point group
-              index, p, such that S = point_group[p].matrix() L @ T. Note: If
-              is_equivalent_superlattice_of==True, numpy.rint(T).astype(int) can be used to round
-              array elements to the nearest integer.
-          )pbdoc")
-      .def("make_transformation_matrix_to_super",
-           &make_transformation_matrix_to_super, py::arg("unit_lattice"),
-           R"pbdoc(
-          Return the integer transformation matrix for this lattice relative a unit lattice
-
-          Parameters
-          ----------
-          unit_lattice : casm.xtal.Lattice
-              The unit lattice.
-
-          Returns
-          -------
-          T: numpy.ndarray[numpy.int64[3, 3]]
-              Returns the integer tranformation matrix T such that S = L @ T, where S and L are the
-              lattice vectors, as columns of a matrix, of this lattice and unit_lattice,
-              respectively.
-
-          Raises
-          ------
-          RuntimeError:
-              If this lattice is not a superlattice of unit_lattice.
-          )pbdoc")
       .def(py::self < py::self,
            "Sorts lattices by how canonical the lattice vectors are")
       .def(py::self <= py::self,
@@ -766,6 +576,250 @@ PYBIND11_MODULE(xtal, m) {
            "True if lattice vectors are approximately equal")
       .def(py::self != py::self,
            "True if lattice vectors are not approximately equal");
+
+  m.def("make_canonical_lattice", &make_canonical_lattice, py::arg("lattice"),
+        R"pbdoc(
+    Return the canonical equivalent lattice
+
+    Finds the canonical right-handed Niggli cell of the lattice, applying
+    lattice point group operations to find the equivalent lattice in a
+    standardized orientation. The canonical orientation prefers lattice
+    vectors that form symmetric matrices with large positive values on the
+    diagonal and small values off the diagonal. See also `Lattice Canonical
+    Form`_.
+
+    Notes
+    -----
+    The returned lattice is not canonical in the context of Prim supercell
+    lattices, in which case the crystal point group must be used in
+    determining the canonical orientation of the supercell lattice.
+
+    .. _`Lattice Canonical Form`:
+    https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+
+    Parameters
+    ----------
+    init_lattice : casm.xtal.Lattice
+        The initial lattice.
+
+    Returns
+    ----------
+    lattice : casm.xtal.Lattice
+        The canonical equivalent lattice, using the lattice point group.
+
+  )pbdoc");
+
+  m.def("make_canonical", &make_canonical_lattice, py::arg("init_lattice"),
+        "Equivalent to :func:`~casm.xtal.make_canonical_lattice`");
+
+  m.def("fractional_to_cartesian", &fractional_to_cartesian, py::arg("lattice"),
+        py::arg("coordinate_frac"), R"pbdoc(
+    Convert fractional coordinates to Cartesian coordinates
+
+    The result is equal to:
+
+    .. code-block:: Python
+
+        lattice.column_vector_matrix() @ coordinate_frac
+
+    Parameters
+    ----------
+    lattice : casm.xtal.Lattice
+        The lattice.
+    coordinate_frac : array_like, shape (3, n)
+        Coordinates, as columns of a matrix, in fractional coordinates
+        with respect to the lattice vectors.
+
+    Returns
+    -------
+    coordinate_cart : numpy.ndarray[numpy.float64[3, n]]
+        Coordinates, as columns of a matrix, in Cartesian coordinates.
+    )pbdoc");
+
+  m.def("cartesian_to_fractional", &cartesian_to_fractional, py::arg("lattice"),
+        py::arg("coordinate_cart"), R"pbdoc(
+    Convert Cartesian coordinates to fractional coordinates
+
+    The result is equal to:
+
+    .. code-block:: Python
+
+        np.linalg.pinv(lattice.column_vector_matrix()) @ coordinate_cart
+
+    Parameters
+    ----------
+    lattice : casm.xtal.Lattice
+        The lattice.
+    coordinate_cart : array_like, shape (3, n)
+        Coordinates, as columns of a matrix, in Cartesian coordinates.
+
+    Returns
+    -------
+    coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
+        Coordinates, as columns of a matrix, in fractional coordinates
+        with respect to the lattice vectors.
+    )pbdoc");
+
+  m.def("fractional_within", &fractional_within, py::arg("lattice"),
+        py::arg("init_coordinate_frac"), R"pbdoc(
+    Translate fractional coordinates within the lattice unit cell
+
+    Parameters
+    ----------
+    lattice : casm.xtal.Lattice
+        The lattice.
+    init_coordinate_frac : array_like, shape (3, n)
+        Coordinates, as columns of a matrix, in fractional coordinates
+        with respect to the lattice vectors.
+
+    Returns
+    -------
+    coordinate_frac : numpy.ndarray[numpy.float64[3, n]]
+        Coordinates, as columns of a matrix, in fractional coordinates
+        with respect to the lattice vectors, translatd within the
+        lattice unit cell.
+    )pbdoc");
+
+  m.def("make_point_group", &make_lattice_point_group, py::arg("lattice"),
+        R"pbdoc(
+      Return the lattice point group
+
+      Parameters
+      ----------
+      lattice : casm.xtal.Lattice
+          The lattice.
+
+      Returns
+      -------
+      point_group : List[casm.xtal.SymOp]
+          The set of rigid transformations that keep the origin fixed
+          (i.e. have zero translation vector) and map the lattice (i.e.
+          all points that are integer multiples of the lattice vectors)
+          onto itself.
+      )pbdoc");
+
+  m.def("is_equivalent_to", &xtal::is_equivalent, py::arg("lattice1"),
+        py::arg("lattice2"), R"pbdoc(
+      Check if lattice1 is equivalent to lattice2
+
+      Two lattices, L1 and L2, are equivalent (i.e. have the same
+      lattice points) if there exists U such that:
+
+      .. code-block:: Python
+
+          L1 = L2 @ U,
+
+      where L1 and L2 are the lattice vectors as matrix columns, and
+      U is a unimodular matrix (integer matrix, with abs(det(U))==1).
+
+      Parameters
+      ----------
+      lattice1 : casm.xtal.Lattice
+          The first lattice.
+      lattice2 : casm.xtal.Lattice
+          The second lattice.
+
+      Returns
+      -------
+      is_equivalent: bool
+          True if lattice1 is equivalent to lattice2.
+      )pbdoc");
+
+  m.def("is_superlattice_of", &is_superlattice_of, py::arg("lattice1"),
+        py::arg("lattice2"), R"pbdoc(
+      Check if lattice1 is a superlattice of lattice2
+
+      If lattice1 is a superlattice of lattice2, then
+
+      .. code-block:: Python
+
+          L1 = L2 @ T
+
+      where p is the index of a point_group operation, T is an approximately
+      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
+      columns of a matrix, of lattice1 and lattice2, respectively.
+
+      Parameters
+      ----------
+      lattice1 : casm.xtal.Lattice
+          The first lattice.
+      lattice2 : casm.xtal.Lattice
+          The second lattice.
+
+      Returns
+      -------
+      (is_superlattice_of, T): (bool, numpy.ndarray[numpy.float64[3, 3]])
+          Returns tuple with a boolean that is True if lattice1 is a
+          superlattice of lattice2, and the tranformation matrix T
+          such that L1 = L2 @ T. Note: If is_superlattice_of==True,
+          numpy.rint(T).astype(int) can be used to round array elements to
+          the nearest integer.
+      )pbdoc");
+
+  m.def("is_equivalent_superlattice_of", &is_equivalent_superlattice_of,
+        py::arg("lattice1"), py::arg("lattice2"),
+        py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
+      Check if lattice1 is equivalent to a superlattice of lattice2
+
+      If lattice1 is equivalent to a superlattice of lattice2, then
+
+      .. code-block:: Python
+
+          L1 = point_group[p].matrix() @ L2 @ T
+
+      where p is the index of a point_group operation, T is an approximately
+      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
+      columns of a matrix, of lattice1 and lattice2, respectively.
+
+      Parameters
+      ----------
+      lattice1 : casm.xtal.Lattice
+          The first lattice.
+      lattice2 : casm.xtal.Lattice
+          The second lattice.
+      point_group : List[casm.xtal.SymOp]
+          The point group symmetry that generates equivalent lattices. Depending
+          on the use case, this is often the prim crystal point group,
+          :func:`~casm.xtal.make_crystal_point_group()`, or the lattice
+          point group, :func:`~casm.xtal.make_point_group()`.
+
+      Returns
+      -------
+      (is_equivalent_superlattice_of, T, p): (bool,
+      numpy.ndarray[numpy.float64[3, 3]], int)
+          Returns tuple with a boolean that is True if lattice1 is
+          equivalent to a superlattice of lattice2, the
+          tranformation matrix T, and point group index, p, such that L1 =
+          point_group[p].matrix() @ L2 @ T. Note: If
+          is_equivalent_superlattice_of==True, numpy.rint(T).astype(int) can
+          be used to round array elements to the nearest integer.
+      )pbdoc");
+
+  m.def("make_transformation_matrix_to_super",
+        &make_transformation_matrix_to_super, py::arg("superlattice"),
+        py::arg("unit_lattice"),
+        R"pbdoc(
+     Return the integer transformation matrix for the superlattice relative a unit lattice.
+
+     Parameters
+     ----------
+     superlattice : casm.xtal.Lattice
+         The superlattice.
+     unit_lattice : casm.xtal.Lattice
+         The unit lattice.
+
+     Returns
+     -------
+     T: numpy.ndarray[numpy.int64[3, 3]]
+         Returns the integer tranformation matrix T such that S = L @ T, where S and L
+         are the lattice vectors, as columns of a matrix, of the superlattice and
+         unit_lattice, respectively.
+
+     Raises
+     ------
+     RuntimeError:
+         If superlattice is not a superlattice of unit_lattice.
+     )pbdoc");
 
   m.def("enumerate_superlattices", &enumerate_superlattices,
         py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
@@ -796,7 +850,7 @@ PYBIND11_MODULE(xtal, m) {
       unit_lattice : casm.xtal.Lattice
           The unit lattice.
       point_group : List[casm.xtal.SymOp]
-          The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.Prim.make_crystal_point_group()`, or the lattice point group, :func:`~xtal.casm.Lattice.make_point_group()`.
+          The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.make_crystal_point_group()`, or the lattice point group, :func:`~casm.xtal.make_point_group()`.
       max_volume : int
           The maximum volume superlattice to enumerate, as a multiple of the volume of unit_lattice.
       min_volume : int, default=1
@@ -924,23 +978,25 @@ PYBIND11_MODULE(xtal, m) {
       )pbdoc")
       .def("name", &xtal::Molecule::name,
            "The \"chemical name\" of the occupant")
-      .def("is_vacancy", &xtal::Molecule::is_vacancy, "True if a vacancy.")
-      .def("is_atomic", &xtal::Molecule::is_atomic,
-           "True if a single isotropic atom or vacancy")
       .def("is_divisible", &xtal::Molecule::is_divisible,
            "True if is divisible in kinetic Monte Carlo calculations")
       .def("atoms", &xtal::Molecule::atoms,
            "Return the atomic components of the occupant")
-      .def("atom", &xtal::Molecule::atom, py::arg("i"),
-           "Return the `i`-th component atom")
       .def("properties", &get_molecule_properties,
            "Return the fixed properties of the occupant");
+
+  m.def("is_vacancy", &xtal::Molecule::is_vacancy,
+        "True if occupant is a vacancy.");
+
+  m.def("is_atomic", &xtal::Molecule::is_atomic,
+        "True if occupant is a single isotropic atom or vacancy");
 
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy
 
       This function is equivalent to ``casm.xtal.Occupant("Va")``.
       )pbdoc");
+
   m.def("make_atom", &xtal::Molecule::make_atom, py::arg("name"), R"pbdoc(
       Construct a Occupant object representing a single isotropic atom
 
@@ -1038,8 +1094,8 @@ PYBIND11_MODULE(xtal, m) {
       which will result in more efficient methods. Some methods may have
       unexpected results when using a non-primitive Prim.
 
-      The :func:`~casm.xtal.Prim.make_primitive` method may be used to find
-      the primitive equivalent, and the :func:`~casm.xtal.Prim.make_canonical`
+      The :func:`~casm.xtal.make_primitive` method may be used to find
+      the primitive equivalent, and the :func:`~casm.xtal.make_canonical_prim`
       method may be used to find the equivalent with a Niggli cell lattice
       aligned in a CASM standard direction.
       )pbdoc")
@@ -1112,11 +1168,24 @@ PYBIND11_MODULE(xtal, m) {
            "Represent the Prim as a JSON-formatted string. The `Prim reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
            "crystallography/BasicStructure/>`_ documents the expected JSON "
-           "format.")
-      .def("make_within", &make_within, R"pbdoc(
-            Return an equivalent Prim with all basis sites within the unit cell
-            )pbdoc")
-      .def("make_primitive", &make_primitive, R"pbdoc(
+           "format.");
+
+  m.def("make_within", &make_within, py::arg("init_prim"), R"pbdoc(
+            Return an equivalent Prim with all basis site coordinates within the unit cell
+
+            Parameters
+            ----------
+            init_prim : casm.xtal.Prim
+                The initial prim.
+
+            Returns
+            ----------
+            prim : Lattice
+                The prim with all basis site coordinates within the unit cell.
+
+            )pbdoc");
+
+  m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
             Return a primitive equivalent Prim
 
             A :class:`Prim` object is not forced to be the primitive equivalent
@@ -1125,8 +1194,21 @@ PYBIND11_MODULE(xtal, m) {
             basis sites onto equivalent basis sites, including allowed
             occupants and equivalent local degrees of freedom (DoF), if they
             exist.
-            )pbdoc")
-      .def("make_canonical", &make_canonical_basicstructure, R"pbdoc(
+
+            Parameters
+            ----------
+            init_prim : casm.xtal.Prim
+                The initial prim.
+
+            Returns
+            ----------
+            prim : Lattice
+                The primitive equivalent prim.
+            )pbdoc");
+
+  m.def("make_canonical_prim", &make_canonical_basicstructure,
+        py::arg("init_prim"),
+        R"pbdoc(
           Return an equivalent Prim with canonical lattice
 
           Finds the canonical right-handed Niggli cell of the lattice, applying
@@ -1137,9 +1219,29 @@ PYBIND11_MODULE(xtal, m) {
 
           .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
 
-          )pbdoc")
-      .def("asymmetric_unit_indices", asymmetric_unit_indices, R"pbdoc(
+          Parameters
+          ----------
+          init_prim : casm.xtal.Prim
+              The initial prim.
+
+          Returns
+          ----------
+          prim : Lattice
+              The prim with canonical lattice.
+
+        )pbdoc");
+
+  m.def("make_canonical", &make_canonical_basicstructure, py::arg("init_prim"),
+        "Equivalent to :func:`~casm.xtal.make_canonical_prim`");
+
+  m.def("asymmetric_unit_indices", &asymmetric_unit_indices, py::arg("prim"),
+        R"pbdoc(
           Return the indices of equivalent basis sites
+
+          Parameters
+          ----------
+          prim : casm.xtal.Prim
+              The prim.
 
           Returns
           -------
@@ -1148,9 +1250,15 @@ PYBIND11_MODULE(xtal, m) {
               In other words, the elements of asymmetric_unit_indices[i] are the indices of the
               i-th set of basis sites which are symmetrically equivalent to each other.
 
-          )pbdoc")
-      .def("make_factor_group", &make_factor_group, R"pbdoc(
+          )pbdoc");
+
+  m.def("make_factor_group", &make_factor_group, py::arg("prim"), R"pbdoc(
           Return the factor group
+
+          Parameters
+          ----------
+          prim : casm.xtal.Prim
+              The prim.
 
           Returns
           -------
@@ -1158,9 +1266,16 @@ PYBIND11_MODULE(xtal, m) {
               The the set of symmery operations, with translation lying within the primitive unit
               cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant.
 
-          )pbdoc")
-      .def("make_crystal_point_group", &make_crystal_point_group, R"pbdoc(
+          )pbdoc");
+
+  m.def("make_crystal_point_group", &make_crystal_point_group, py::arg("prim"),
+        R"pbdoc(
           Return the crystal point group
+
+          Parameters
+          ----------
+          prim : casm.xtal.Prim
+              The prim.
 
           Returns
           -------
@@ -1212,22 +1327,7 @@ PYBIND11_MODULE(xtal, m) {
       .def("translation", &xtal::get_translation,
            "Return the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
-           "Return the time reversal value.")
-      .def("info", &make_syminfo, py::arg("lattice"),
-           R"pbdoc(
-          Return a SymInfo object describing the symmetry operation
-
-          Parameters
-          ----------
-          lattice : casm.xtal.Lattice
-              The lattice
-
-          Returns
-          -------
-          info : casm.xtal.SymInfo
-              Information about the symmetry operation, including type, axis, invariant point, etc.
-              as applicable.
-          )pbdoc");
+           "Return the time reversal value.");
 
   py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
       Symmetry operation type, axis, invariant point, etc.
