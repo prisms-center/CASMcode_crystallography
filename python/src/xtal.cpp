@@ -9,10 +9,12 @@
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/CanonicalForm.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
+#include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
+#include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
 #include "casm/crystallography/io/SymInfo_stream_io.hh"
 
@@ -516,6 +518,96 @@ std::string syminfo_to_json(xtal::SymInfo const &syminfo) {
   to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC)),
           json["brief"]["FRAC"]);
 
+  std::stringstream ss;
+  ss << json;
+  return ss.str();
+}
+
+xtal::SimpleStructure make_simplestructure(
+    xtal::Lattice const &lattice,
+    Eigen::MatrixXd const &atom_coordinate_frac = Eigen::MatrixXd(),
+    std::vector<std::string> const &atom_type = std::vector<std::string>{},
+    std::map<std::string, Eigen::MatrixXd> const &atom_properties =
+        std::map<std::string, Eigen::MatrixXd>{},
+    Eigen::MatrixXd const &mol_coordinate_frac = Eigen::MatrixXd(),
+    std::vector<std::string> const &mol_type = std::vector<std::string>{},
+    std::map<std::string, Eigen::MatrixXd> const &mol_properties =
+        std::map<std::string, Eigen::MatrixXd>{},
+    std::map<std::string, Eigen::MatrixXd> const &global_properties =
+        std::map<std::string, Eigen::MatrixXd>{}) {
+  xtal::SimpleStructure simple;
+  simple.lat_column_mat = lattice.lat_column_mat();
+  Eigen::MatrixXd const &L = simple.lat_column_mat;
+  simple.atom_info.coords = L * atom_coordinate_frac;
+  simple.atom_info.names = atom_type;
+  simple.atom_info.properties = atom_properties;
+  simple.mol_info.coords = L * mol_coordinate_frac;
+  simple.mol_info.names = mol_type;
+  simple.mol_info.properties = mol_properties;
+  simple.properties = global_properties;
+  return simple;
+}
+
+xtal::Lattice get_simplestructure_lattice(xtal::SimpleStructure const &simple) {
+  return xtal::Lattice(simple.lat_column_mat);
+}
+
+Eigen::MatrixXd get_simplestructure_atom_coordinate_cart(
+    xtal::SimpleStructure const &simple) {
+  return simple.atom_info.coords;
+}
+
+Eigen::MatrixXd get_simplestructure_atom_coordinate_frac(
+    xtal::SimpleStructure const &simple) {
+  return get_simplestructure_lattice(simple).inv_lat_column_mat() *
+         simple.atom_info.coords;
+}
+
+std::vector<std::string> get_simplestructure_atom_type(
+    xtal::SimpleStructure const &simple) {
+  return simple.atom_info.names;
+}
+
+std::map<std::string, Eigen::MatrixXd> get_simplestructure_atom_properties(
+    xtal::SimpleStructure const &simple) {
+  return simple.atom_info.properties;
+}
+
+Eigen::MatrixXd get_simplestructure_mol_coordinate_cart(
+    xtal::SimpleStructure const &simple) {
+  return simple.mol_info.coords;
+}
+
+Eigen::MatrixXd get_simplestructure_mol_coordinate_frac(
+    xtal::SimpleStructure const &simple) {
+  return get_simplestructure_lattice(simple).inv_lat_column_mat() *
+         simple.mol_info.coords;
+}
+
+std::vector<std::string> get_simplestructure_mol_type(
+    xtal::SimpleStructure const &simple) {
+  return simple.mol_info.names;
+}
+
+std::map<std::string, Eigen::MatrixXd> get_simplestructure_mol_properties(
+    xtal::SimpleStructure const &simple) {
+  return simple.mol_info.properties;
+}
+
+std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
+    xtal::SimpleStructure const &simple) {
+  return simple.properties;
+}
+
+xtal::SimpleStructure simplestructure_from_json(jsonParser const &json) {
+  xtal::SimpleStructure simple;
+  from_json(simple, json);
+  return simple;
+}
+
+std::string simplestructure_to_json(xtal::SimpleStructure const &simple) {
+  jsonParser json;
+  to_json(simple, json);
   std::stringstream ss;
   ss << json;
   return ss.str();
@@ -1437,6 +1529,110 @@ PYBIND11_MODULE(xtal, m) {
 
           The `Symmetry Operation Information JSON Object reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents JSON format, except conjugacy class and inverse operation are not currently included.
           )pbdoc");
+
+  py::class_<xtal::SimpleStructure>(m, "Structure", R"pbdoc(
+    A crystal structure
+
+    Structure may specify atom and / or molecule coordinates and properties:
+
+    - lattice vectors
+    - atom coordinates
+    - atom type names
+    - continuous atom properties
+    - molecule coordinates
+    - molecule type names
+    - continuous molecule properties
+    - continuous global properties
+
+    Atom representation is most widely supported in CASM methods. In some limited cases the molecule representation is used.
+
+    Notes
+    -----
+
+    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
+
+    See the CASM `Degrees of Freedom (DoF) and Properties`_
+    documentation for the full list of supported properites and their
+    definitions.
+
+    .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
+
+    )pbdoc")
+      .def(
+          py::init(&make_simplestructure), py::arg("lattice"),
+          py::arg("atom_coordinate_frac") = Eigen::MatrixXd(),
+          py::arg("atom_type") = std::vector<std::string>{},
+          py::arg("atom_properties") = std::map<std::string, Eigen::MatrixXd>{},
+          py::arg("mol_coordinate_frac") = Eigen::MatrixXd(),
+          py::arg("mol_type") = std::vector<std::string>{},
+          py::arg("mol_properties") = std::map<std::string, Eigen::MatrixXd>{},
+          py::arg("global_properties") =
+              std::map<std::string, Eigen::MatrixXd>{},
+          R"pbdoc(
+
+    .. _prim-init:
+
+    Parameters
+    ----------
+    lattice : Lattice
+        The Lattice.
+    atom_coordinate_frac : array_like, shape (3, n)
+        Atom positions, as columns of a matrix, in fractional
+        coordinates with respect to the lattice vectors.
+    atom_type : List[str], size=n
+        Atom type names.
+    atom_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+        Continuous properties associated with individual atoms, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+    mol_coordinate_frac : array_like, shape (3, n)
+        Molecule positions, as columns of a matrix, in fractional
+        coordinates with respect to the lattice vectors.
+    mol_type : List[str], size=n
+        Molecule type names.
+    mol_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+        Continuous properties associated with individual molecules, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
+        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+    )pbdoc")
+      .def("lattice", &get_simplestructure_lattice, "Return the lattice")
+      .def("atom_coordinate_cart", &get_simplestructure_atom_coordinate_cart,
+           "Return the atom positions, as columns of a matrix, in Cartesian "
+           "coordinates.")
+      .def("atom_coordinate_frac", &get_simplestructure_atom_coordinate_frac,
+           "Return the atom positions, as columns of a matrix, in fractional "
+           "coordinates with respect to the lattice vectors.")
+      .def("atom_type", &get_simplestructure_atom_type,
+           "Return a list with atom type names.")
+      .def("atom_properties", &get_simplestructure_atom_properties,
+           "Return continuous properties associated with individual atoms, if "
+           "present.")
+      .def("mol_coordinate_cart", &get_simplestructure_mol_coordinate_cart,
+           "Return the molecule positions, as columns of a matrix, in "
+           "Cartesian coordinates.")
+      .def("mol_coordinate_frac", &get_simplestructure_mol_coordinate_frac,
+           "Return the molecule positions, as columns of a matrix, in "
+           "fractional coordinates with respect to the lattice vectors.")
+      .def("mol_type", &get_simplestructure_mol_type,
+           "Return a list with molecule type names.")
+      .def("mol_properties", &get_simplestructure_mol_properties,
+           "Return continuous properties associated with individual molecules, "
+           "if present.")
+      .def("global_properties", &get_simplestructure_global_properties,
+           "Return continuous properties associated with the entire crystal, "
+           "if present.")
+      .def_static(
+          "from_json", &simplestructure_from_json,
+          "Construct a Structure from a JSON-formatted string. The `Structure "
+          "reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/SimpleStructure/>`_ documents the expected JSON "
+          "format.",
+          py::arg("structure_json_str"))
+      .def("to_json", &simplestructure_to_json,
+           "Represent the Structure as a JSON-formatted string. The `Structure "
+           "reference "
+           "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+           "crystallography/SimpleStructure/>`_ documents the expected JSON "
+           "format.");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
