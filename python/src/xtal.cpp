@@ -10,6 +10,7 @@
 #include "casm/crystallography/CanonicalForm.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
+#include "casm/crystallography/SimpleStructureTools.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
@@ -34,7 +35,8 @@ double default_tol() { return TOL; }
 
 // Lattice
 
-xtal::Lattice make_canonical_lattice(xtal::Lattice const &lattice) {
+xtal::Lattice make_canonical_lattice(xtal::Lattice lattice) {
+  lattice.make_right_handed();
   return xtal::canonical::equivalent(lattice);
 }
 
@@ -611,6 +613,13 @@ std::string simplestructure_to_json(xtal::SimpleStructure const &simple) {
   std::stringstream ss;
   ss << json;
   return ss.str();
+}
+
+xtal::SimpleStructure make_superstructure(
+    Eigen::Matrix3l const &transformation_matrix_to_super,
+    xtal::SimpleStructure const &simple) {
+  return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
+                                   simple);
 }
 
 }  // namespace CASMpy
@@ -1633,6 +1642,24 @@ PYBIND11_MODULE(xtal, m) {
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
            "crystallography/SimpleStructure/>`_ documents the expected JSON "
            "format.");
+
+  m.def("make_superstructure", &make_superstructure,
+        py::arg("transformation_matrix_to_super"), py::arg("structure"),
+        R"pbdoc(
+      Make a superstructure
+
+      Parameters
+      ----------
+      transformation_matrix_to_super: array_like, shape=(3,3), dtype=int
+          The transformation matrix, T, relating the superstructure lattice vectors, S, to the unit structure lattice vectors, L, according to S = L @ T, where S and L are shape=(3,3)  matrices with lattice vectors as columns.
+      structure: casm.xtal.Structure
+          The unit structure used to form the superstructure.
+
+      Returns
+      -------
+      superstructure: casm.xtal.Structure
+          The superstructure.
+      )pbdoc");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
