@@ -280,9 +280,11 @@ std::string basicstructure_to_json(xtal::BasicStructure const &prim) {
 xtal::BasicStructure make_basicstructure(
     xtal::Lattice const &lattice, Eigen::MatrixXd const &coordinate_frac,
     std::vector<std::vector<std::string>> const &occ_dof,
-    std::vector<std::vector<DoFSetBasis>> const &local_dof,
-    std::vector<DoFSetBasis> const &global_dof,
-    std::map<std::string, xtal::Molecule> const &molecules,
+    std::vector<std::vector<DoFSetBasis>> const &local_dof =
+        std::vector<std::vector<DoFSetBasis>>{},
+    std::vector<DoFSetBasis> const &global_dof = std::vector<DoFSetBasis>{},
+    std::map<std::string, xtal::Molecule> const &molecules =
+        std::map<std::string, xtal::Molecule>{},
     std::string title = std::string("prim")) {
   // validation
   if (coordinate_frac.rows() != 3) {
@@ -450,11 +452,12 @@ std::vector<std::vector<Index>> asymmetric_unit_indices(
   return result;
 }
 
-std::vector<xtal::SymOp> make_factor_group(xtal::BasicStructure const &prim) {
+std::vector<xtal::SymOp> make_basicstructure_factor_group(
+    xtal::BasicStructure const &prim) {
   return xtal::make_factor_group(prim);
 }
 
-std::vector<xtal::SymOp> make_crystal_point_group(
+std::vector<xtal::SymOp> make_basicstructure_crystal_point_group(
     xtal::BasicStructure const &prim) {
   auto fg = xtal::make_factor_group(prim);
   return xtal::make_crystal_point_group(fg, prim.lattice().tol());
@@ -615,11 +618,55 @@ std::string simplestructure_to_json(xtal::SimpleStructure const &simple) {
   return ss.str();
 }
 
+std::vector<xtal::SymOp> make_simplestructure_factor_group(
+    xtal::SimpleStructure const &simple) {
+  std::vector<std::vector<std::string>> occ_dof;
+  for (std::string name : simple.atom_info.names) {
+    occ_dof.push_back({name});
+  }
+  std::cout << "coordinate_frac:\n"
+            << get_simplestructure_atom_coordinate_frac(simple) << std::endl;
+  std::cout << "occ_dof:" << std::endl;
+  for (auto const &site_dof : occ_dof) {
+    for (auto const &occupant : site_dof) {
+      std::cout << occupant << ",";
+    }
+    std::cout << std::endl;
+  }
+  xtal::BasicStructure prim = make_basicstructure(
+      get_simplestructure_lattice(simple),
+      get_simplestructure_atom_coordinate_frac(simple), occ_dof);
+  return xtal::make_factor_group(prim);
+}
+
+std::vector<xtal::SymOp> make_simplestructure_crystal_point_group(
+    xtal::SimpleStructure const &simple) {
+  auto fg = make_simplestructure_factor_group(simple);
+  return xtal::make_crystal_point_group(fg, TOL);
+}
+
 xtal::SimpleStructure make_superstructure(
     Eigen::Matrix3l const &transformation_matrix_to_super,
     xtal::SimpleStructure const &simple) {
   return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
                                    simple);
+}
+
+std::vector<Eigen::VectorXd> make_equivalent_strain(
+    std::vector<xtal::SymOp> const &point_group,
+    Eigen::VectorXd const &e_standard, std::string metric, double tol = TOL) {
+  AnisoValTraits traits(metric);
+  auto compare = [&](Eigen::VectorXd const &lhs, Eigen::VectorXd const &rhs) {
+    return float_lexicographical_compare(lhs, rhs, tol);
+  };
+  std::set<Eigen::VectorXd, decltype(compare)> equivalent_strain(compare);
+  for (auto const &op : point_group) {
+    Eigen::MatrixXd M = traits.symop_to_matrix(op.matrix, op.translation,
+                                               op.is_time_reversal_active);
+    equivalent_strain.insert(M * e_standard);
+  }
+  return std::vector<Eigen::VectorXd>(equivalent_strain.begin(),
+                                      equivalent_strain.end());
 }
 
 }  // namespace CASMpy
@@ -1353,7 +1400,8 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc");
 
-  m.def("make_factor_group", &make_factor_group, py::arg("prim"), R"pbdoc(
+  m.def("make_prim_factor_group", &make_basicstructure_factor_group,
+        py::arg("prim"), R"pbdoc(
           Return the factor group
 
           Parameters
@@ -1369,7 +1417,11 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc");
 
-  m.def("make_crystal_point_group", &make_crystal_point_group, py::arg("prim"),
+  m.def("make_factor_group", &make_basicstructure_factor_group, py::arg("prim"),
+        "Equivalent to :func:`~casm.xtal.make_prim_factor_group`");
+
+  m.def("make_prim_crystal_point_group",
+        &make_basicstructure_crystal_point_group, py::arg("prim"),
         R"pbdoc(
           Return the crystal point group
 
@@ -1385,6 +1437,10 @@ PYBIND11_MODULE(xtal, m) {
               with translation vector set to zero.
 
           )pbdoc");
+
+  m.def("make_crystal_point_group", &make_basicstructure_crystal_point_group,
+        py::arg("prim"),
+        "Equivalent to :func:`~casm.xtal.make_prim_crystal_point_group`");
 
   py::class_<xtal::SymOp>(m, "SymOp", R"pbdoc(
       A symmetry operation representation that acts on Cartesian coordinates
@@ -1643,6 +1699,58 @@ PYBIND11_MODULE(xtal, m) {
            "crystallography/SimpleStructure/>`_ documents the expected JSON "
            "format.");
 
+  m.def("make_structure_factor_group", &make_simplestructure_factor_group,
+        py::arg("structure"), R"pbdoc(
+           Return the factor group of an atomic structure
+
+           Parameters
+           ----------
+           structure : casm.xtal.Structure
+               The structure.
+
+           Returns
+           -------
+           factor_group : List[casm.xtal.SymOp]
+               The the set of symmery operations, with translation lying within the primitive unit
+               cell, that leave the lattice vectors, atom coordinates, and atom types invariant.
+
+           Notes
+           -----
+           Currently this method only considers atom coordinates and types. Molecular coordinates
+           and types are not considered.
+
+           )pbdoc");
+
+  m.def("make_factor_group", &make_simplestructure_factor_group,
+        py::arg("structure"),
+        "Equivalent to :func:`~casm.xtal.make_structure_factor_group`");
+
+  m.def("make_structure_crystal_point_group",
+        &make_simplestructure_crystal_point_group, py::arg("structure"),
+        R"pbdoc(
+           Return the crystal point group of an atomic structure
+
+           Parameters
+           ----------
+           structure : casm.xtal.Structure
+               The structure.
+
+           Returns
+           -------
+           crystal_point_group : List[casm.xtal.SymOp]
+               The crystal point group is the group constructed from the structure factor group
+               operations with translation vector set to zero.
+
+           Notes
+           -----
+           Currently this method only considers atom coordinates and types. Molecular coordinates
+           and types are not considered.
+           )pbdoc");
+
+  m.def("make_crystal_point_group", &make_simplestructure_crystal_point_group,
+        py::arg("structure"),
+        "Equivalent to :func:`~casm.xtal.make_structure_crystal_point_group`");
+
   m.def("make_superstructure", &make_superstructure,
         py::arg("transformation_matrix_to_super"), py::arg("structure"),
         R"pbdoc(
@@ -1659,6 +1767,30 @@ PYBIND11_MODULE(xtal, m) {
       -------
       superstructure: casm.xtal.Structure
           The superstructure.
+      )pbdoc");
+
+  m.def("make_equivalent_strain", &make_equivalent_strain,
+        py::arg("point_group"), py::arg("e_standard"), py::arg("metric"),
+        py::arg("tol") = TOL,
+        R"pbdoc(
+      Make the set of equivalent strains
+
+      Parameters
+      ----------
+      point_group : List[casm.xtal.symop]
+          Point group that generates the equivalent strains.
+      e_standard : array_like, shape=(6,)
+          The unrolled strain metric value.
+      metric : string
+          The strain metric name. One of: "Bstrain", "EAstrain", "GLstrain",
+          "Hstain", or "Ustrain".
+      tol: float, default=1e-5
+          The tolerance used to eliminate equivalent strain values
+
+      Returns
+      -------
+      equivalent_strain: List[numpy.ndarray[numpy.float64[6, 1]]]
+          A list of unrolled strain values equivalent under the point group.
       )pbdoc");
 
 #ifdef VERSION_INFO
