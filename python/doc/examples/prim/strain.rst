@@ -40,24 +40,24 @@ This example uses a fixed "A" sublattice for occ_dof, which by default are creat
     ]
 
     # Global continuous degrees of freedom (DoF)
-    GLstrain_dof = xtal.DoFSetBasis("GLstrain")  # Green-Lagrange strain metric
-    global_dof = [GLstrain_dof]
+    Hstrain_dof = xtal.DoFSetBasis("Hstrain")  # Hencky strain metric
+    global_dof = [Hstrain_dof]
 
     # Construct the prim
     prim = xtal.Prim(lattice=lattice,
                      coordinate_frac=coordinate_frac,
                      occ_dof=occ_dof,
                      global_dof=global_dof,
-                     title="simple_cubic_GLstrain")
+                     title="simple_cubic_Hstrain")
 
 
-This prim as JSON: :download:`simple_cubic_GLstrain.json <json/simple_cubic_GLstrain.json>`
+This prim as JSON: :download:`simple_cubic_Hstrain.json <json/simple_cubic_Hstrain.json>`
 
 
 Simple cubic with strain DoF, symmetry-adapted basis
 ----------------------------------------------------
 
-This example constructs the prim for simple cubic crystal system with strain DoF, using the Green-Lagrange strain metric, with the symmetry-adapted basis :math:`\vec{e}`, as described by :cite:t:`THOMAS201776`:
+This example constructs the prim for simple cubic crystal system with strain DoF, using the Green-Lagrange strain metric, with the symmetry-adapted basis :math:`\vec{e}`, as described by :cite:t:`THOMAS2017a`:
 
 .. math::
 
@@ -100,8 +100,8 @@ This example uses a fixed "A" sublattice for occ_dof, which by default are creat
     ]
 
     # Global continuous degrees of freedom (DoF)
-    GLstrain_dof = xtal.DoFSetBasis(
-        dofname="GLstrain",
+    Hstrain_dof = xtal.DoFSetBasis(
+        dofname="Hstrain",
         axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
         basis=np.array([
             [1. / sqrt(3), 1. / sqrt(3), 1. / sqrt(3), 0.0, 0.0, 0.0],
@@ -111,14 +111,14 @@ This example uses a fixed "A" sublattice for occ_dof, which by default are creat
             [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
         ]).transpose())
-    global_dof = [GLstrain_dof]
+    global_dof = [Hstrain_dof]
 
     # Construct the prim
     prim = xtal.Prim(lattice=lattice,
                      coordinate_frac=coordinate_frac,
                      occ_dof=occ_dof,
                      global_dof=global_dof,
-                     title="simple_cubic_GLstrain_symadapted")
+                     title="simple_cubic_Hstrain_symadapted")
 
 
-This prim as JSON: :download:`simple_cubic_GLstrain_symadapted.json <json/simple_cubic_GLstrain_symadapted.json>`
+This prim as JSON: :download:`simple_cubic_Hstrain_symadapted.json <json/simple_cubic_Hstrain_symadapted.json>`

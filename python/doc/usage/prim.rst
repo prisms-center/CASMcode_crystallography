@@ -160,7 +160,7 @@ See the `Degrees of Freedom (DoF) and Properties`_ documentation for the full li
 
 **Example: Atomic displacement DoF**
 
-Atomic displacement DoF, with the standard basis :math:`\[d_{x}, d_{y}, d_{z}]\]` can be added using:
+Atomic displacement DoF, with the standard basis :math:`[d_{x}, d_{y}, d_{z}]` can be added using:
 
 .. code-block:: Python
 
@@ -175,7 +175,7 @@ Atomic displacement DoF, with the standard basis :math:`\[d_{x}, d_{y}, d_{z}]\]
 
 **Example: Collinear magnetic spin DoF**
 
-Collinear magnetic spin DoF, with the standard basis :math:`\[m\]` can be added using:
+Collinear magnetic spin DoF, with the standard basis :math:`[m]` can be added using:
 
 .. code-block:: Python
 
@@ -190,7 +190,7 @@ Collinear magnetic spin DoF, with the standard basis :math:`\[m\]` can be added 
 
 **Example: Non-collinear magnetic spin DoF, with spin-orbit coupling**
 
-Non-collinear magnetic spin DoF, with spin-orbit coupling, with the standard basis :math:`\[m\]` can be added using:
+Non-collinear magnetic spin DoF, with spin-orbit coupling, with the standard basis :math:`[m]` can be added using:
 
 .. code-block:: Python
 
@@ -225,14 +225,16 @@ It is possible to restrict the dimension of allowed DoF, or rotate the basis, by
 If a user-specified basis is provided, configurations, and the cluster expansion, are restricted to the specified space.
 
 
+.. _sec-strain-dof:
+
 Strain DoF
 ----------
 
 CASM supports strain global continuous DoF, with the following choices of symmetric strain metrics, :math:`E`:
 
-- `"GLstrain"`: Green-Lagrange strain metric, with :math:`E = \frac{1}{2}(F^{\mathsf{T}} F - I)`
-- `"Hstrain"`: Hencky strain metric, with :math:`E = \frac{1}{2}\ln(F^{\mathsf{T}} F)`
-- `"EAstrain"`: Euler-Almansi strain metric, with :math:`E = \frac{1}{2}(I−(F F^{\mathsf{T}})^{-1})`
+- `"GLstrain"`: Green-Lagrange strain metric, :math:`E = \frac{1}{2}(F^{\mathsf{T}} F - I)`
+- `"Hstrain"`: Hencky strain metric, :math:`E = \frac{1}{2}\ln(F^{\mathsf{T}} F)`
+- `"EAstrain"`: Euler-Almansi strain metric, :math:`E = \frac{1}{2}(I−(F F^{\mathsf{T}})^{-1})`
 
 Where:
 
@@ -241,17 +243,24 @@ Where:
 - :math:`I`: identity matrix, shape=(3,3)
 - :math:`E`: symmetric strain metric, shape=(3,3)
 
-The deformation tensor, F, can be decomposed into a pure rotation matrix, :math:`R`, shape=(3,3), and pure stretch tensor, :math:`U`, shape=(3,3):
+Two additional strain metrics are supported as properties which can be transformed by symmetry operations, but not as DoF:
+
+- `"Bstrain"`: Biot strain metric, :math:`E = U - I`
+- `"Ustrain"`: Right stretch tensor, :math:`E = U`
+
+The deformation tensor, F, can be decomposed into a pure isometry (rigid transformation), :math:`Q`, shape=(3,3), and either the right stretch tensor, :math:`U`, shape=(3,3), or the left stretch tensor, :math:`V`, shape=(3,3), according to:
 
 .. math::
 
-    F = R U
+    F &= Q U = V Q
+
+    Q^{-1} &= Q^{\mathsf{T}}
 
 The strain metric, :math:`E`, can be represented by the vector, :math:`\vec{E}`, which is the CASM standard strain basis:
 
 .. math::
 
-    \vec{E} = [E_{xx}, E_{yy}, E_{zz}, \sqrt(2)E_{yz}, \sqrt(2)E_{xz}, \sqrt(2)E_{xy}]
+    \vec{E} = [E_{xx}, E_{yy}, E_{zz}, \sqrt{2}E_{yz}, \sqrt{2}E_{xz}, \sqrt{2}E_{xy}]
 
 
 **Example: Strain DoF, using the Green-Lagrange strain metric**
@@ -261,41 +270,46 @@ The following constructs a prim with strain DoF, using the Green-Lagrange strain
 .. code-block:: Python
 
     # Global continuous degrees of freedom (DoF)
-    GLstrain_dof = xtal.DoFSetBasis("GLstrain")     # Green-Lagrange strain metric
-    global_dof = [GLstrain_dof]
+    Hstrain_dof = xtal.DoFSetBasis("Hstrain")     # Hencky strain metric
+    global_dof = [Hstrain_dof]
     prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
 
 **Example: Strain DoF, symmetry-adapted basis**
 
-As described by :cite:t:`THOMAS201776`, the symmetry-adapted strain basis :math:`\vec{e}`,
+As described by :cite:t:`THOMAS2017a`, the symmetry-adapted strain basis,
 
 .. math::
 
-    \vec{e} = \left( \begin{array}{ccc} e_1 \\ e_2 \\ e_3 \\ e_4 \\ e_5 \\ e_6 \end{array} \right) = \left( \begin{array}{ccc} \left( E_{xx} + E_{yy} + E_{zz} \right)/\sqrt{3} \\ \left( E_{xx} - E_{yy} \right)/\sqrt{2} \\ \left( 2E_{zz} - E_{xx} - E_{yy} + \right)/\sqrt{6} \\ \sqrt{2}E_{yz} \\ \sqrt{2}E_{xz} \\ \sqrt{2}E_{xy} \end{array} \right),
+    B^{\vec{e}} = \left(
+      \begin{array}{cccccc}
+      1/\sqrt{3} & 1/\sqrt{2} & -1/\sqrt{6} & 0 & 0 & 0 \\
+      1/\sqrt{3} & -1/\sqrt{2} & -1/\sqrt{6} & 0 & 0 & 0  \\
+      1/\sqrt{3} & 0 & 2/\sqrt{6} & 0 & 0 & 0  \\
+      0 & 0 & 0 & 1 & 0 & 0 \\
+      0 & 0 & 0 & 0 & 1 & 0 \\
+      0 & 0 & 0 & 0 & 0 & 1
+      \end{array}
+    \right),
 
-is a useful strain basis because it decomposes strain space into irreducible subspaces which do not mix under application of symmetry.
+is a transformation which decomposes strain space into irreducible subspaces which do not mix under application of symmetry. Using the symmetry-adapted strain basis results in symmetry-adapted strain metric vectors,
 
-For cubic point groups, there are three irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_2, e_3\}`, and :math:`\{e_4, e_5, e_6\}`.
+.. math::
 
-For hexagonal point groups, there are four irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_3\}`, :math:`\{e_2, e_6\}`, and :math:`\{e_4, e_5\}`.
+    \vec{e} = \left( \begin{array}{ccc} e_1 \\ e_2 \\ e_3 \\ e_4 \\ e_5 \\ e_6 \end{array} \right) = \left( \begin{array}{ccc} \left( E_{xx} + E_{yy} + E_{zz} \right)/\sqrt{3} \\ \left( E_{xx} - E_{yy} \right)/\sqrt{2} \\ \left( 2E_{zz} - E_{xx} - E_{yy} + \right)/\sqrt{6} \\ \sqrt{2}E_{yz} \\ \sqrt{2}E_{xz} \\ \sqrt{2}E_{xy} \end{array} \right).
 
-The following constructs a prim with strain DoF, using the Green-Lagrange strain metric, and the symmetry-adapted basis, :math:`\vec{e}`:
+The same symmetry-adapted strain basis holds for all crystal point groups, but the irreducible subspaces vary. As an example, for cubic point groups, there are three irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_2, e_3\}`, and :math:`\{e_4, e_5, e_6\}`. For hexagonal point groups, there are four irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_3\}`, :math:`\{e_2, e_6\}`, and :math:`\{e_4, e_5\}`.
+
+The following uses :func:`~casm.xtal.make_symmetry_adapted_strain_basis` to construct a prim with strain DoF, using the Hencky strain metric, and the symmetry-adapted basis:
 
 .. code-block:: Python
 
     from math import sqrt
     # Global continuous degrees of freedom (DoF)
-    GLstrain_dof = xtal.DoFSetBasis(
-        dofname="GLstrain",
+    Hstrain_dof = xtal.DoFSetBasis(
+        dofname="Hstrain",
         axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
-        basis=np.array([
-              [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
-              [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
-              [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
-              [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]).transpose())
-    global_dof = [GLstrain_dof]
+        basis=xtal.make_symmetry_adapted_strain_basis())
+    global_dof = [Hstrain_dof]
     prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
 
 
@@ -307,14 +321,14 @@ It is possible to restrict the dimension of allowed strain DoF, or rotate the st
 
     from math import sqrt
     # Global continuous degrees of freedom (DoF)
-    GLstrain_dof = xtal.DoFSetBasis(
-        dofname="GLstrain",
-        axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
-        basis=[
+    Hstrain_dof = xtal.DoFSetBasis(
+        dofname="Hstrain",
+        axis_names=["e_{1}", "e_{2}", "e_{3}"],
+        basis=np.array([
             [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
             [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
-            [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0]])
-    global_dof = [GLstrain_dof]
+            [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0]]).transpose())
+    global_dof = [Hstrain_dof]
     prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
 
 
@@ -342,8 +356,6 @@ The `factor group` is a finite description of the crystal space group in which a
 The `factor group` of the prim is the set of transformations, with translation lying within the primitive unit cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant. It is found by a check of the combination of lattice point group operations and translations between basis sites. For cluster expansions of global crystal properties, such as the energy, the cluster basis functions are constructed to have the same symmetry as the prim factor group.
 
 The factor group can be generated using the :func:`~casm.xtal.make_factor_group` method, and a description of the operations printed using :class:`~casm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
-
-.. code-block:: Python
 
     >>> i = 1
     >>> factor_group = xtal.make_factor_group(prim)
@@ -373,9 +385,6 @@ The `crystal point group` is the group constructed from the prim factor group op
 
 The crystal point group can be generated using the :func:`~casm.xtal.make_crystal_point_group` method:
 
-.. code-block:: Python
-
     >>> crystal_point_group = xtal.make_crystal_point_group(prim)
-
 
 .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/

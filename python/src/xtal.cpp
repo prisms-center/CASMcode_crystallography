@@ -11,6 +11,7 @@
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
+#include "casm/crystallography/Strain.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
@@ -28,6 +29,17 @@ namespace py = pybind11;
 namespace CASMpy {
 
 using namespace CASM;
+
+namespace _xtal_impl {
+
+Eigen::MatrixXd pseudoinverse(Eigen::MatrixXd const &M) {
+  Index dim = M.rows();
+  return M.transpose()
+      .colPivHouseholderQr()
+      .solve(Eigen::MatrixXd::Identity(dim, dim))
+      .transpose();
+}
+}  // namespace _xtal_impl
 
 // xtal
 
@@ -652,21 +664,189 @@ xtal::SimpleStructure make_superstructure(
                                    simple);
 }
 
-std::vector<Eigen::VectorXd> make_equivalent_strain(
-    std::vector<xtal::SymOp> const &point_group,
-    Eigen::VectorXd const &e_standard, std::string metric, double tol = TOL) {
-  AnisoValTraits traits(metric);
+std::vector<Eigen::VectorXd> make_equivalent_property_values(
+    std::vector<xtal::SymOp> const &point_group, Eigen::VectorXd const &x,
+    std::string property_type, Eigen::MatrixXd basis = Eigen::MatrixXd(0, 0),
+    double tol = TOL) {
+  AnisoValTraits traits(property_type);
+  Index dim = traits.dim();
   auto compare = [&](Eigen::VectorXd const &lhs, Eigen::VectorXd const &rhs) {
     return float_lexicographical_compare(lhs, rhs, tol);
   };
-  std::set<Eigen::VectorXd, decltype(compare)> equivalent_strain(compare);
+  std::set<Eigen::VectorXd, decltype(compare)> equivalent_x(compare);
+  if (basis.cols() == 0) {
+    basis = Eigen::MatrixXd::Identity(dim, dim);
+  }
+  Eigen::MatrixXd basis_pinv = _xtal_impl::pseudoinverse(basis);
   for (auto const &op : point_group) {
+    Eigen::VectorXd x_standard = basis * x;
     Eigen::MatrixXd M = traits.symop_to_matrix(op.matrix, op.translation,
                                                op.is_time_reversal_active);
-    equivalent_strain.insert(M * e_standard);
+    equivalent_x.insert(basis_pinv * M * x_standard);
   }
-  return std::vector<Eigen::VectorXd>(equivalent_strain.begin(),
-                                      equivalent_strain.end());
+  return std::vector<Eigen::VectorXd>(equivalent_x.begin(), equivalent_x.end());
+}
+
+/// \brief Holds strain metric and basis to facilitate conversions
+struct StrainConverter {
+  StrainConverter(std::string _metric, Eigen::MatrixXd const &_basis)
+      : metric(_metric),
+        basis(_basis),
+        basis_pinv(_xtal_impl::pseudoinverse(basis)) {}
+
+  /// \brief Name of strain metric (i.e. 'Hstrain', etc.)
+  std::string metric;
+
+  /// \brief Strain metric basis, such that E_standard = basis * E_basis
+  Eigen::MatrixXd basis;
+
+  /// \brief Pseudoinverse of basis
+  Eigen::MatrixXd basis_pinv;
+};
+
+/// \brief Decompose deformation tensor, F, as Q*U
+///
+/// \param F A deformation tensor
+/// \returns {Q, U}
+std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_QU(Eigen::Matrix3d const &F) {
+  Eigen::Matrix3d right_stretch = polar_decomposition(F);
+  Eigen::Matrix3d isometry = F * right_stretch.inverse();
+  return std::make_pair(isometry, right_stretch);
+}
+
+/// \brief Decompose deformation tensor, F, as V*Q
+///
+/// \param F A deformation tensor
+/// \returns {Q, V} Note the isometry matrix, Q, is returned first.
+std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_VQ(Eigen::Matrix3d const &F) {
+  auto result = F_to_QU(F);
+  result.second = F * result.first.transpose();
+  return result;
+}
+
+/// \brief Return strain metric vector value in standard basis
+Eigen::VectorXd strain_metric_vector_in_standard_basis(
+    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
+  return converter.basis * E_vector;
+}
+
+/// \brief Return strain metric vector value in converter basis
+Eigen::VectorXd strain_metric_vector_in_converter_basis(
+    StrainConverter const &converter,
+    Eigen::VectorXd const &E_vector_in_standard_basis) {
+  return converter.basis_pinv * E_vector_in_standard_basis;
+}
+
+/// \brief Converter strain metric vector value to matrix value
+///
+/// Strain metric vector value is:
+///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
+///
+/// \param converter Strain converter
+/// \param E_vector, strain metric vector value in basis converter.basis
+/// \returns E_matrix Strain metric matrix
+///
+Eigen::Matrix3d strain_metric_vector_to_matrix(
+    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
+  Eigen::VectorXd e = converter.basis * E_vector;
+  double w = sqrt(2.);
+  Eigen::Matrix3d E_matrix;
+  E_matrix <<  //
+      e(0),
+      e(5) / w, e(4) / w,        //
+      e(5) / w, e(1), e(3) / w,  //
+      e(4) / w, e(3) / w, e(2);  //
+  return E_matrix;
+}
+
+/// \brief Converter strain metric matrix value to vector value
+///
+/// Strain metric vector value is:
+///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
+///
+/// \param converter Strain converter
+/// \param E_matrix Strain metric matrix
+/// \return E_vector, strain metric vector value in converter.basis
+///
+Eigen::VectorXd strain_metric_matrix_to_vector(
+    StrainConverter const &converter, Eigen::Matrix3d const &E_matrix) {
+  Eigen::Matrix3d const &e = E_matrix;
+  Eigen::VectorXd E_vector = Eigen::VectorXd::Zero(6);
+  double w = std::sqrt(2.);
+  E_vector << e(0, 0), e(1, 1), e(2, 2), w * e(1, 2), w * e(0, 2), w * e(0, 1);
+  return converter.basis_pinv * E_vector;
+}
+
+/// \brief Converter strain metric value to deformation tensor
+///
+/// \param converter A StrainConverter
+/// \param E_vector Unrolled strain metric value, in converter.basis,
+///     such that E_standard = converter.basis * E_vector
+/// \returns F, the deformation tensor
+Eigen::Matrix3d strain_metric_vector_to_F(StrainConverter const &converter,
+                                          Eigen::VectorXd const &E_vector) {
+  using namespace strain;
+  Eigen::Matrix3d E_matrix =
+      strain_metric_vector_to_matrix(converter, E_vector);
+
+  if (converter.metric == "Hstrain") {
+    return metric_to_deformation_tensor<METRIC::HENCKY>(E_matrix);
+  } else if (converter.metric == "EAstrain") {
+    return metric_to_deformation_tensor<METRIC::EULER_ALMANSI>(E_matrix);
+  } else if (converter.metric == "GLstrain") {
+    return metric_to_deformation_tensor<METRIC::GREEN_LAGRANGE>(E_matrix);
+  } else if (converter.metric == "Bstrain") {
+    return metric_to_deformation_tensor<METRIC::BIOT>(E_matrix);
+  } else if (converter.metric == "Ustrain") {
+    return E_matrix;
+  } else {
+    std::stringstream ss;
+    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
+    throw std::runtime_error(ss.str());
+  }
+};
+
+/// \brief Converter strain metric value to deformation tensor
+///
+/// \param converter A StrainConverter
+/// \param F Deformation gradient tensor
+/// \returns Unrolled strain metric value, in converter.basis,
+///     such that E_standard = converter.basis * E_vector
+Eigen::VectorXd strain_metric_vector_from_F(StrainConverter const &converter,
+                                            Eigen::Matrix3d const &F) {
+  using namespace strain;
+  Eigen::Matrix3d E_matrix;
+
+  if (converter.metric == "Hstrain") {
+    E_matrix = deformation_tensor_to_metric<METRIC::HENCKY>(F);
+  } else if (converter.metric == "EAstrain") {
+    E_matrix = deformation_tensor_to_metric<METRIC::EULER_ALMANSI>(F);
+  } else if (converter.metric == "GLstrain") {
+    E_matrix = deformation_tensor_to_metric<METRIC::GREEN_LAGRANGE>(F);
+  } else if (converter.metric == "Bstrain") {
+    E_matrix = deformation_tensor_to_metric<METRIC::BIOT>(F);
+  } else if (converter.metric == "Ustrain") {
+    E_matrix = right_stretch_tensor(F);
+  } else {
+    std::stringstream ss;
+    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
+    throw std::runtime_error(ss.str());
+  }
+  return strain_metric_matrix_to_vector(converter, E_matrix);
+};
+
+Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
+  Eigen::MatrixXd B;
+  // clang-format off
+  B <<  //
+      1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3), 0, 0, 0,    //e1
+      1 / sqrt(2), -1 / sqrt(2), 0.0, 0, 0, 0,           //e2
+      -1 / sqrt(6), -1 / sqrt(6), 2 / sqrt(6), 0, 0, 0,  //e3
+      0, 0, 0, 1, 0, 0,                                  //e4
+      0, 0, 0, 0, 1, 0,                                  //e5
+      0, 0, 0, 0, 0, 1;                                  //e6
+  // clang-format on
+  return B.transpose();
 }
 
 }  // namespace CASMpy
@@ -742,8 +922,7 @@ PYBIND11_MODULE(xtal, m) {
     lattices, in which case the crystal point group must be used in
     determining the canonical orientation of the supercell lattice.
 
-    .. _`Lattice Canonical Form`:
-    https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+    .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
 
     Parameters
     ----------
@@ -751,11 +930,10 @@ PYBIND11_MODULE(xtal, m) {
         The initial lattice.
 
     Returns
-    ----------
+    -------
     lattice : casm.xtal.Lattice
         The canonical equivalent lattice, using the lattice point group.
-
-  )pbdoc");
+    )pbdoc");
 
   m.def("make_canonical", &make_canonical_lattice, py::arg("init_lattice"),
         "Equivalent to :func:`~casm.xtal.make_canonical_lattice`");
@@ -1066,7 +1244,7 @@ PYBIND11_MODULE(xtal, m) {
           type.
 
           See the CASM `Degrees of Freedom (DoF) and Properties`_
-          documentation for the full list of supported properites and their
+          documentation for the full list of supported properties and their
           definitions.
 
           .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1119,7 +1297,7 @@ PYBIND11_MODULE(xtal, m) {
           type.
 
           See the CASM `Degrees of Freedom (DoF) and Properties`_
-          documentation for the full list of supported properites and their
+          documentation for the full list of supported properties and their
           definitions.
 
           .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1242,10 +1420,14 @@ PYBIND11_MODULE(xtal, m) {
       which will result in more efficient methods. Some methods may have
       unexpected results when using a non-primitive Prim.
 
-      The :func:`~casm.xtal.make_primitive` method may be used to find
-      the primitive equivalent, and the :func:`~casm.xtal.make_canonical_prim`
-      method may be used to find the equivalent with a Niggli cell lattice
-      aligned in a CASM standard direction.
+      Notes
+      -----
+      The Prim is not required to have the primitive equivalent cell at
+      construction. The :func:`~casm.xtal.make_primitive` method may be
+      used to find the primitive equivalent, and the
+      :func:`~casm.xtal.make_canonical_prim` method may be used to find
+      the equivalent with a Niggli cell lattice aligned in a CASM
+      standard direction.
       )pbdoc")
       .def(py::init(&make_basicstructure), py::arg("lattice"),
            py::arg("coordinate_frac"), py::arg("occ_dof"),
@@ -1617,7 +1799,7 @@ PYBIND11_MODULE(xtal, m) {
     The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
 
     See the CASM `Degrees of Freedom (DoF) and Properties`_
-    documentation for the full list of supported properites and their
+    documentation for the full list of supported properties and their
     definitions.
 
     .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1769,28 +1951,283 @@ PYBIND11_MODULE(xtal, m) {
           The superstructure.
       )pbdoc");
 
-  m.def("make_equivalent_strain", &make_equivalent_strain,
-        py::arg("point_group"), py::arg("e_standard"), py::arg("metric"),
-        py::arg("tol") = TOL,
+  m.def("make_equivalent_property_values", &make_equivalent_property_values,
+        py::arg("point_group"), py::arg("x"), py::arg("property_type"),
+        py::arg("basis") = Eigen::MatrixXd(0, 0), py::arg("tol") = TOL,
         R"pbdoc(
-      Make the set of equivalent strains
+      Make the set of symmetry equivalent property values
 
       Parameters
       ----------
       point_group : List[casm.xtal.symop]
-          Point group that generates the equivalent strains.
-      e_standard : array_like, shape=(6,)
-          The unrolled strain metric value.
-      metric : string
-          The strain metric name. One of: "Bstrain", "EAstrain", "GLstrain",
-          "Hstain", or "Ustrain".
+          Point group that generates the equivalent property values.
+      x : array_like, shape=(m,1)
+          The property value, as a vector. For strain, this is the
+          unrolled strain metric vector. For local property values, such
+          as atomic displacements, this is the vector value associated
+          with one site.
+      property_type : string
+          The property type name. See the CASM `Degrees of Freedom (DoF) and Properties`_
+          documentation for the full list of supported properties and their
+          definitions.
+
+          .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
+      basis : array_like, shape=(s,m), optional
+          The basis in which the value is expressed, as columns of a
+          matrix. A property value in this basis, `x`, is related to a
+          property value in the CASM standard basis, `x_standard`,
+          according to `x_standard = basis @ x`. The number of rows in
+          the basis matrix must match the standard dimension of the CASM
+          supported property_type. The number of columns must be less
+          than or equal to the number of rows. The default value indicates
+          the standard basis should be used.
       tol: float, default=1e-5
-          The tolerance used to eliminate equivalent strain values
+          The tolerance used to eliminate equivalent property values
+
 
       Returns
       -------
-      equivalent_strain: List[numpy.ndarray[numpy.float64[6, 1]]]
-          A list of unrolled strain values equivalent under the point group.
+      equivalent_x: List[numpy.ndarray[numpy.float64[m, 1]]]
+          A list of distinct property values, in the given basis,
+          equivalent under the point group.
+      )pbdoc");
+
+  py::class_<StrainConverter>(m, "StrainConverter", R"pbdoc(
+    Convert strain values
+
+    Converts between strain metric vector values
+    (6-element or less vector representing a symmetric strain metric), and
+    the strain metric matrix values, or the deformation tensor, F, shape=(3,3).
+
+    For more information on strain metrics and using a symmetry-adapted or user-specified basis, see :ref:`Strain DoF <sec-strain-dof>`.
+
+    :class:`~casm.xtal.StrainConverter` supports the following choices of symmetric strain metrics, :math:`E`, shape=(3,3):
+
+    - `"GLstrain"`: Green-Lagrange strain metric, :math:`E = \frac{1}{2}(F^{\mathsf{T}} F - I)`
+    - `"Hstrain"`: Hencky strain metric, :math:`E = \frac{1}{2}\ln(F^{\mathsf{T}} F)`
+    - `"EAstrain"`: Euler-Almansi strain metric, :math:`E = \frac{1}{2}(I−(F F^{\mathsf{T}})^{-1})`
+    - `"Ustrain"`: Right stretch tensor, :math:`E = U`
+    - `"Bstrain"`: Biot strain metric, :math:`E = U - I`
+
+    )pbdoc")
+      .def(py::init<std::string, Eigen::MatrixXd const &>(),
+           py::arg("metric") = "Ustrain",
+           py::arg("basis") = Eigen::MatrixXd::Identity(6, 6),
+           R"pbdoc(
+
+    Parameters
+    ----------
+    metric: str (optional, default='Ustrain')
+        Choice of strain metric, one of: 'Ustrain', 'GLstrain', 'Hstrain', 'EAstrain', 'Bstrain'
+
+    basis: array-like of shape (6, dim), optional
+        User-specified basis for E_vector, in terms of the standard basis.
+
+            E_vector_in_standard_basis = basis @ E_vector
+
+        The default value, shape=(6,6) identity matrix, chooses the standard basis.
+
+    )pbdoc")
+      .def(
+          "metric",
+          [](StrainConverter const &converter) { return converter.metric; },
+          "Return the strain metric name.")
+      .def(
+          "basis",
+          [](StrainConverter const &converter) { return converter.basis; },
+          R"pbdoc(
+          Return the basis used for strain metric vectors.
+
+          Returns
+          -------
+          basis: array-like of shape (6, dim), optional
+              The basis for E_vector, in terms of the standard basis.
+
+                  E_vector_in_standard_basis = basis @ E_vector
+
+          )pbdoc")
+      .def(
+          "dim",
+          [](StrainConverter const &converter) {
+            return converter.basis.cols();
+          },
+          R"pbdoc(
+          Return the strain space dimension.
+
+          Returns
+          -------
+          dim: int
+              The strain space dimension, equivalent to the number of columns
+              of the basis matrix.
+          )pbdoc")
+      .def(
+          "basis_pinv",
+          [](StrainConverter const &converter) { return converter.basis_pinv; },
+          R"pbdoc(
+          Return the strain metric basis pseudoinverse.
+
+          Returns
+          -------
+          basis_pinv: numpy.ndarray[numpy.float64[dim, 6]]
+              The pseudoinverse of the basis for E_vector.
+
+                  E_vector = basis_pinv @ E_vector_in_standard_basis
+
+          )pbdoc")
+      .def_static("F_to_QU", &F_to_QU, py::arg("F"),
+                  R"pbdoc(
+           Decompose a deformation tensor as QU.
+
+           Parameters
+           ----------
+           F: numpy.ndarray[numpy.float64[3, 3]]
+               The deformation tensor, :math:`F`.
+
+           Returns
+           -------
+           Q:
+               The shape=(3,3) isometry matrix, :math:`Q`, of the
+               deformation tensor.
+           U:
+               The shape=(3,3) right stretch tensor, :math:`U`, of
+               the deformation tensor.
+           )pbdoc")
+      .def_static("F_to_VQ", &F_to_VQ, py::arg("F"),
+                  R"pbdoc(
+            Decompose a deformation tensor as VQ.
+
+            Parameters
+            ----------
+            F: numpy.ndarray[numpy.float64[3, 3]]
+                The deformation tensor, :math:`F`.
+
+            Returns
+            -------
+            Q:
+                The shape=(3,3) isometry matrix, :math:`Q`, of the
+                deformation tensor.
+            V:
+                The shape=(3,3) left stretch tensor, :math:`V`, of
+                the deformation tensor.
+            )pbdoc")
+      .def("to_F", &strain_metric_vector_to_F, py::arg("E_vector"),
+           R"pbdoc(
+           Convert strain metric vector to deformation tensor.
+
+           Parameters
+           ----------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+
+           Returns
+           -------
+           F: numpy.ndarray[numpy.float64[3, 3]]
+               The deformation tensor, :math:`F`.
+           )pbdoc")
+      .def("from_F", &strain_metric_vector_from_F, py::arg("F"),
+           R"pbdoc(
+           Convert deformation tensor to strain metric vector.
+
+           Parameters
+           ----------
+           F: numpy.ndarray[numpy.float64[3, 3]]
+               The deformation tensor, :math:`F`.
+
+           Returns
+           -------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+           )pbdoc")
+      .def("to_standard_basis", &strain_metric_vector_in_standard_basis,
+           py::arg("E_vector"),
+           R"pbdoc(
+           Convert strain metric vector to standard basis
+
+           Parameters
+           ----------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+
+           Returns
+           -------
+           E_vector_in_standard_basis: array_like, shape=(6,1)
+               Strain metric vector, expressed in the standard basis. This is
+               equivalent to `basis @ E_vector`.
+           )pbdoc")
+      .def("from_standard_basis", &strain_metric_vector_in_converter_basis,
+           py::arg("E_vector_in_standard_basis"),
+           R"pbdoc(
+           Convert strain metric vector from standard basis to converter basis.
+
+           Parameters
+           ----------
+           E_vector_in_standard_basis: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the standard basis. This is
+               equivalent to `basis @ E_vector`.
+
+           Returns
+           -------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+           )pbdoc")
+      .def("to_E_matrix", &strain_metric_vector_to_matrix, py::arg("E_vector"),
+           R"pbdoc(
+           Convert strain metric vector to strain metric matrix.
+
+           Parameters
+           ----------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+
+           Returns
+           -------
+           E_matrix: array_like, shape=(3,3)
+               Strain metric matrix, :math:`E`, using the metric of this StrainConverter.
+           )pbdoc")
+      .def("from_E_matrix", &strain_metric_matrix_to_vector,
+           py::arg("E_matrix"),
+           R"pbdoc(
+           Convert strain metric matrix to strain metric vector.
+
+           Parameters
+           ----------
+           E_matrix: array_like, shape=(3,3)
+               Strain metric matrix, :math:`E`, using the metric of this StrainConverter.
+
+           Returns
+           -------
+           E_vector: array_like, shape=(dim,1)
+               Strain metric vector, expressed in the basis of this StrainConverter.
+           )pbdoc");
+
+  m.def("make_symmetry_adapted_strain_basis",
+        &make_symmetry_adapted_strain_basis,
+        R"pbdoc(
+      Returns the symmetry-adapted strain basis.
+
+      The symmetry-adapted strain basis,
+
+      .. math::
+
+          B^{\vec{e}} = \left(
+            \begin{array}{cccccc}
+            1/\sqrt{3} & 1/\sqrt{2} & -1/\sqrt{6} & 0 & 0 & 0 \\
+            1/\sqrt{3} & -1/\sqrt{2} & -1/\sqrt{6} & 0 & 0 & 0  \\
+            1/\sqrt{3} & 0 & 2/\sqrt{6} & 0 & 0 & 0  \\
+            0 & 0 & 0 & 1 & 0 & 0 \\
+            0 & 0 & 0 & 0 & 1 & 0 \\
+            0 & 0 & 0 & 0 & 0 & 1
+            \end{array}
+          \right),
+
+      which decomposes strain space into irreducible subspaces (subspaces which do not mix under application of symmetry).
+
+      For more information on strain metrics and the symmetry-adapted strain basis, see :ref:`Strain DoF <sec-strain-dof>`.
+
+      Returns
+      -------
+      symmetry_adapted_strain_basis: List[numpy.ndarray[numpy.float64[6, 6]]]
+          The symmetry-adapted strain basis, :math:`B^{\vec{e}}`.
       )pbdoc");
 
 #ifdef VERSION_INFO

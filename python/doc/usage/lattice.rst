@@ -8,14 +8,17 @@ The :class:`~casm.xtal.Lattice` class represents a three-dimensional lattice. It
 
 .. code-block:: Python
 
+    import math
     import numpy as np
     import casm.xtal as xtal
 
     # Lattice vectors
+    a = 3.23398686
+    c = 5.16867834
     lattice_column_vector_matrix = np.array([
-        [1., 0., 0.],  # a
-        [0., 1., 0.],  # a
-        [0., 0., 1.],  # a
+        [a, 0., 0.],  # a, along x
+        [-a / 2., a * math.sqrt(3.) / 2., 0.],  # a
+        [0., 0., c],  # c
     ]).transpose()  # <--- note transpose
     lattice = xtal.Lattice(lattice_column_vector_matrix)
 
@@ -43,7 +46,7 @@ Additionally, the :func:`~casm.xtal.fractional_within()` can be used to set frac
 Symmetry operations
 -------------------
 
-A symmetry operation transforms a spatial coordinate according to :math:`\vec{r}_{cart}\rightarrow\pmb{A} \vec{r}_{cart}+\vec{\tau}`, where :math:`\pmb{A}` is the :math:`3 \times 3` `operation matrix` and :math:`\vec{\tau}` is the `translation vector`.
+A symmetry operation transforms a spatial coordinate according to :math:`\vec{r}_{cart}\rightarrow A \vec{r}_{cart}+\vec{\tau}`, where :math:`A` is the shape=(3,3) `operation matrix` and :math:`\vec{\tau}` is the `translation vector`.
 
 An instance of the :class:`~casm.xtal.SymOp` class, op, is used to represent a symmetry operation that transforms Cartesian coordinates according to:
 

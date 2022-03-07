@@ -22,25 +22,18 @@ occ_dof = [
 ]
 
 # Global continuous degrees of freedom (DoF)
-GLstrain_dof = xtal.DoFSetBasis(
-    dofname="GLstrain",
+Hstrain_dof = xtal.DoFSetBasis(
+    dofname="Hstrain",
     axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
-    basis=np.array([
-        [1. / sqrt(3), 1. / sqrt(3), 1. / sqrt(3), 0.0, 0.0, 0.0],
-        [1. / sqrt(2), -1. / sqrt(2), 0.0, 0.0, 0.0, 0.0],
-        [-1. / sqrt(6), -1. / sqrt(6), 2. / sqrt(6), 0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
-    ]).transpose())
-global_dof = [GLstrain_dof]
+    basis=xtal.make_symmetry_adapted_strain_basis())
+global_dof = [Hstrain_dof]
 
 # Construct the prim
 prim = xtal.Prim(lattice=lattice,
                  coordinate_frac=coordinate_frac,
                  occ_dof=occ_dof,
                  global_dof=global_dof,
-                 title="simple_cubic_GLstrain_symadapted")
+                 title="simple_cubic_Hstrain_symadapted")
 
 # Print the factor group
 i = 1
@@ -51,6 +44,6 @@ for op in factor_group:
     i += 1
 
 # Format as JSON
-with open('../../doc/examples/prim/json/simple_cubic_GLstrain_symadapted.json',
+with open('../../doc/examples/prim/json/simple_cubic_Hstrain_symadapted.json',
           'w') as f:
     f.write(prim.to_json())

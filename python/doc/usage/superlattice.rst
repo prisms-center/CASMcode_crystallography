@@ -10,7 +10,7 @@ Superlattices satisfy:
 
     S = L T,
 
-where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of :math:`3 \times 3` matrices, and :math:`T` is an integer :math:`3 \times 3` transformation matrix. The :func:`~casm.xtal.is_superlattice_of` and :func:`~casm.xtal.make_transformation_matrix_to_super` methods can be used to check if a superlattice relationship exists between two lattices and find T.
+where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of shape=(3,3) matrices, and :math:`T` is a shape=(3,3) integer transformation matrix. The :func:`~casm.xtal.is_superlattice_of` and :func:`~casm.xtal.make_transformation_matrix_to_super` methods can be used to check if a superlattice relationship exists between two lattices and find T.
 
 Superlattices :math:`S_1` and :math:`S_2` may have different lattice points but be symmetrically equivalent if there exists p and :math:`U` such that:
 
@@ -31,7 +31,7 @@ The appropriate point group for superlattice enumeration depends on the use case
 Usage
 -----
 
-To enumerate superlattices of a prim (casm.xtal.Prim), taking into account the symmetry of the basis and DoF:
+To enumerate superlattices of a prim (:class:`~casm.xtal.Prim`), taking into account the symmetry of the basis and DoF:
 
 .. code-block:: Python
 
@@ -40,7 +40,7 @@ To enumerate superlattices of a prim (casm.xtal.Prim), taking into account the s
     >>> superlattices = xtal.enumerate_superlattices(
     ...     unit_lattice, point_group, max_volume=4, min_volume=1, dirs="abc")
 
-To enumerate superlattices of a lattice (casm.xtal.Lattice), with no basis or DoF:
+To enumerate superlattices of a lattice (:class:`~casm.xtal.Lattice`), with no basis or DoF:
 
 .. code-block:: Python
 
@@ -51,7 +51,7 @@ To enumerate superlattices of a lattice (casm.xtal.Lattice), with no basis or Do
 
 The minimum volume is optional, with default=1. The dirs parameter, with default="abc", specifies which lattice vectors to enumerate over ("a", "b", and "c" indicate the first, second, and third lattice vectors, respectively). This allows restriction of the enumeration to 1d (i.e. dirs="b") or 2d superlattices (i.e. dirs="ac").
 
-The output, superlattices, is a list of :class:`~casm.xtal.Lattice`, which will be in canonical form.
+The output, superlattices, is a list of :class:`~casm.xtal.Lattice`, which will be in canonical form with respect to point_group.
 
 
 Super-duper lattice
@@ -67,7 +67,7 @@ It is often useful to find superlattices that are commensurate with multiple ord
     ...     mode="fully_commensurate",
     ...     point_group=point_group)
 
-It includes three modes:
+It implements three modes:
 
 - (default) "commensurate": Finds the mininum volume superlattice of all the input lattices, without any application of symmetry. The point_group parameter is ignored if provided.
 - "minimal_commensurate": Returns the lattice that is the smallest possible superlattice of an equivalent lattice to all input lattices.

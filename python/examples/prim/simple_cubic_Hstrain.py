@@ -21,15 +21,15 @@ occ_dof = [
 ]
 
 # Global continuous degrees of freedom (DoF)
-GLstrain_dof = xtal.DoFSetBasis("GLstrain")  # Green-Lagrange strain metric
-global_dof = [GLstrain_dof]
+Hstrain_dof = xtal.DoFSetBasis("Hstrain")  # Hencky strain metric
+global_dof = [Hstrain_dof]
 
 # Construct the prim
 prim = xtal.Prim(lattice=lattice,
                  coordinate_frac=coordinate_frac,
                  occ_dof=occ_dof,
                  global_dof=global_dof,
-                 title="simple_cubic_GLstrain")
+                 title="simple_cubic_Hstrain")
 
 # Print the factor group
 i = 1
@@ -40,5 +40,5 @@ for op in factor_group:
     i += 1
 
 # Format as JSON
-with open('../../doc/examples/prim/json/simple_cubic_GLstrain.json', 'w') as f:
+with open('../../doc/examples/prim/json/simple_cubic_Hstrain.json', 'w') as f:
     f.write(prim.to_json())
