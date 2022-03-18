@@ -272,24 +272,7 @@ std::map<std::string, Eigen::MatrixXd> get_molecule_properties(
 
 // Prim
 
-/// \brief Construct xtal::BasicStructure from JSON string
-xtal::BasicStructure basicstructure_from_json(std::string const &prim_json_str,
-                                              double xtal_tol) {
-  jsonParser json{prim_json_str};
-  ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
-  return read_prim(json, xtal_tol, aniso_val_dict);
-}
-
-/// \brief Format xtal::BasicStructure as JSON string
-std::string basicstructure_to_json(xtal::BasicStructure const &prim) {
-  jsonParser json;
-  write_prim(prim, json, FRAC);
-  std::stringstream ss;
-  ss << json;
-  return ss.str();
-}
-
-xtal::BasicStructure make_basicstructure(
+std::shared_ptr<xtal::BasicStructure> make_prim(
     xtal::Lattice const &lattice, Eigen::MatrixXd const &coordinate_frac,
     std::vector<std::vector<std::string>> const &occ_dof,
     std::vector<std::vector<DoFSetBasis>> const &local_dof =
@@ -300,22 +283,22 @@ xtal::BasicStructure make_basicstructure(
     std::string title = std::string("prim")) {
   // validation
   if (coordinate_frac.rows() != 3) {
-    throw std::runtime_error(
-        "Error in make_basicstructure: coordinate_frac.rows() != 3");
+    throw std::runtime_error("Error in make_prim: coordinate_frac.rows() != 3");
   }
   if (coordinate_frac.cols() != Index(occ_dof.size())) {
     throw std::runtime_error(
-        "Error in make_basicstructure: coordinate_frac.cols() != "
+        "Error in make_prim: coordinate_frac.cols() != "
         "occ_dof.size()");
   }
   if (local_dof.size() && coordinate_frac.cols() != Index(local_dof.size())) {
     throw std::runtime_error(
-        "Error in make_basicstructure: local_dof.size() && "
+        "Error in make_prim: local_dof.size() && "
         "coordinate_frac.cols() != occ_dof.size()");
   }
 
   // construct prim
-  xtal::BasicStructure prim{lattice};
+  auto shared_prim = std::make_shared<xtal::BasicStructure>(lattice);
+  xtal::BasicStructure &prim = *shared_prim;
   prim.set_title(title);
 
   // set basis sites
@@ -361,36 +344,89 @@ xtal::BasicStructure make_basicstructure(
 
   prim.set_global_dofs(global_dofsets);
 
+  return shared_prim;
+}
+
+void init_prim(
+    xtal::BasicStructure &obj, xtal::Lattice const &lattice,
+    Eigen::MatrixXd const &coordinate_frac,
+    std::vector<std::vector<std::string>> const &occ_dof,
+    std::vector<std::vector<DoFSetBasis>> const &local_dof =
+        std::vector<std::vector<DoFSetBasis>>{},
+    std::vector<DoFSetBasis> const &global_dof = std::vector<DoFSetBasis>{},
+    std::map<std::string, xtal::Molecule> const &molecules =
+        std::map<std::string, xtal::Molecule>{},
+    std::string title = std::string("prim")) {
+  auto prim = make_prim(lattice, coordinate_frac, occ_dof, local_dof,
+                        global_dof, molecules, title);
+  new (&obj) xtal::BasicStructure(*prim);
+}
+
+/// \brief Construct xtal::BasicStructure from JSON string
+std::shared_ptr<xtal::BasicStructure const> prim_from_json(
+    std::string const &prim_json_str, double xtal_tol) {
+  jsonParser json{prim_json_str};
+  ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
+  return std::make_shared<xtal::BasicStructure>(
+      read_prim(json, xtal_tol, aniso_val_dict));
+}
+
+/// \brief Format xtal::BasicStructure as JSON string
+std::string prim_to_json(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  jsonParser json;
+  write_prim(*prim, json, FRAC);
+  std::stringstream ss;
+  ss << json;
+  return ss.str();
+}
+
+bool is_same_prim(xtal::BasicStructure const &first,
+                  xtal::BasicStructure const &second) {
+  return &first == &second;
+}
+
+std::shared_ptr<xtal::BasicStructure const> share_prim(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {  // for testing
   return prim;
 }
 
-Eigen::MatrixXd get_basicstructure_coordinate_frac(
-    xtal::BasicStructure const &prim) {
-  Eigen::MatrixXd coordinate_frac(3, prim.basis().size());
+std::shared_ptr<xtal::BasicStructure const> copy_prim(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {  // for testing
+  return std::make_shared<xtal::BasicStructure const>(*prim);
+}
+
+xtal::Lattice const &get_prim_lattice(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  return prim->lattice();
+}
+
+Eigen::MatrixXd get_prim_coordinate_frac(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  Eigen::MatrixXd coordinate_frac(3, prim->basis().size());
   Index b = 0;
-  for (auto const &site : prim.basis()) {
+  for (auto const &site : prim->basis()) {
     coordinate_frac.col(b) = site.const_frac();
     ++b;
   }
   return coordinate_frac;
 }
 
-Eigen::MatrixXd get_basicstructure_coordinate_cart(
-    xtal::BasicStructure const &prim) {
-  return prim.lattice().lat_column_mat() *
-         get_basicstructure_coordinate_frac(prim);
+Eigen::MatrixXd get_prim_coordinate_cart(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  return prim->lattice().lat_column_mat() * get_prim_coordinate_frac(prim);
 }
 
-std::vector<std::vector<std::string>> get_basicstructure_occ_dof(
-    xtal::BasicStructure const &prim) {
-  return xtal::allowed_molecule_names(prim);
+std::vector<std::vector<std::string>> get_prim_occ_dof(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  return xtal::allowed_molecule_names(*prim);
 }
 
-std::vector<std::vector<DoFSetBasis>> get_basicstructure_local_dof(
-    xtal::BasicStructure const &prim) {
+std::vector<std::vector<DoFSetBasis>> get_prim_local_dof(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
   std::vector<std::vector<DoFSetBasis>> local_dof;
   Index b = 0;
-  for (auto const &site : prim.basis()) {
+  for (auto const &site : prim->basis()) {
     std::vector<DoFSetBasis> site_dof;
     for (auto const &pair : site.dofs()) {
       std::string const &dofname = pair.first;
@@ -403,10 +439,10 @@ std::vector<std::vector<DoFSetBasis>> get_basicstructure_local_dof(
   return local_dof;
 }
 
-std::vector<DoFSetBasis> get_basicstructure_global_dof(
-    xtal::BasicStructure const &prim) {
+std::vector<DoFSetBasis> get_prim_global_dof(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
   std::vector<DoFSetBasis> global_dof;
-  for (auto const &pair : prim.global_dofs()) {
+  for (auto const &pair : prim->global_dofs()) {
     std::string const &dofname = pair.first;
     xtal::DoFSet const &dofset = pair.second;
     global_dof.emplace_back(dofname, dofset.component_names(), dofset.basis());
@@ -414,19 +450,19 @@ std::vector<DoFSetBasis> get_basicstructure_global_dof(
   return global_dof;
 }
 
-std::map<std::string, xtal::Molecule> get_basicstructure_molecules(
-    xtal::BasicStructure const &prim) {
+std::map<std::string, xtal::Molecule> get_prim_molecules(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
   std::map<std::string, xtal::Molecule> molecules;
-  std::vector<std::vector<std::string>> mol_names = prim.unique_names();
+  std::vector<std::vector<std::string>> mol_names = prim->unique_names();
   if (mol_names.empty()) {
-    mol_names = xtal::allowed_molecule_unique_names(prim);
+    mol_names = xtal::allowed_molecule_unique_names(*prim);
   }
   Index b = 0;
   for (auto const &site_mol_names : mol_names) {
     Index i = 0;
     for (auto const &name : site_mol_names) {
       if (!molecules.count(name)) {
-        molecules.emplace(name, prim.basis()[b].occupant_dof()[i]);
+        molecules.emplace(name, prim->basis()[b].occupant_dof()[i]);
       }
       ++i;
     }
@@ -435,44 +471,51 @@ std::map<std::string, xtal::Molecule> get_basicstructure_molecules(
   return molecules;
 }
 
-xtal::BasicStructure make_within(xtal::BasicStructure prim) {
-  prim.within();
+std::shared_ptr<xtal::BasicStructure const> make_within(
+    std::shared_ptr<xtal::BasicStructure const> const &init_prim) {
+  auto prim = std::make_shared<xtal::BasicStructure>(*init_prim);
+  prim->within();
   return prim;
 }
 
-xtal::BasicStructure make_primitive(xtal::BasicStructure prim) {
-  return xtal::make_primitive(prim, prim.lattice().tol());
+std::shared_ptr<xtal::BasicStructure const> make_primitive(
+    std::shared_ptr<xtal::BasicStructure const> const &init_prim) {
+  auto prim = std::make_shared<xtal::BasicStructure>(*init_prim);
+  *prim = xtal::make_primitive(*prim, prim->lattice().tol());
+  return prim;
 }
 
-xtal::BasicStructure make_canonical_basicstructure(xtal::BasicStructure prim) {
-  xtal::Lattice lattice{prim.lattice()};
+std::shared_ptr<xtal::BasicStructure const> make_canonical_prim(
+    std::shared_ptr<xtal::BasicStructure const> const &init_prim) {
+  auto prim = std::make_shared<xtal::BasicStructure>(*init_prim);
+  xtal::Lattice lattice{prim->lattice()};
   lattice.make_right_handed();
   lattice = xtal::canonical::equivalent(lattice);
-  prim.set_lattice(xtal::canonical::equivalent(lattice), CART);
+  prim->set_lattice(xtal::canonical::equivalent(lattice), CART);
   return prim;
 }
 
 std::vector<std::vector<Index>> asymmetric_unit_indices(
-    xtal::BasicStructure prim) {
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
   // Note: pybind11 doesn't nicely convert sets of set,
   // so return vector of vector, which is converted to List[List[int]]
   std::vector<std::vector<Index>> result;
-  std::set<std::set<Index>> asym_unit = make_asymmetric_unit(prim);
+  std::set<std::set<Index>> asym_unit = make_asymmetric_unit(*prim);
   for (auto const &orbit : asym_unit) {
     result.push_back(std::vector<Index>(orbit.begin(), orbit.end()));
   }
   return result;
 }
 
-std::vector<xtal::SymOp> make_basicstructure_factor_group(
-    xtal::BasicStructure const &prim) {
-  return xtal::make_factor_group(prim);
+std::vector<xtal::SymOp> make_prim_factor_group(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  return xtal::make_factor_group(*prim);
 }
 
-std::vector<xtal::SymOp> make_basicstructure_crystal_point_group(
-    xtal::BasicStructure const &prim) {
-  auto fg = xtal::make_factor_group(prim);
-  return xtal::make_crystal_point_group(fg, prim.lattice().tol());
+std::vector<xtal::SymOp> make_prim_crystal_point_group(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  auto fg = xtal::make_factor_group(*prim);
+  return xtal::make_crystal_point_group(fg, prim->lattice().tol());
 }
 
 // SymOp
@@ -645,10 +688,10 @@ std::vector<xtal::SymOp> make_simplestructure_factor_group(
     }
     std::cout << std::endl;
   }
-  xtal::BasicStructure prim = make_basicstructure(
-      get_simplestructure_lattice(simple),
-      get_simplestructure_atom_coordinate_frac(simple), occ_dof);
-  return xtal::make_factor_group(prim);
+  std::shared_ptr<xtal::BasicStructure const> prim =
+      make_prim(get_simplestructure_lattice(simple),
+                get_simplestructure_atom_coordinate_frac(simple), occ_dof);
+  return xtal::make_factor_group(*prim);
 }
 
 std::vector<xtal::SymOp> make_simplestructure_crystal_point_group(
@@ -850,6 +893,8 @@ Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
 }
 
 }  // namespace CASMpy
+
+PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
 PYBIND11_MODULE(xtal, m) {
   using namespace CASMpy;
@@ -1403,7 +1448,18 @@ PYBIND11_MODULE(xtal, m) {
       .def("axis_names", &get_dofsetbasis_axis_names, "Return the axis names.")
       .def("basis", &get_dofsetbasis_basis, "Return the basis matrix.");
 
-  py::class_<xtal::BasicStructure>(m, "Prim", R"pbdoc(
+  // Note: Prim is intended to be `std::shared_ptr<xtal::BasicStructure const>`,
+  // but Python does not handle constant-ness directly as in C++. Therefore, do
+  // not add modifiers. Bound functions should still take
+  // `std::shared_ptr<xtal::BasicStructure const> const &` or
+  // `xtal::BasicStructure const &` arguments and return
+  // `std::shared_ptr<xtal::BasicStructure const>`. Pybind11 will cast away the
+  // const-ness of the returned quantity. The one exception is the method
+  // `make_prim` used for the casm.xtal.Prim __init__ method, which it appears
+  // must return `std::shared_ptr<xtal::BasicStructure>`.
+
+  py::class_<xtal::BasicStructure, std::shared_ptr<xtal::BasicStructure>>(
+      m, "Prim", R"pbdoc(
       A primitive crystal structure and allowed degrees of freedom (DoF) (the `"Prim"`)
 
       The Prim specifies:
@@ -1429,8 +1485,8 @@ PYBIND11_MODULE(xtal, m) {
       the equivalent with a Niggli cell lattice aligned in a CASM
       standard direction.
       )pbdoc")
-      .def(py::init(&make_basicstructure), py::arg("lattice"),
-           py::arg("coordinate_frac"), py::arg("occ_dof"),
+      .def(py::init(&make_prim), py::arg("lattice"), py::arg("coordinate_frac"),
+           py::arg("occ_dof"),
            py::arg("local_dof") = std::vector<std::vector<DoFSetBasis>>{},
            py::arg("global_dof") = std::vector<DoFSetBasis>{},
            py::arg("occupants") = std::map<std::string, xtal::Molecule>{},
@@ -1472,33 +1528,89 @@ PYBIND11_MODULE(xtal, m) {
           cluster expansion, this must consist of alphanumeric characters
           and underscores only. The first character may not be a number.
       )pbdoc")
-      .def("lattice", &xtal::BasicStructure::lattice, "Return the lattice")
-      .def("coordinate_frac", &get_basicstructure_coordinate_frac,
+      .def("lattice", &get_prim_lattice, "Return the lattice")
+      .def("coordinate_frac", &get_prim_coordinate_frac,
            "Return the basis site positions, as columns of a matrix, in "
            "fractional coordinates with respect to the lattice vectors")
-      .def("coordinate_cart", &get_basicstructure_coordinate_cart,
+      .def("coordinate_cart", &get_prim_coordinate_cart,
            "Return the basis site positions, as columns of a matrix, in "
            "Cartesian coordinates")
-      .def("occ_dof", &get_basicstructure_occ_dof,
+      .def("occ_dof", &get_prim_occ_dof,
            "Return the labels of occupants allowed on each basis site")
-      .def("local_dof", &get_basicstructure_local_dof,
+      .def("local_dof", &get_prim_local_dof,
            "Return the continuous DoF allowed on each basis site")
-      .def("global_dof", &get_basicstructure_global_dof,
+      .def("global_dof", &get_prim_global_dof,
            "Return the continuous DoF allowed for the entire crystal structure")
-      .def("occupants", &get_basicstructure_molecules,
+      .def("occupants", &get_prim_molecules,
            "Return the :class:`Occupant` allowed in the crystal.")
       .def_static(
-          "from_json", &basicstructure_from_json,
+          "from_json", &prim_from_json,
           "Construct a Prim from a JSON-formatted string. The `Prim reference "
           "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
           "crystallography/BasicStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("prim_json_str"), py::arg("xtal_tol") = TOL)
-      .def("to_json", &basicstructure_to_json,
+      .def("to_json", &prim_to_json,
            "Represent the Prim as a JSON-formatted string. The `Prim reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
            "crystallography/BasicStructure/>`_ documents the expected JSON "
            "format.");
+
+  m.def("_is_same_prim", &is_same_prim, py::arg("first"), py::arg("second"),
+        R"pbdoc(
+            Check if Prim are sharing the same data
+
+            This is for testing purposes, it should be equivalent to
+            `first is second` and `first == second`.
+
+            Parameters
+            ----------
+            first : casm.xtal.Prim
+                First Prim.
+
+            second : casm.xtal.SharedPrim
+                Second Prim.
+
+            Returns
+            ----------
+            is_same : casm.xtal.Prim
+                Returns true if Prim are sharing the same data
+
+            )pbdoc");
+
+  m.def("_share_prim", &share_prim, py::arg("init_prim"), R"pbdoc(
+            Make a copy of a Prim - sharing same data
+
+            This is for testing purposes.
+
+            Parameters
+            ----------
+            init_prim : casm.xtal.Prim
+                Initial prim.
+
+            Returns
+            ----------
+            prim : casm.xtal.Prim
+                A copy of the initial prim, sharing the same data.
+
+            )pbdoc");
+
+  m.def("_copy_prim", &copy_prim, py::arg("init_prim"), R"pbdoc(
+            Make a copy of a Prim - not sharing same data
+
+            This is for testing purposes.
+
+            Parameters
+            ----------
+            init_prim : casm.xtal.Prim
+                Initial prim.
+
+            Returns
+            ----------
+            prim : casm.xtal.Prim
+                A copy of the initial prim, not sharing the same data.
+
+            )pbdoc");
 
   m.def("make_within", &make_within, py::arg("init_prim"), R"pbdoc(
             Return an equivalent Prim with all basis site coordinates within the unit cell
@@ -1536,8 +1648,7 @@ PYBIND11_MODULE(xtal, m) {
                 The primitive equivalent prim.
             )pbdoc");
 
-  m.def("make_canonical_prim", &make_canonical_basicstructure,
-        py::arg("init_prim"),
+  m.def("make_canonical_prim", &make_canonical_prim, py::arg("init_prim"),
         R"pbdoc(
           Return an equivalent Prim with canonical lattice
 
@@ -1561,7 +1672,7 @@ PYBIND11_MODULE(xtal, m) {
 
         )pbdoc");
 
-  m.def("make_canonical", &make_canonical_basicstructure, py::arg("init_prim"),
+  m.def("make_canonical", &make_canonical_prim, py::arg("init_prim"),
         "Equivalent to :func:`~casm.xtal.make_canonical_prim`");
 
   m.def("asymmetric_unit_indices", &asymmetric_unit_indices, py::arg("prim"),
@@ -1582,8 +1693,8 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc");
 
-  m.def("make_prim_factor_group", &make_basicstructure_factor_group,
-        py::arg("prim"), R"pbdoc(
+  m.def("make_prim_factor_group", &make_prim_factor_group, py::arg("prim"),
+        R"pbdoc(
           Return the factor group
 
           Parameters
@@ -1599,11 +1710,11 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc");
 
-  m.def("make_factor_group", &make_basicstructure_factor_group, py::arg("prim"),
+  m.def("make_factor_group", &make_prim_factor_group, py::arg("prim"),
         "Equivalent to :func:`~casm.xtal.make_prim_factor_group`");
 
-  m.def("make_prim_crystal_point_group",
-        &make_basicstructure_crystal_point_group, py::arg("prim"),
+  m.def("make_prim_crystal_point_group", &make_prim_crystal_point_group,
+        py::arg("prim"),
         R"pbdoc(
           Return the crystal point group
 
@@ -1620,7 +1731,7 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc");
 
-  m.def("make_crystal_point_group", &make_basicstructure_crystal_point_group,
+  m.def("make_crystal_point_group", &make_prim_crystal_point_group,
         py::arg("prim"),
         "Equivalent to :func:`~casm.xtal.make_prim_crystal_point_group`");
 

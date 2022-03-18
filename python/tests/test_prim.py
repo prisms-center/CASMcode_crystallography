@@ -1,3 +1,4 @@
+import copy
 import pytest
 import casm.xtal as xtal
 
@@ -38,3 +39,31 @@ def test_simple_cubic_1d_disp_factor_group(simple_cubic_1d_disp_prim):
     prim = simple_cubic_1d_disp_prim
     factor_group = xtal.make_factor_group(prim)
     assert len(factor_group) == 16
+
+def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
+    prim = simple_cubic_1d_disp_prim
+    prim2 = simple_cubic_binary_prim
+
+    assert prim is not prim2
+    assert prim != prim2
+    assert xtal._is_same_prim(prim, prim2) == False
+
+    other = prim
+    assert other is prim
+    assert other == prim
+    assert xtal._is_same_prim(other, prim)
+
+    first = xtal._share_prim(prim)
+    assert first is prim
+    assert first == prim
+    assert xtal._is_same_prim(first, prim)
+
+    first = xtal._copy_prim(prim)
+    assert first is not prim
+    assert first != prim
+    assert xtal._is_same_prim(first, prim) == False
+
+    second = xtal._share_prim(prim2)
+    assert second is not first
+    assert second != first
+    assert xtal._is_same_prim(second, first) == False
