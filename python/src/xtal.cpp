@@ -679,15 +679,6 @@ std::vector<xtal::SymOp> make_simplestructure_factor_group(
   for (std::string name : simple.atom_info.names) {
     occ_dof.push_back({name});
   }
-  std::cout << "coordinate_frac:\n"
-            << get_simplestructure_atom_coordinate_frac(simple) << std::endl;
-  std::cout << "occ_dof:" << std::endl;
-  for (auto const &site_dof : occ_dof) {
-    for (auto const &occupant : site_dof) {
-      std::cout << occupant << ",";
-    }
-    std::cout << std::endl;
-  }
   std::shared_ptr<xtal::BasicStructure const> prim =
       make_prim(get_simplestructure_lattice(simple),
                 get_simplestructure_atom_coordinate_frac(simple), occ_dof);

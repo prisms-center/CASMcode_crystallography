@@ -274,9 +274,9 @@ BasicStructure make_primitive(const BasicStructure &non_primitive_struc,
   // possible (running lattice volume check)
   double minimum_volume = std::abs(2 * non_primitive_struc.lattice().volume());
   Eigen::Vector3d a_vector_primitive, b_vector_primitive, c_vector_primitive;
-  for (const Eigen::Vector3d a_vector_candidate : possible_lattice_vectors) {
-    for (const Eigen::Vector3d b_vector_candidate : possible_lattice_vectors) {
-      for (const Eigen::Vector3d c_vector_candidate :
+  for (Eigen::Vector3d const &a_vector_candidate : possible_lattice_vectors) {
+    for (Eigen::Vector3d const &b_vector_candidate : possible_lattice_vectors) {
+      for (Eigen::Vector3d const &c_vector_candidate :
            possible_lattice_vectors) {
         double possible_volume = std::abs(triple_product(
             a_vector_candidate, b_vector_candidate, c_vector_candidate));
