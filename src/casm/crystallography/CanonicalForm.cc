@@ -48,7 +48,7 @@ std::pair<Lattice, Index> _equivalent_lattice_and_index(
       continue;
     }
 
-    for (Eigen::MatrixXd const &lat_mat : lat_set) {
+    for (Eigen::MatrixXd lat_mat : lat_set) {
       trans_lat_mat = get_matrix(*it) * lat_mat;
       assert(is_niggli(lat_mat, compare_tol) &&
              "Result of 'niggli()' is not a Niggli cell");
