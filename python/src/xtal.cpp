@@ -758,13 +758,13 @@ std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_VQ(Eigen::Matrix3d const &F) {
   return result;
 }
 
-/// \brief Return strain metric vector value in standard basis
+/// \brief Returns strain metric vector value in standard basis
 Eigen::VectorXd strain_metric_vector_in_standard_basis(
     StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
   return converter.basis * E_vector;
 }
 
-/// \brief Return strain metric vector value in converter basis
+/// \brief Returns strain metric vector value in converter basis
 Eigen::VectorXd strain_metric_vector_in_converter_basis(
     StrainConverter const &converter,
     Eigen::VectorXd const &E_vector_in_standard_basis) {
@@ -923,9 +923,9 @@ PYBIND11_MODULE(xtal, m) {
           Tolerance to be used for crystallographic comparisons.
       )pbdoc")
       .def("column_vector_matrix", &xtal::Lattice::lat_column_mat,
-           "Return the lattice vectors, as columns of a 3x3 matrix.")
+           "Returns the lattice vectors, as columns of a 3x3 matrix.")
       .def("tol", &xtal::Lattice::tol,
-           "Return the tolerance used for crystallographic comparisons.")
+           "Returns the tolerance used for crystallographic comparisons.")
       .def("set_tol", &xtal::Lattice::set_tol, py::arg("tol"),
            "Set the tolerance used for crystallographic comparisons.")
       .def(py::self < py::self,
@@ -943,7 +943,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("make_canonical_lattice", &make_canonical_lattice, py::arg("lattice"),
         R"pbdoc(
-    Return the canonical equivalent lattice
+    Returns the canonical equivalent lattice
 
     Finds the canonical right-handed Niggli cell of the lattice, applying
     lattice point group operations to find the equivalent lattice in a
@@ -1044,7 +1044,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("make_point_group", &make_lattice_point_group, py::arg("lattice"),
         R"pbdoc(
-      Return the lattice point group
+      Returns the lattice point group
 
       Parameters
       ----------
@@ -1161,7 +1161,7 @@ PYBIND11_MODULE(xtal, m) {
         &make_transformation_matrix_to_super, py::arg("superlattice"),
         py::arg("unit_lattice"),
         R"pbdoc(
-     Return the integer transformation matrix for the superlattice relative a unit lattice.
+     Returns the integer transformation matrix for the superlattice relative a unit lattice.
 
      Parameters
      ----------
@@ -1233,7 +1233,7 @@ PYBIND11_MODULE(xtal, m) {
   m.def("make_superduperlattice", &make_superduperlattice, py::arg("lattices"),
         py::arg("mode") = std::string("commensurate"),
         py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
-      Return the smallest lattice that is superlattice of the input lattices
+      Returns the smallest lattice that is superlattice of the input lattices
 
       Parameters
       ----------
@@ -1286,16 +1286,16 @@ PYBIND11_MODULE(xtal, m) {
           .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
       )pbdoc")
       .def("name", &xtal::AtomPosition::name,
-           "Return the \"chemical name\" of the atom.")
+           "Returns the \"chemical name\" of the atom.")
       .def("coordinate", &xtal::AtomPosition::cart, R"pbdoc(
-           Return the position of the atom
+           Returns the position of the atom
 
            The osition is in Cartesian coordinates, relative to the
            basis site at which the occupant containing this atom
            is placed.
            )pbdoc")
       .def("properties", &get_atom_position_properties,
-           "Return the fixed properties of the atom");
+           "Returns the fixed properties of the atom");
 
   py::class_<xtal::Molecule>(m, "Occupant", R"pbdoc(
       A site occupant, which may be a vacancy, atom, or molecule
@@ -1343,9 +1343,9 @@ PYBIND11_MODULE(xtal, m) {
       .def("is_divisible", &xtal::Molecule::is_divisible,
            "True if is divisible in kinetic Monte Carlo calculations")
       .def("atoms", &xtal::Molecule::atoms,
-           "Return the atomic components of the occupant")
+           "Returns the atomic components of the occupant")
       .def("properties", &get_molecule_properties,
-           "Return the fixed properties of the occupant");
+           "Returns the fixed properties of the occupant");
 
   m.def("is_vacancy", &xtal::Molecule::is_vacancy,
         "True if occupant is a vacancy.");
@@ -1435,9 +1435,9 @@ PYBIND11_MODULE(xtal, m) {
 
           The default value indicates the standard basis should be used.
       )pbdoc")
-      .def("dofname", &get_dofsetbasis_dofname, "Return the DoF type name.")
-      .def("axis_names", &get_dofsetbasis_axis_names, "Return the axis names.")
-      .def("basis", &get_dofsetbasis_basis, "Return the basis matrix.");
+      .def("dofname", &get_dofsetbasis_dofname, "Returns the DoF type name.")
+      .def("axis_names", &get_dofsetbasis_axis_names, "Returns the axis names.")
+      .def("basis", &get_dofsetbasis_basis, "Returns the basis matrix.");
 
   // Note: Prim is intended to be `std::shared_ptr<xtal::BasicStructure const>`,
   // but Python does not handle constant-ness directly as in C++. Therefore, do
@@ -1519,21 +1519,22 @@ PYBIND11_MODULE(xtal, m) {
           cluster expansion, this must consist of alphanumeric characters
           and underscores only. The first character may not be a number.
       )pbdoc")
-      .def("lattice", &get_prim_lattice, "Return the lattice")
+      .def("lattice", &get_prim_lattice, "Returns the lattice")
       .def("coordinate_frac", &get_prim_coordinate_frac,
-           "Return the basis site positions, as columns of a matrix, in "
+           "Returns the basis site positions, as columns of a matrix, in "
            "fractional coordinates with respect to the lattice vectors")
       .def("coordinate_cart", &get_prim_coordinate_cart,
-           "Return the basis site positions, as columns of a matrix, in "
+           "Returns the basis site positions, as columns of a matrix, in "
            "Cartesian coordinates")
       .def("occ_dof", &get_prim_occ_dof,
-           "Return the labels of occupants allowed on each basis site")
+           "Returns the labels of occupants allowed on each basis site")
       .def("local_dof", &get_prim_local_dof,
-           "Return the continuous DoF allowed on each basis site")
-      .def("global_dof", &get_prim_global_dof,
-           "Return the continuous DoF allowed for the entire crystal structure")
+           "Returns the continuous DoF allowed on each basis site")
+      .def(
+          "global_dof", &get_prim_global_dof,
+          "Returns the continuous DoF allowed for the entire crystal structure")
       .def("occupants", &get_prim_molecules,
-           "Return the :class:`Occupant` allowed in the crystal.")
+           "Returns the :class:`Occupant` allowed in the crystal.")
       .def_static(
           "from_json", &prim_from_json,
           "Construct a Prim from a JSON-formatted string. The `Prim reference "
@@ -1604,7 +1605,7 @@ PYBIND11_MODULE(xtal, m) {
             )pbdoc");
 
   m.def("make_within", &make_within, py::arg("init_prim"), R"pbdoc(
-            Return an equivalent Prim with all basis site coordinates within the unit cell
+            Returns an equivalent Prim with all basis site coordinates within the unit cell
 
             Parameters
             ----------
@@ -1619,7 +1620,7 @@ PYBIND11_MODULE(xtal, m) {
             )pbdoc");
 
   m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
-            Return a primitive equivalent Prim
+            Returns a primitive equivalent Prim
 
             A :class:`Prim` object is not forced to be the primitive equivalent
             cell at construction. This function finds and returns the primitive
@@ -1641,7 +1642,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("make_canonical_prim", &make_canonical_prim, py::arg("init_prim"),
         R"pbdoc(
-          Return an equivalent Prim with canonical lattice
+          Returns an equivalent Prim with canonical lattice
 
           Finds the canonical right-handed Niggli cell of the lattice, applying
           lattice point group operations to find the equivalent lattice in a
@@ -1668,7 +1669,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("asymmetric_unit_indices", &asymmetric_unit_indices, py::arg("prim"),
         R"pbdoc(
-          Return the indices of equivalent basis sites
+          Returns the indices of equivalent basis sites
 
           Parameters
           ----------
@@ -1686,7 +1687,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("make_prim_factor_group", &make_prim_factor_group, py::arg("prim"),
         R"pbdoc(
-          Return the factor group
+          Returns the factor group
 
           Parameters
           ----------
@@ -1707,7 +1708,7 @@ PYBIND11_MODULE(xtal, m) {
   m.def("make_prim_crystal_point_group", &make_prim_crystal_point_group,
         py::arg("prim"),
         R"pbdoc(
-          Return the crystal point group
+          Returns the crystal point group
 
           Parameters
           ----------
@@ -1764,11 +1765,11 @@ PYBIND11_MODULE(xtal, m) {
               False otherwise
           )pbdoc")
       .def("matrix", &xtal::get_matrix,
-           "Return the transformation matrix value.")
+           "Returns the transformation matrix value.")
       .def("translation", &xtal::get_translation,
-           "Return the translation value.")
+           "Returns the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
-           "Return the time reversal value.");
+           "Returns the time reversal value.");
 
   py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
       Symmetry operation type, axis, invariant point, etc.
@@ -1786,7 +1787,7 @@ PYBIND11_MODULE(xtal, m) {
               The lattice
           )pbdoc")
       .def("op_type", &get_syminfo_type, R"pbdoc(
-          Return the symmetry operation type.
+          Returns the symmetry operation type.
 
           Returns
           -------
@@ -1803,7 +1804,7 @@ PYBIND11_MODULE(xtal, m) {
               - "invalid"
           )pbdoc")
       .def("axis", get_syminfo_axis, R"pbdoc(
-          Return the symmetry operation axis.
+          Returns the symmetry operation axis.
 
           Returns
           -------
@@ -1817,7 +1818,7 @@ PYBIND11_MODULE(xtal, m) {
               The axis is in Cartesian coordinates and normalized to length 1.
           )pbdoc")
       .def("angle", &get_syminfo_angle, R"pbdoc(
-          Return the symmetry operation angle.
+          Returns the symmetry operation angle.
 
           Returns
           -------
@@ -1830,7 +1831,7 @@ PYBIND11_MODULE(xtal, m) {
 
           )pbdoc")
       .def("screw_glide_shift", &get_syminfo_screw_glide_shift, R"pbdoc(
-          Return the screw or glide translation component
+          Returns the screw or glide translation component
 
           Returns
           -------
@@ -1942,31 +1943,32 @@ PYBIND11_MODULE(xtal, m) {
     global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
         Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
     )pbdoc")
-      .def("lattice", &get_simplestructure_lattice, "Return the lattice")
+      .def("lattice", &get_simplestructure_lattice, "Returns the lattice")
       .def("atom_coordinate_cart", &get_simplestructure_atom_coordinate_cart,
-           "Return the atom positions, as columns of a matrix, in Cartesian "
+           "Returns the atom positions, as columns of a matrix, in Cartesian "
            "coordinates.")
       .def("atom_coordinate_frac", &get_simplestructure_atom_coordinate_frac,
-           "Return the atom positions, as columns of a matrix, in fractional "
+           "Returns the atom positions, as columns of a matrix, in fractional "
            "coordinates with respect to the lattice vectors.")
       .def("atom_type", &get_simplestructure_atom_type,
-           "Return a list with atom type names.")
+           "Returns a list with atom type names.")
       .def("atom_properties", &get_simplestructure_atom_properties,
-           "Return continuous properties associated with individual atoms, if "
+           "Returns continuous properties associated with individual atoms, if "
            "present.")
       .def("mol_coordinate_cart", &get_simplestructure_mol_coordinate_cart,
-           "Return the molecule positions, as columns of a matrix, in "
+           "Returns the molecule positions, as columns of a matrix, in "
            "Cartesian coordinates.")
       .def("mol_coordinate_frac", &get_simplestructure_mol_coordinate_frac,
-           "Return the molecule positions, as columns of a matrix, in "
+           "Returns the molecule positions, as columns of a matrix, in "
            "fractional coordinates with respect to the lattice vectors.")
       .def("mol_type", &get_simplestructure_mol_type,
-           "Return a list with molecule type names.")
-      .def("mol_properties", &get_simplestructure_mol_properties,
-           "Return continuous properties associated with individual molecules, "
-           "if present.")
+           "Returns a list with molecule type names.")
+      .def(
+          "mol_properties", &get_simplestructure_mol_properties,
+          "Returns continuous properties associated with individual molecules, "
+          "if present.")
       .def("global_properties", &get_simplestructure_global_properties,
-           "Return continuous properties associated with the entire crystal, "
+           "Returns continuous properties associated with the entire crystal, "
            "if present.")
       .def_static(
           "from_json", &simplestructure_from_json,
@@ -1985,7 +1987,7 @@ PYBIND11_MODULE(xtal, m) {
 
   m.def("make_structure_factor_group", &make_simplestructure_factor_group,
         py::arg("structure"), R"pbdoc(
-           Return the factor group of an atomic structure
+           Returns the factor group of an atomic structure
 
            Parameters
            ----------
@@ -2012,7 +2014,7 @@ PYBIND11_MODULE(xtal, m) {
   m.def("make_structure_crystal_point_group",
         &make_simplestructure_crystal_point_group, py::arg("structure"),
         R"pbdoc(
-           Return the crystal point group of an atomic structure
+           Returns the crystal point group of an atomic structure
 
            Parameters
            ----------
@@ -2133,12 +2135,12 @@ PYBIND11_MODULE(xtal, m) {
       .def(
           "metric",
           [](StrainConverter const &converter) { return converter.metric; },
-          "Return the strain metric name.")
+          "Returns the strain metric name.")
       .def(
           "basis",
           [](StrainConverter const &converter) { return converter.basis; },
           R"pbdoc(
-          Return the basis used for strain metric vectors.
+          Returns the basis used for strain metric vectors.
 
           Returns
           -------
@@ -2154,7 +2156,7 @@ PYBIND11_MODULE(xtal, m) {
             return converter.basis.cols();
           },
           R"pbdoc(
-          Return the strain space dimension.
+          Returns the strain space dimension.
 
           Returns
           -------
@@ -2166,7 +2168,7 @@ PYBIND11_MODULE(xtal, m) {
           "basis_pinv",
           [](StrainConverter const &converter) { return converter.basis_pinv; },
           R"pbdoc(
-          Return the strain metric basis pseudoinverse.
+          Returns the strain metric basis pseudoinverse.
 
           Returns
           -------
