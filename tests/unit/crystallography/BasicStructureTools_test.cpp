@@ -1,8 +1,8 @@
 #include "casm/crystallography/BasicStructureTools.hh"
 
+#include "TestStructures.hh"
 #include "autotools.hh"
 #include "casm/crystallography/BasicStructure.hh"
-#include "crystallography/TestStructures.hh"
 #include "gtest/gtest.h"
 
 using namespace CASM;

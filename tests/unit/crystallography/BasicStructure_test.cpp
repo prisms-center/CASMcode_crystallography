@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include "Common.hh"
+#include "TestStructures.hh"
 #include "casm/crystallography/Coordinate.hh"
 #include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
@@ -22,7 +23,6 @@
 #include "casm/external/Eigen/src/Core/Matrix.h"
 #include "casm/global/filesystem.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
-#include "crystallography/TestStructures.hh"
 
 using namespace CASM;
 using xtal::BasicStructure;
@@ -339,22 +339,33 @@ class HexagonalSuperStructureTest : public testing::Test {
   void SetUp() override {
     fs::path hcp_stack_file =
         test::data_file("crystallography", "hcp_stack3.vasp");
+    EXPECT_TRUE(fs::exists(hcp_stack_file))
+        << "file does not exist:" << hcp_stack_file;
     std::ifstream hcp_stack_stream(hcp_stack_file.string());
+    EXPECT_TRUE(hcp_stack_stream.is_open()) << "ifstream not open" << std::endl;
     xtal::BasicStructure hcp_stack_structure =
         xtal::BasicStructure::from_poscar_stream(hcp_stack_stream);
 
     hcp_3stack_ptr.reset(
         new xtal::BasicStructure(std::move(hcp_stack_structure)));
+    EXPECT_TRUE(hcp_3stack_ptr != nullptr)
+        << "hcp_3stack_ptr not set" << std::endl;
     hcp_primitive_ptr.reset(
         new xtal::BasicStructure(xtal::make_primitive(*hcp_3stack_ptr)));
 
     fs::path hcp_read_prim_path =
         test::data_file("crystallography", "hcp_mg.vasp");
+    EXPECT_TRUE(fs::exists(hcp_read_prim_path))
+        << "file does not exist:" << hcp_read_prim_path;
     std::ifstream hcp_read_prim_stream(hcp_read_prim_path.string());
+    EXPECT_TRUE(hcp_read_prim_stream.is_open())
+        << "ifstream not open" << std::endl;
     xtal::BasicStructure hcp_read_prim_structure =
         xtal::BasicStructure::from_poscar_stream(hcp_read_prim_stream);
     hcp_read_prim_ptr.reset(
         new xtal::BasicStructure(std::move(hcp_read_prim_structure)));
+    EXPECT_TRUE(hcp_read_prim_ptr != nullptr)
+        << "hcp_read_prim_ptr not set" << std::endl;
 
     hcp_3stack_factor_group = xtal::make_factor_group(*hcp_3stack_ptr);
     hcp_primitive_factor_group = xtal::make_factor_group(*hcp_primitive_ptr);

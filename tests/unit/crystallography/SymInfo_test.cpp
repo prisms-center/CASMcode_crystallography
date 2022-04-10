@@ -1,11 +1,11 @@
 #include "casm/crystallography/SymInfo.hh"
 
+#include "TestStructures.hh"
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
 #include "casm/crystallography/io/SymInfo_stream_io.hh"
-#include "crystallography/TestStructures.hh"
 #include "gtest/gtest.h"
 
 using namespace CASM;

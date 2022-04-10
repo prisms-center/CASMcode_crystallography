@@ -415,6 +415,7 @@ def make_unit_test(unit_test_directory, ldadd=[]):
     last_directory = os.path.basename(os.path.normpath(unit_test_directory))
     test_name = "casm_unit_{}".format(last_directory)
 
+    # Test source files used are stored in <unit_test_directory>
     all_dir_files_relative = [
         os.path.join(unit_test_directory, f)
         for f in os.listdir(unit_test_directory)
@@ -422,10 +423,7 @@ def make_unit_test(unit_test_directory, ldadd=[]):
     only_tracked_files = purge_untracked_files(all_dir_files_relative)
     only_makeable_files = purge_git_related_files(only_tracked_files)
 
-    # TODO:
-    # I think it would be better if instead of mixing up EXTRA_DIST files
-    # with the test code, all files necessary for the test to run existed
-    # in a separate subdirectory
+    # Primary test source files end with "_test.cpp"
     source_files = [f for f in only_makeable_files if f.endswith("_test.cpp")
                     ] + ["tests/unit/gtest_main_run_all.cpp"]
     ldadd.append("libcasmtesting.la")
@@ -440,7 +438,15 @@ def make_unit_test(unit_test_directory, ldadd=[]):
         CPPFLAGS=["$(AM_CPPFLAGS)", "-I$(top_srcdir)/tests/unit/"],
     )
 
-    extra_files = [f for f in only_makeable_files if f not in source_files]
+    # Data files used in tests are stored in <unit_test_directory>/data
+    all_data_files_relative = [
+        os.path.join(unit_test_directory, "data", f)
+        for f in os.listdir(os.path.join(unit_test_directory, "data"))
+    ]
+    only_tracked_data_files = purge_untracked_files(all_data_files_relative)
+    only_makeable_data_files = purge_git_related_files(only_tracked_data_files)
+
+    extra_files = [f for f in only_makeable_data_files]
     value += "\n"
     value += make_add_to_EXTRA_DIST(extra_files)
 

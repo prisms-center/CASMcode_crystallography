@@ -5,13 +5,13 @@
 #include "casm/crystallography/Niggli.hh"
 
 /// What is being used to test it:
+#include "TestStructures.hh"
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymTools.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
-#include "crystallography/TestStructures.hh"
 
 namespace CASM {
 namespace xtal {
