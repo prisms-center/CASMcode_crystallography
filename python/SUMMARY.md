@@ -1,6 +1,6 @@
-The casm-mapping package
+The casm-xtal package
 ========================
 
-The `casm-mapping` Python package provides a Python interface to the CASM structure mapping library.
+The `casm-xtal` Python package provides a Python interface to the CASM crystallography library.
 
-This version of `casm-mapping` is compatible with version 2.X of [`CASMcode_mapping`](https://github.com/prisms-center/CASMcode_mapping/).
+This version of `casm-xtal` is compatible with version 2.X of [`CASMcode_crystallography`](https://github.com/prisms-center/CASMcode_crystallography/).

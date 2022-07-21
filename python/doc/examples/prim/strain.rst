@@ -18,7 +18,7 @@ This example uses a fixed "A" sublattice for occ_dof, which by default are creat
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([
@@ -77,7 +77,7 @@ This example uses a fixed "A" sublattice for occ_dof, which by default are creat
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
     from math import sqrt
 
     # Lattice vectors

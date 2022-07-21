@@ -59,7 +59,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'casm-xtal'
+project = u'libcasm-xtal'
 copyright = u'2021, CASM Developers'
 author = u'CASM Developers'
 
@@ -152,7 +152,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'casm-xtal.tex', u'casm-xtal Documentation',
+    (master_doc, 'libcasm-xtal.tex', u'libcasm-xtal Documentation',
      u'CASM Developers', 'manual'),
 ]
 
@@ -160,7 +160,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, 'casm-xtal', u'casm-xtal Documentation', [author], 1)
+man_pages = [(master_doc, 'libcasm-xtal', u'libcasm-xtal Documentation', [author], 1)
              ]
 
 # -- Options for Texinfo output -------------------------------------------
@@ -169,6 +169,6 @@ man_pages = [(master_doc, 'casm-xtal', u'casm-xtal Documentation', [author], 1)
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'casm-xtal', u'casm-xtal Documentation', author, 'casm-xtal',
+    (master_doc, 'libcasm-xtal', u'libcasm-xtal Documentation', author, 'libcasm-xtal',
      'One line description of project.', 'Miscellaneous'),
 ]

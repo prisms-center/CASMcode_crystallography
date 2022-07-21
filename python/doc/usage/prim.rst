@@ -9,7 +9,7 @@ The primitive crystal structure and allowed degrees of freedom (DoF) (the “pri
 - continuous local (site) DoF
 - continuous global DoF
 
-The prim is the starting point for constructing a cluster expansion effective Hamiltonian. Based on the allowed DoF, it specifies what configurations are possible, and the symmetry of the prim determines the symmetry of the cluster basis functions. The :class:`~casm.xtal.Prim` class constructor documentation is :ref:`here <prim-init>`, and this section gives an introduction through examples.
+The prim is the starting point for constructing a cluster expansion effective Hamiltonian. Based on the allowed DoF, it specifies what configurations are possible, and the symmetry of the prim determines the symmetry of the cluster basis functions. The :class:`~libcasm.xtal.Prim` class constructor documentation is :ref:`here <prim-init>`, and this section gives an introduction through examples.
 
 
 Occupation DoF
@@ -20,7 +20,7 @@ The following is an example of prim construction, including atomic occupation Do
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([
@@ -50,7 +50,7 @@ The parameter `coordinate_frac` gives basis site positions, as columns of a matr
 
 The parameter `occ_dof` gives labels of occupants allowed on each basis site. The value occ_dof[b] is the list of occupants allowed on the b-th basis site. The values may either be (i) the name of an isotropic atom (i.e. “Mg”) or vacancy (“Va”), or (ii) a key in the optional parameter, `occupants`, (see below). The names are case sensitive, and “Va” is reserved for vacancies.
 
-The optional parameter, `occupants`, is a dictionary containing :class:`~casm.xtal.Occupant` allowed in the crystal. The keys are labels used in the occ_dof parameter. This may include isotropic atoms, vacancies, atoms with fixed anisotropic properties, and molecular occupants. A seperate key and value is required for all species with distinct anisotropic properties (i.e. “H2_xy”, “H2_xz”, and “H2_yz” for distinct orientations, or “A.up”, and “A.down” for distinct collinear magnetic spins, etc.). See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported property types and their definitions.
+The optional parameter, `occupants`, is a dictionary containing :class:`~libcasm.xtal.Occupant` allowed in the crystal. The keys are labels used in the occ_dof parameter. This may include isotropic atoms, vacancies, atoms with fixed anisotropic properties, and molecular occupants. A seperate key and value is required for all species with distinct anisotropic properties (i.e. “H2_xy”, “H2_xz”, and “H2_yz” for distinct orientations, or “A.up”, and “A.down” for distinct collinear magnetic spins, etc.). See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported property types and their definitions.
 
 **Example: Isotropic atomic occupant**
 
@@ -104,12 +104,12 @@ The value "Cmagspin" is string indicating the CASM supported collinear magnetic 
     prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
                      occupants=occupants, title="ising")
 
-The :class:`~casm.xtal.Occupant` constructor parameter `name` is a "chemical name" which must be equal for occupants to be found symmetrically equivalent.
+The :class:`~libcasm.xtal.Occupant` constructor parameter `name` is a "chemical name" which must be equal for occupants to be found symmetrically equivalent.
 
 
 **Example: Molecular occupants with distinct orientations**
 
-The :class:`~casm.xtal.AtomComponent` can be used to specify the positions of individual atoms in a molecular :class:`~casm.xtal.Occupant`. The following specifies three orientations of O2, aligned along the x, y, and z axes, respectively.
+The :class:`~libcasm.xtal.AtomComponent` can be used to specify the positions of individual atoms in a molecular :class:`~libcasm.xtal.Occupant`. The following specifies three orientations of O2, aligned along the x, y, and z axes, respectively.
 
 .. code-block:: Python
 
@@ -117,20 +117,20 @@ The :class:`~casm.xtal.AtomComponent` can be used to specify the positions of in
     O2_xx_occ = xtal.Occupant(
         name="O2",
         atoms=[
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([delta, 0., 0.])),
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([-delta, 0., 0.]))
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([delta, 0., 0.])),
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([-delta, 0., 0.]))
         ])
     O2_yy_occ = xtal.Occupant(
         name="O2",
         atoms=[
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., delta, 0.])),
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., -delta, 0.]))
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., delta, 0.])),
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., -delta, 0.]))
         ])
     O2_zz_occ = xtal.Occupant(
         name="O2",
         atoms=[
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., delta])),
-            casm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., -delta]))
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., delta])),
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., -delta]))
         ])
     occupants = {
       "O2_xx": O2_xx_occ,     # <label> : occupant
@@ -147,7 +147,7 @@ The :class:`~casm.xtal.AtomComponent` can be used to specify the positions of in
 Continuous local DoF
 --------------------
 
-The optional local_dof parameter enables constructing a :class:`~casm.xtal.Prim` which includes continuous local DoF (DoF associated with a particular site). There is no effect if local_dof is empty. If not empty, the value local_dof[b] is a list of :class:`~casm.xtal.DoFSetBasis` objects describing the continuous local DoF allowed on the b-th basis site.
+The optional local_dof parameter enables constructing a :class:`~libcasm.xtal.Prim` which includes continuous local DoF (DoF associated with a particular site). There is no effect if local_dof is empty. If not empty, the value local_dof[b] is a list of :class:`~libcasm.xtal.DoFSetBasis` objects describing the continuous local DoF allowed on the b-th basis site.
 
 This section provides examples construting a prim with:
 
@@ -299,7 +299,7 @@ is a transformation which decomposes strain space into irreducible subspaces whi
 
 The same symmetry-adapted strain basis holds for all crystal point groups, but the irreducible subspaces vary. As an example, for cubic point groups, there are three irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_2, e_3\}`, and :math:`\{e_4, e_5, e_6\}`. For hexagonal point groups, there are four irreducible subspaces: :math:`\{e_1\}`, :math:`\{e_3\}`, :math:`\{e_2, e_6\}`, and :math:`\{e_4, e_5\}`.
 
-The following uses :func:`~casm.xtal.make_symmetry_adapted_strain_basis` to construct a prim with strain DoF, using the Hencky strain metric, and the symmetry-adapted basis:
+The following uses :func:`~libcasm.xtal.make_symmetry_adapted_strain_basis` to construct a prim with strain DoF, using the Hencky strain metric, and the symmetry-adapted basis:
 
 .. code-block:: Python
 
@@ -335,13 +335,13 @@ It is possible to restrict the dimension of allowed strain DoF, or rotate the st
 Primitive cell
 --------------
 
-A :class:`~casm.xtal.Prim` object is not forced to be the primitive equivalent cell at construction. The :func:`~casm.xtal.make_primitive` method finds and returns the primitive equivalent cell by checking for internal translations that map all basis sites onto equivalent basis sites, including allowed occupants and equivalent local degrees of freedom (DoF), if they exist.
+A :class:`~libcasm.xtal.Prim` object is not forced to be the primitive equivalent cell at construction. The :func:`~libcasm.xtal.make_primitive` method finds and returns the primitive equivalent cell by checking for internal translations that map all basis sites onto equivalent basis sites, including allowed occupants and equivalent local degrees of freedom (DoF), if they exist.
 
 
 Canonical cell
 --------------
 
-The :func:`~casm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, applying lattice point group operations to find the equivalent lattice in a standardized orientation. The canonical orientation prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
+The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, applying lattice point group operations to find the equivalent lattice in a standardized orientation. The canonical orientation prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
 
 .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
 
@@ -355,7 +355,7 @@ The `factor group` is a finite description of the crystal space group in which a
 
 The `factor group` of the prim is the set of transformations, with translation lying within the primitive unit cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant. It is found by a check of the combination of lattice point group operations and translations between basis sites. For cluster expansions of global crystal properties, such as the energy, the cluster basis functions are constructed to have the same symmetry as the prim factor group.
 
-The factor group can be generated using the :func:`~casm.xtal.make_factor_group` method, and a description of the operations printed using :class:`~casm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
+The factor group can be generated using the :func:`~libcasm.xtal.make_factor_group` method, and a description of the operations printed using :class:`~libcasm.xtal.SymInfo` (described :ref:`previously <lattice-symmetry-operation-information>`):
 
     >>> i = 1
     >>> factor_group = xtal.make_factor_group(prim)
@@ -383,7 +383,7 @@ Crystal point group
 
 The `crystal point group` is the group constructed from the prim factor group operations with translation vector set to zero. This is the appropriate point group to use for checking the equivalence of superlattices while taking into account the symmetry of the prim basis site coordinates and DoF.
 
-The crystal point group can be generated using the :func:`~casm.xtal.make_crystal_point_group` method:
+The crystal point group can be generated using the :func:`~libcasm.xtal.make_crystal_point_group` method:
 
     >>> crystal_point_group = xtal.make_crystal_point_group(prim)
 

@@ -19,7 +19,7 @@ This example uses "A" and "B" for occ_dof, which by default are created as isotr
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([
@@ -66,7 +66,7 @@ This example uses "Va", the reserved name for vacancies, in occ_dof.
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([
@@ -121,7 +121,7 @@ The occupants list includes the value of the fixed collinear magnetic spin "Cmag
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     lattice_column_vector_matrix = np.array([

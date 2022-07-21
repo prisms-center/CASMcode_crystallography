@@ -887,7 +887,7 @@ Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
 
-PYBIND11_MODULE(xtal, m) {
+PYBIND11_MODULE(_xtal, m) {
   using namespace CASMpy;
 
   m.doc() = R"pbdoc(

@@ -1,8 +1,8 @@
 
-casm-xtal: The Python interface for CASM crystallography
-========================================================
+libcasm-xtal: The Python interface for CASM crystallography
+===========================================================
 
-The casm-xtal package is a Python interface to the crystallography
+The libcasm-xtal package is a Python interface to the crystallography
 classes and methods in the CASM::xtal namespace of the CASM C++ libraries.
 This includes:
 
@@ -21,10 +21,10 @@ Documentation
     Installation <installation>
     Usage <usage>
     Prim Examples <examples/prim/index>
-    Reference <reference/casm/xtal/_autosummary/casm.xtal>
+    Reference <reference/libcasm/xtal/_autosummary/libcasm.xtal>
     Bibliography <bibliography>
-    About casm-xtal <about>
+    About libcasm-xtal <about>
 
-casm-xtal is available on GitHub_.
+libcasm-xtal is available on GitHub_.
 
 .. _GitHub: https://github.com/prisms-center/CASMcode_crystallography

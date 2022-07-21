@@ -10,7 +10,7 @@ Superlattices satisfy:
 
     S = L T,
 
-where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of shape=(3,3) matrices, and :math:`T` is a shape=(3,3) integer transformation matrix. The :func:`~casm.xtal.is_superlattice_of` and :func:`~casm.xtal.make_transformation_matrix_to_super` methods can be used to check if a superlattice relationship exists between two lattices and find T.
+where :math:`S` and :math:`L` are, respectively, the superlattice and unit lattice vectors as columns of shape=(3,3) matrices, and :math:`T` is a shape=(3,3) integer transformation matrix. The :func:`~libcasm.xtal.is_superlattice_of` and :func:`~libcasm.xtal.make_transformation_matrix_to_super` methods can be used to check if a superlattice relationship exists between two lattices and find T.
 
 Superlattices :math:`S_1` and :math:`S_2` may have different lattice points but be symmetrically equivalent if there exists p and :math:`U` such that:
 
@@ -18,9 +18,9 @@ Superlattices :math:`S_1` and :math:`S_2` may have different lattice points but 
 
     S_1 = A_p S_2 U,
 
-where :math:`A_p` the operation matrix of the p-th element in the relevant point group, and :math:`U` is a unimodular matrix (integer matrix, with :math:`\det(U) = \pm 1`). The :func:`~casm.xtal.is_equivalent_superlattice_of` method can be used to check if a lattice is symmetrically equivalent to a superlattice of another lattice and identify p.
+where :math:`A_p` the operation matrix of the p-th element in the relevant point group, and :math:`U` is a unimodular matrix (integer matrix, with :math:`\det(U) = \pm 1`). The :func:`~libcasm.xtal.is_equivalent_superlattice_of` method can be used to check if a lattice is symmetrically equivalent to a superlattice of another lattice and identify p.
 
-The :func:`~casm.xtal.enumerate_superlattices` function enumerates symmetrically unique superlattices given:
+The :func:`~libcasm.xtal.enumerate_superlattices` function enumerates symmetrically unique superlattices given:
 
 - a unit lattice
 - a point group defining which lattices are symmetrically equivalent
@@ -31,7 +31,7 @@ The appropriate point group for superlattice enumeration depends on the use case
 Usage
 -----
 
-To enumerate superlattices of a prim (:class:`~casm.xtal.Prim`), taking into account the symmetry of the basis and DoF:
+To enumerate superlattices of a prim (:class:`~libcasm.xtal.Prim`), taking into account the symmetry of the basis and DoF:
 
 .. code-block:: Python
 
@@ -40,7 +40,7 @@ To enumerate superlattices of a prim (:class:`~casm.xtal.Prim`), taking into acc
     >>> superlattices = xtal.enumerate_superlattices(
     ...     unit_lattice, point_group, max_volume=4, min_volume=1, dirs="abc")
 
-To enumerate superlattices of a lattice (:class:`~casm.xtal.Lattice`), with no basis or DoF:
+To enumerate superlattices of a lattice (:class:`~libcasm.xtal.Lattice`), with no basis or DoF:
 
 .. code-block:: Python
 
@@ -51,13 +51,13 @@ To enumerate superlattices of a lattice (:class:`~casm.xtal.Lattice`), with no b
 
 The minimum volume is optional, with default=1. The dirs parameter, with default="abc", specifies which lattice vectors to enumerate over ("a", "b", and "c" indicate the first, second, and third lattice vectors, respectively). This allows restriction of the enumeration to 1d (i.e. dirs="b") or 2d superlattices (i.e. dirs="ac").
 
-The output, superlattices, is a list of :class:`~casm.xtal.Lattice`, which will be in canonical form with respect to point_group.
+The output, superlattices, is a list of :class:`~libcasm.xtal.Lattice`, which will be in canonical form with respect to point_group.
 
 
 Super-duper lattice
 -------------------
 
-It is often useful to find superlattices that are commensurate with multiple ordered phases. The :func:`~casm.xtal.make_superduperlattice` function finds a minimum volume lattice that is a superlattice of 2 or more input lattices.
+It is often useful to find superlattices that are commensurate with multiple ordered phases. The :func:`~libcasm.xtal.make_superduperlattice` function finds a minimum volume lattice that is a superlattice of 2 or more input lattices.
 
 .. code-block:: Python
 
