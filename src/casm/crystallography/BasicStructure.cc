@@ -1,6 +1,7 @@
 #include "casm/crystallography/BasicStructure.hh"
 
 #include <fstream>
+#include <iomanip>
 #include <stdexcept>
 
 #include "casm/crystallography/Adapter.hh"
