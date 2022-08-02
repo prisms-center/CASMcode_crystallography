@@ -40,12 +40,19 @@ class OccupantDoFIsEquivalent {
   /// comparison
   Permutation const &perm() const { return m_P; }
 
+  /// return atom position transformation permutation calculated during last
+  /// successful comparison
+  std::vector<Permutation> const &atom_position_perm() const {
+    return m_atom_position_P;
+  }
+
  private:
   std::vector<xtal::Molecule> m_dof;
 
   double m_tol;
 
   mutable Permutation m_P;
+  mutable std::vector<Permutation> m_atom_position_P;
 };
 
 }  // namespace xtal

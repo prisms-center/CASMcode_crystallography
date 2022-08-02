@@ -69,3 +69,40 @@ TEST(MoleculteTest, MoleculeTest1) {
   EXPECT_EQ(mol_va2.name(), "Va");
   EXPECT_EQ(mol_va2.is_vacancy(), true);
 }
+
+TEST(MoleculeTest, IdenticalTest1) {
+  Eigen::Vector3d pos0(0.0, 0.0, 0.4);
+  Eigen::Vector3d pos1(0.0, 0.0, -0.4);
+  double tol(1e-5);
+
+  Molecule mol_a2_i =
+      Molecule("A2", {AtomPosition(pos0, "A"), AtomPosition(pos1, "A")});
+
+  Molecule mol_a2_ii =
+      Molecule("A2", {AtomPosition(pos1, "A"), AtomPosition(pos0, "A")});
+
+  Molecule mol_ab_i =
+      Molecule("AB", {AtomPosition(pos0, "A"), AtomPosition(pos1, "B")});
+
+  {
+    Permutation atom_position_perm(mol_a2_i.size());
+    bool is_identical = mol_a2_i.identical(mol_a2_i, tol, atom_position_perm);
+    EXPECT_TRUE(is_identical);
+    EXPECT_EQ(atom_position_perm[0], 0);
+    EXPECT_EQ(atom_position_perm[1], 1);
+  }
+
+  {
+    Permutation atom_position_perm(mol_a2_i.size());
+    bool is_identical = mol_a2_i.identical(mol_a2_ii, tol, atom_position_perm);
+    EXPECT_TRUE(is_identical);
+    EXPECT_EQ(atom_position_perm[0], 1);
+    EXPECT_EQ(atom_position_perm[1], 0);
+  }
+
+  {
+    Permutation atom_position_perm(mol_a2_i.size());
+    bool is_identical = mol_a2_i.identical(mol_ab_i, tol, atom_position_perm);
+    EXPECT_FALSE(is_identical);
+  }
+}

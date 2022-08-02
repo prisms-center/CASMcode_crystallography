@@ -73,6 +73,47 @@ bool Molecule::identical(Molecule const &RHS, double _tol) const {
   return true;
 }
 
+/// \brief Check equality of two molecules, within specified tolerance.
+/// Compares atoms, irrespective of order, and attributes (name is not
+/// checked) and sets permutation of atom positions if true
+///
+/// Note: When the Molecule are identical, then the following relation is
+/// satisfied: `*this->atoms() == atom_position_perm.permute(RHS.atoms())`
+///
+bool Molecule::identical(Molecule const &RHS, double _tol,
+                         Permutation &atom_position_perm) const {
+  // compare number of attributes
+  if (m_property_map.size() != RHS.m_property_map.size()) return false;
+
+  // compare number of atoms
+  if (size() != RHS.size()) return false;
+
+  atom_position_perm = Permutation(size());
+
+  // compare atoms, irrespective of order
+  for (Index i = 0; i < RHS.size(); i++) {
+    Index j = 0;
+    for (j = 0; j < size(); j++) {
+      if (atom(i).identical(RHS.atom(j), _tol)) {
+        atom_position_perm.set(i) = j;
+        break;
+      }
+    }
+    if (j == size()) return false;
+  }
+
+  // compare attributes
+  auto it(m_property_map.cbegin()), end_it(m_property_map.cend());
+  for (; it != end_it; ++it) {
+    auto it_RHS = RHS.m_property_map.find(it->first);
+    if (it_RHS == RHS.m_property_map.cend() ||
+        !(it->second).identical(it_RHS->second, _tol))
+      return false;
+  }
+
+  return true;
+}
+
 bool Molecule::contains(std::string const &_name) const {
   for (Index i = 0; i < size(); i++)
     if (atom(i).name() == _name) return true;
