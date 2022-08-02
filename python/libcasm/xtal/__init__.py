@@ -1,4 +1,4 @@
-"""casm-xtal: CASM crystallography Python interface"""
+"""libcasm-xtal: CASM crystallography Python interface"""
 from ._xtal import *
 
 __all__ = [

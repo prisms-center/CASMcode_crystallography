@@ -21,7 +21,7 @@ Documentation
     Installation <installation>
     Usage <usage>
     Prim Examples <examples/prim/index>
-    Reference <reference/libcasm/xtal/_autosummary/libcasm.xtal>
+    Reference <reference/libcasm/index>
     Bibliography <bibliography>
     About libcasm-xtal <about>
 
