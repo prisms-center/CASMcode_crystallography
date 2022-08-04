@@ -370,95 +370,71 @@ std::pair<double, Eigen::Vector3d> calc_rotation_angle_and_axis(
   return std::make_pair(angle, rotation_axis);
 }
 
-//*******************************************************************************************
-/// \brief Sort SymOp in the SymGroup
+/// \brief Generate key for sorting xtal::SymOp
+///
+/// Note:
+/// - compare on vector of '-det', '-trace', 'angle', 'axis', 'tau'
+symop_sort_key_type make_symop_sort_key(xtal::SymOp const &op,
+                                        xtal::Lattice const &lat) {
+  Eigen::Matrix<double, 10, 1> vec;
+  int offset = 0;
+  double sym_angle;
+  Eigen::Vector3d sym_frac;
+  std::tie(sym_angle, sym_frac) = calc_rotation_angle_and_axis(op, lat);
+
+  vec[offset] = double(op.is_time_reversal_active);
+  offset++;
+
+  vec[offset] = -op.matrix.determinant();
+  offset++;
+
+  vec[offset] = -op.matrix.trace();
+  offset++;
+
+  vec[offset] = sym_angle;
+  offset++;
+
+  vec.segment<3>(offset) = sym_frac;
+  offset += 3;
+
+  vec.segment<3>(offset) = Coordinate(op.translation, lat, CART).const_frac();
+  offset += 3;
+
+  return vec;
+}
+
+SymOpSortKeyCompare::SymOpSortKeyCompare(double _tol) : tol(_tol) {}
+
+bool SymOpSortKeyCompare::operator()(const symop_sort_key_type &A,
+                                     const symop_sort_key_type &B) const {
+  return float_lexicographical_compare(A, B, tol);
+}
+
+/// \brief Sort SymOp
 ///
 /// SymOp are sorted by lexicographical comparison of: (-det, -trace, angle,
 /// axis, tau)
 /// - angle is positive
 /// - axis[0] is positive
 ///
-/// This function is an almost identical clone of SymGroup::sort()
+/// This function is an *not* an identical clone of CASM::SymGroup::sort(),
+/// which sorts by conjugacy class.
 void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat) {
   // floating point comparison tolerance
   double tol = TOL;
 
-  // COORD_TYPE print_mode = CART;
-
-  // compare on vector of '-det', '-trace', 'angle', 'axis', 'tau'
-  typedef Eigen::Matrix<double, 10, 1> key_type;
-  auto make_key = [](const SymOp &op, const Lattice &lat) {
-    key_type vec;
-    int offset = 0;
-    double sym_angle;
-    Eigen::Vector3d sym_frac;
-    std::tie(sym_angle, sym_frac) = calc_rotation_angle_and_axis(op, lat);
-
-    vec[offset] = double(op.is_time_reversal_active);
-    offset++;
-
-    vec[offset] = -op.matrix.determinant();
-    offset++;
-
-    vec[offset] = -op.matrix.trace();
-    offset++;
-
-    vec[offset] = sym_angle;
-    offset++;
-
-    vec.segment<3>(offset) = sym_frac;
-    offset += 3;
-
-    vec.segment<3>(offset) = Coordinate(op.translation, lat, CART).const_frac();
-    offset += 3;
-
-    return vec;
-  };
-
-  // define symop compare function
-  auto op_compare = [tol](const key_type &A, const key_type &B) {
-    return float_lexicographical_compare(A, B, tol);
-  };
-
-  typedef std::map<key_type, SymOp,
-                   std::reference_wrapper<decltype(op_compare)>>
-      map_type;
-
-  // first put identity in position 0 in order to calculat multi_table correctly
-  for (int i = 0; i < factor_group.size(); ++i) {
-    if (factor_group[i].matrix.isIdentity() &&
-        factor_group[i].translation.norm() < TOL &&
-        !factor_group[i].is_time_reversal_active) {
-      std::swap(factor_group[0], factor_group[i]);
-      break;
-    }
+  // Just sorts elements - does not sort by class
+  SymOpSortKeyCompare op_compare(tol);
+  std::map<symop_sort_key_type, SymOp, SymOpSortKeyCompare> all_op(op_compare);
+  for (auto const &op : factor_group) {
+    all_op.emplace(make_symop_sort_key(op, lat), op);
   }
-
-  // sort conjugacy class using the first symop in the sorted class
-  auto cclass_compare = [tol](const map_type &A, const map_type &B) {
-    return float_lexicographical_compare(A.begin()->first, B.begin()->first,
-                                         tol);
-  };
-
-  // sort elements in each conjugracy class (or just put all elements in the
-  // first map)
-  std::set<map_type, std::reference_wrapper<decltype(cclass_compare)>> sorter(
-      cclass_compare);
-
-  // else just sort element
-  map_type all_op(op_compare);
-  for (auto it = factor_group.begin(); it != factor_group.end(); ++it) {
-    all_op.emplace(make_key(*it, lat), *it);
-  }
-  sorter.emplace(std::move(all_op));
 
   // copy symop back into group
   int j = 0;
-  for (auto const &cclass : sorter) {
-    for (auto it = cclass.begin(); it != cclass.end(); ++it) {
-      factor_group[j] = it->second;
-      ++j;
-    }
+  for (auto const &pair : all_op) {
+    factor_group[j] = pair.second;
+    ++j;
   }
 }
 
