@@ -1565,11 +1565,15 @@ PYBIND11_MODULE(_xtal, m) {
           "crystallography/BasicStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("prim_json_str"), py::arg("xtal_tol") = TOL)
-      .def_static("from_poscar", &prim_from_poscar,
-                  "Construct a Prim from poscar path provided as a string",
-                  py::arg("poscar_path"),
-                  py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
-                  py::arg("xtal_tol") = TOL)
+      .def_static(
+          "from_poscar", &prim_from_poscar,
+          "Construct a Prim from poscar path provided as a string"
+          "By default uses atom types from poscar as occupatinal degrees of "
+          "freedom. It can be overridden by explicitly providing occ_dof as "
+          "an argument.",
+          py::arg("poscar_path"),
+          py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
+          py::arg("xtal_tol") = TOL)
       .def("to_json", &prim_to_json,
            "Represent the Prim as a JSON-formatted string. The `Prim reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
