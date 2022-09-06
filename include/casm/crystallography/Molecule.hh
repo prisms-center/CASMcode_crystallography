@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "casm/container/Permutation.hh"
 #include "casm/crystallography/Adapter.hh"
 #include "casm/crystallography/SpeciesProperty.hh"
 #include "casm/global/definitions.hh"
@@ -131,6 +132,12 @@ class Molecule {
   /// Compares atoms, irrespective of order, and properties (name is not
   /// checked)
   bool identical(Molecule const &RHS, double _tol) const;
+
+  /// \brief Check equality of two molecules, within specified tolerance.
+  /// Compares atoms, irrespective of order, and attributes (name is not
+  /// checked) and sets permutation of atom positions if true
+  bool identical(Molecule const &RHS, double _tol,
+                 Permutation &atom_position_perm) const;
 
   /// \brief Returns true of molecule contains atom of specified name
   bool contains(std::string const &atom_name) const;

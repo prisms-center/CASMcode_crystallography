@@ -1,7 +1,7 @@
 import math
 import pytest
 import numpy as np
-import casm.xtal as xtal
+import libcasm.xtal as xtal
 
 
 def test_tol():

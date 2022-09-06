@@ -1,5 +1,5 @@
 import pytest
-import casm.xtal as xtal
+import libcasm.xtal as xtal
 
 
 def test_make_vacancy():

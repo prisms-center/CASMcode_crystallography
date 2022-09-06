@@ -1,5 +1,5 @@
 import numpy as np
-import casm.xtal as xtal
+import libcasm.xtal as xtal
 import pytest
 
 

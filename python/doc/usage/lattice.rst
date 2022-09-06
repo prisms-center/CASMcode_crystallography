@@ -4,13 +4,13 @@ Lattice construction and symmetry analysis
 Lattice construction
 --------------------
 
-The :class:`~casm.xtal.Lattice` class represents a three-dimensional lattice. It is constructed by providing the lattice vectors as columns of a shape=(3,3) array.
+The :class:`~libcasm.xtal.Lattice` class represents a three-dimensional lattice. It is constructed by providing the lattice vectors as columns of a shape=(3,3) array.
 
 .. code-block:: Python
 
     import math
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
 
     # Lattice vectors
     a = 3.23398686
@@ -33,14 +33,14 @@ This column-vector convention is used throughout CASM to represent basis vectors
     coordinate_cart = lattice.column_vector_matrix() @ coordinate_frac
     coordinate_frac = np.linalg.pinv(lattice.column_vector_matrix()) @ coordinate_cart
 
-For clarity and ease of use, casm-xtal also includes equivalent methods, :func:`~casm.xtal.fractional_to_cartesian()` and :func:`~casm.xtal.cartesian_to_fractional()`, for performing these transformations:
+For clarity and ease of use, libcasm-xtal also includes equivalent methods, :func:`~libcasm.xtal.fractional_to_cartesian()` and :func:`~libcasm.xtal.cartesian_to_fractional()`, for performing these transformations:
 
 .. code-block:: Python
 
     coordinate_cart = xtal.fractional_to_cartesian(lattice, coordinate_frac)
     coordinate_frac = xtal.cartesian_to_fractional(lattice, coordinate_cart)
 
-Additionally, the :func:`~casm.xtal.fractional_within()` can be used to set fractional coordinates with values less than 0. or greater than or equal to 1. to the equivalent values within the lattice unit cell.
+Additionally, the :func:`~libcasm.xtal.fractional_within()` can be used to set fractional coordinates with values less than 0. or greater than or equal to 1. to the equivalent values within the lattice unit cell.
 
 
 Symmetry operations
@@ -48,7 +48,7 @@ Symmetry operations
 
 A symmetry operation transforms a spatial coordinate according to :math:`\vec{r}_{cart}\rightarrow A \vec{r}_{cart}+\vec{\tau}`, where :math:`A` is the shape=(3,3) `operation matrix` and :math:`\vec{\tau}` is the `translation vector`.
 
-An instance of the :class:`~casm.xtal.SymOp` class, op, is used to represent a symmetry operation that transforms Cartesian coordinates according to:
+An instance of the :class:`~libcasm.xtal.SymOp` class, op, is used to represent a symmetry operation that transforms Cartesian coordinates according to:
 
 .. code-block:: Python
 
@@ -69,7 +69,7 @@ where s_before and s_after are the spins before and after transformation, respec
 Lattice point group generation
 ------------------------------
 
-The point group is the set of symmetry operations that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~casm.xtal.make_point_group()` method. For the example of a simple cubic lattice, the lattice point group has 48 operations:
+The point group is the set of symmetry operations that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~libcasm.xtal.make_point_group()` method. For the example of a simple cubic lattice, the lattice point group has 48 operations:
 
 .. code-block:: Python
 
@@ -84,7 +84,7 @@ The point group is the set of symmetry operations that transform the lattice vec
 Symmetry operation information
 ------------------------------
 
-The :class:`~casm.xtal.SymInfo` class is used to determine information about a :class:`~casm.xtal.SymOp`, such as:
+The :class:`~libcasm.xtal.SymInfo` class is used to determine information about a :class:`~libcasm.xtal.SymOp`, such as:
 
 - The type of symmetry operation
 - The axis of rotation or mirror plane normal
@@ -92,7 +92,7 @@ The :class:`~casm.xtal.SymInfo` class is used to determine information about a :
 - The location of an invariant point
 - The screw or glide translation component
 
-The symmetry information for the point group operations can be constructed from the :class:`~casm.xtal.SymOp` and the :class:`~casm.xtal.Lattice`:
+The symmetry information for the point group operations can be constructed from the :class:`~libcasm.xtal.SymOp` and the :class:`~libcasm.xtal.Lattice`:
 
 .. code-block:: Python
 
@@ -106,7 +106,7 @@ The symmetry information for the point group operations can be constructed from 
     >>> print("location:", syminfo.location())
     location: [0. 0. 0.]
 
-A brief description can also be printed following the conventions of International Tables for Crystallography, and using either fractional or Cartesian coordinates, using the :func:`~casm.xtal.SymInfo.brief_frac()` or :func:`~casm.xtal.SymInfo.brief_cart()` methods of :class:`~casm.xtal.SymInfo`:
+A brief description can also be printed following the conventions of International Tables for Crystallography, and using either fractional or Cartesian coordinates, using the :func:`~libcasm.xtal.SymInfo.brief_frac()` or :func:`~libcasm.xtal.SymInfo.brief_cart()` methods of :class:`~libcasm.xtal.SymInfo`:
 
 .. code-block:: Python
 
@@ -133,7 +133,7 @@ A brief description can also be printed following the conventions of Internation
 Lattice equivalence
 -------------------
 
-A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~casm.xtal.is_equivalent_to` method checks for the equivalence lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of the others according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
+A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~libcasm.xtal.is_equivalent_to` method checks for the equivalence lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of the others according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
 
 .. code-block:: Python
 
@@ -156,7 +156,7 @@ A lattice can be represented using any choice of lattice vectors that results in
 Lattice canonical form
 ----------------------
 
-For clarity and comparison purposes it useful to have a canonical choice of equivalent lattice vectors. The :func:`~casm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
+For clarity and comparison purposes it useful to have a canonical choice of equivalent lattice vectors. The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
 
 .. code-block:: Python
 

@@ -1,9 +1,9 @@
 Installation
 ============
 
-casm-xtal is currently in development as a standalone library and requires user compilation.
+libcasm-xtal is currently in development as a standalone library and requires user compilation.
 
-Installation of casm-xtal requires:
+Installation of libcasm-xtal requires:
 
 - git, GNU autotools for building C++ libraries
 - Python >=3.8, gitpython
@@ -44,10 +44,10 @@ Configure, make, run tests, install:
     make install
 
 
-Install casm-xtal
------------------
+Install libcasm-xtal
+--------------------
 
-Go to `python directory`:
+Go to `python` directory:
 
     cd CASMcode_crystallography/python
 

@@ -1,7 +1,7 @@
 import os
 import pytest
 import numpy as np
-import casm.xtal as xtal
+import libcasm.xtal as xtal
 
 
 @pytest.fixture
@@ -22,78 +22,75 @@ def pytest_root_dir(request: pytest.FixtureRequest) -> str:
     return str(request.config.rootdir)
 
 
-def test_prim_from_poscar(pytest_root_dir):
-    li9al4_prim_path = os.path.join(
-        pytest_root_dir, "tests", "input_files", "Li9Al4_primitive.vasp"
-    )
-    li9al4_prim = xtal.Prim.from_poscar(li9al4_prim_path)
+def lial_lattice_and_coords() -> tuple[np.array, np.array]:
+    """Populate lattice and coordinates
+    of lial to compare
 
-    li9al4_lattice = np.array(
+    Returns
+    -------
+    tuple[np.array, np.array]
+        Tuple of lattice and fractional coordinates
+
+    """
+    lial_lattice = np.array(
         [
             [4.471006, 0.000000, -2.235503],
             [0.000000, 1.411149, -9.345034],
             [0.000000, 5.179652, 0.000000],
         ]
     )
-    li9al4_frac_coords = np.array(
+
+    lial_frac_coords = np.array(
         [
             [
                 0.232895,
                 0.307941,
-                0.692059,
-                0.543552,
-                0.767105,
-                0.456448,
-                0.0,
-                0.914098,
-                0.085902,
-                0.614294,
-                0.385706,
                 0.15082,
                 0.84918,
             ],
             [
                 0.842594,
                 0.472885,
-                0.527115,
-                0.32586,
-                0.157406,
-                0.67414,
-                0.0,
-                0.359347,
-                0.640653,
-                0.934058,
-                0.065942,
                 0.216684,
                 0.783316,
             ],
             [
                 0.46579,
                 0.615882,
-                0.384118,
-                0.087104,
-                0.53421,
-                0.912896,
-                0.0,
-                0.828196,
-                0.171804,
-                0.228588,
-                0.771412,
                 0.30164,
                 0.69836,
             ],
         ]
     )
+    return lial_lattice, lial_frac_coords
+
+
+def test_prim_from_poscar(pytest_root_dir):
+    prim_path = os.path.join(pytest_root_dir, "tests", "input_files", "lial.vasp")
+
+    # with no occ dofs
+    prim = xtal.Prim.from_poscar(prim_path)
+    lattice, frac_coords = lial_lattice_and_coords()
+    assert (
+        np.allclose(lattice, prim.lattice().column_vector_matrix(), 1e-4, 1e-4) is True
+    )
+    assert np.allclose(frac_coords, prim.coordinate_frac(), 1e-4, 1e-4) is True
+    assert prim.occ_dof() == [["Li"], ["Li"], ["Al"], ["Al"]]
+
+    # change occ dofs
+    occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
+    prim_with_occ_dofs = xtal.Prim.from_poscar(prim_path, occ_dofs)
     assert (
         np.allclose(
-            li9al4_lattice, li9al4_prim.lattice().column_vector_matrix(), 1e-4, 1e-4
+            lattice, prim_with_occ_dofs.lattice().column_vector_matrix(), 1e-4, 1e-4
         )
         is True
     )
     assert (
-        np.allclose(li9al4_frac_coords, li9al4_prim.coordinate_frac(), 1e-4, 1e-4)
+        np.allclose(frac_coords, prim_with_occ_dofs.coordinate_frac(), 1e-4, 1e-4)
         is True
     )
+    assert prim_with_occ_dofs.occ_dof() == occ_dofs
 
 
 def test_make_primitive_occ(nonprimitive_cubic_occ_prim):
@@ -140,24 +137,24 @@ def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
 
     assert prim is not prim2
     assert prim != prim2
-    assert xtal._is_same_prim(prim, prim2) == False
+    assert xtal._xtal._is_same_prim(prim, prim2) is False
 
     other = prim
     assert other is prim
     assert other == prim
-    assert xtal._is_same_prim(other, prim)
+    assert xtal._xtal._is_same_prim(other, prim)
 
-    first = xtal._share_prim(prim)
+    first = xtal._xtal._share_prim(prim)
     assert first is prim
     assert first == prim
-    assert xtal._is_same_prim(first, prim)
+    assert xtal._xtal._is_same_prim(first, prim)
 
-    first = xtal._copy_prim(prim)
+    first = xtal._xtal._copy_prim(prim)
     assert first is not prim
     assert first != prim
-    assert xtal._is_same_prim(first, prim) == False
+    assert xtal._xtal._is_same_prim(first, prim) is False
 
-    second = xtal._share_prim(prim2)
+    second = xtal._xtal._share_prim(prim2)
     assert second is not first
     assert second != first
-    assert xtal._is_same_prim(second, first) == False
+    assert xtal._xtal._is_same_prim(second, first) is False

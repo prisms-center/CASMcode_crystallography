@@ -1,15 +1,15 @@
-The casm-xtal package
+The libcasm-xtal package
 ========================
 
-The `casm-xtal` Python package provides a Python interface to the CASM C++ crystallography library.
+The `libcasm-xtal` Python package provides a Python interface to the CASM C++ crystallography library.
 
-This version of `casm-xtal` is compatible with version 2.X of [`CASMcode_mapping`](https://github.com/prisms-center/CASMcode_crystallography/).
+This version of `libcasm-xtal` is compatible with version 2.X of [`CASMcode_crystallography`](https://github.com/prisms-center/CASMcode_crystallography/).
 
 
 Install
 =======
 
-Installation of `casm-xtal` requires:
+Installation of `libcasm-xtal` requires:
 - Python >=3.8
 - The compatible version of the CASM C++ crystallography library is already installed.
 - Development environment that allows compiling the pybind11 interface to CASM C++ (i.e. C++ compiler with support for c++17)
@@ -30,7 +30,7 @@ Install documentation requirements:
 
     pip -r doc_requirements.txt
 
-Install `casm-xtal`
+Install `libcasm-xtal`
 
 Build and open the documentation:
 
@@ -60,4 +60,4 @@ Formatting
 
 Use yapf. From CASMcode_crystallography/python do:
 
-    yapf -ir . 
+    yapf -ir .

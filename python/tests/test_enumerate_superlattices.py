@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-import casm.xtal as xtal
+import libcasm.xtal as xtal
 
 
 def test_enumerate_superlattices_simple_cubic_point_group():

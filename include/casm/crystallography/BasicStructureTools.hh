@@ -41,6 +41,21 @@ BasicStructure make_primitive(const BasicStructure &non_primitive_struc,
 std::pair<double, Eigen::Vector3d> calc_rotation_angle_and_axis(
     const SymOp &op, const Lattice &lat);
 
+typedef Eigen::Matrix<double, 10, 1> symop_sort_key_type;
+
+/// \brief Generate key for sorting xtal::SymOp
+symop_sort_key_type make_symop_sort_key(xtal::SymOp const &op,
+                                        xtal::Lattice const &lat);
+
+struct SymOpSortKeyCompare {
+  double tol;
+
+  SymOpSortKeyCompare(double _tol);
+
+  bool operator()(const symop_sort_key_type &A,
+                  const symop_sort_key_type &B) const;
+};
+
 /// Sort a factor group based on a lexicographical comparison of (-det, -trace,
 /// angle, axis, tau)
 void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat);

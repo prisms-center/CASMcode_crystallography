@@ -19,7 +19,7 @@ To construct this prim, the following must be specified:
 .. code-block:: Python
 
     import numpy as np
-    import casm.xtal as xtal
+    import libcasm.xtal as xtal
     from math import sqrt
 
     # Lattice vectors
