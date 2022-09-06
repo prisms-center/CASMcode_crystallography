@@ -10,6 +10,7 @@
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/CanonicalForm.hh"
+#include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
@@ -390,8 +391,10 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
   for (int index = 0; index < prim->basis().size(); ++index) {
     frac_coords.block<3, 1>(0, index) = prim->basis()[index].const_frac();
   }
-  return make_prim(prim->lattice(), frac_coords, occ_dof, {}, {}, {},
-                   prim->title());
+  xtal::Lattice lattice = prim->lattice();
+  std::string title = prim->title();
+  prim.reset();
+  return make_prim(lattice, frac_coords, occ_dof, {}, {}, {}, title);
 }
 
 /// \brief Format xtal::BasicStructure as JSON string
