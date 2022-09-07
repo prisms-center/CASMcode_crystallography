@@ -1,25 +1,6 @@
 import os
-import pytest
 import numpy as np
 import libcasm.xtal as xtal
-
-
-@pytest.fixture
-def pytest_root_dir(request: pytest.FixtureRequest) -> str:
-    """Get pytest root dir (wherever pytest.ini/tox.ini/setup.cfg exists)
-    Useful for resolving absolute paths of input files that are used in
-    tests
-
-    Parameters
-    ----------
-    request : pytest.FixtureRequest
-
-    Returns
-    -------
-    str
-
-    """
-    return str(request.config.rootdir)
 
 
 def lial_lattice_and_coords() -> tuple[np.array, np.array]:
@@ -65,8 +46,8 @@ def lial_lattice_and_coords() -> tuple[np.array, np.array]:
     return lial_lattice, lial_frac_coords
 
 
-def test_prim_from_poscar(pytest_root_dir):
-    prim_path = os.path.join(pytest_root_dir, "tests", "input_files", "lial.vasp")
+def test_prim_from_poscar(root_pytest_dir):
+    prim_path = os.path.join(root_pytest_dir, "tests", "input_files", "lial.vasp")
 
     # with no occ dofs
     prim = xtal.Prim.from_poscar(prim_path)
