@@ -5,8 +5,8 @@ libcasm.xtal module
 ===================
 
 .. autosummary::
-   :toctree: _autosummary
-      :template: custom-module-template.rst
-      :recursive:
+    :toctree: _autosummary
+    :template: custom-module-template.rst
+    :recursive:
 
-      libcasm.xtal
+    libcasm.xtal

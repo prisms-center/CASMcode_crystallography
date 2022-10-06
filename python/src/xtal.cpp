@@ -15,6 +15,7 @@
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
+#include "casm/crystallography/UnitCellCoord.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
 #include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
@@ -419,7 +420,7 @@ Eigen::MatrixXd get_prim_coordinate_cart(
 
 std::vector<std::vector<std::string>> get_prim_occ_dof(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
-  return xtal::allowed_molecule_names(*prim);
+  return prim->unique_names();
 }
 
 std::vector<std::vector<DoFSetBasis>> get_prim_local_dof(
@@ -881,6 +882,12 @@ Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
       0, 0, 0, 0, 0, 1;                                  //e6
   // clang-format on
   return B.transpose();
+}
+
+// UnitCellCoord
+xtal::UnitCellCoord make_integral_site_coordinate(
+    Index sublattice, Eigen::Vector3l const &unitcell) {
+  return xtal::UnitCellCoord(sublattice, unitcell);
 }
 
 }  // namespace CASMpy
@@ -1494,12 +1501,12 @@ PYBIND11_MODULE(_xtal, m) {
           Basis site positions, as columns of a matrix, in fractional
           coordinates with respect to the lattice vectors.
       occ_dof : List[List[str]]
-          Labels of occupants allowed on each basis site. The value
-          occ_dof[b] is the list of occupants allowed on the `b`-th basis
-          site. The values may either be (i) the name of an isotropic atom
-          (i.e. "Mg") or vacancy ("Va"), or (ii) a key in the occupants
-          dictionary (i.e. "H2O", or "H2_xx"). The names are case
-          sensitive, and "Va" is reserved for vacancies.
+          Labels ('orientation names') of occupants allowed on each basis
+          site. The value occ_dof[b] is the list of occupants allowed on
+          the `b`-th basis site. The values may either be (i) the name of
+          an isotropic atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
+          in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
+          are case sensitive, and "Va" is reserved for vacancies.
       local_dof : List[List[DoFSetBasis]], default=[[]]
           Continuous DoF allowed on each basis site. No effect if empty.
           If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
@@ -1508,12 +1515,13 @@ PYBIND11_MODULE(_xtal, m) {
           Global continuous DoF allowed for the entire crystal.
       occupants : Dict[str, Occupant], default=[]
           :class:`Occupant` allowed in the crystal. The keys are labels
-          used in the occ_dof parameter. This may include isotropic
-          atoms, vacancies, atoms with fixed anisotropic properties, and
-          molecular occupants. A seperate key and value is required for
-          all species with distinct anisotropic properties (i.e. "H2_xy",
-          "H2_xz", and "H2_yz" for distinct orientations, or "A.up", and
-          "A.down" for distinct collinear magnetic spins, etc.).
+          ('orientation names') used in the occ_dof parameter. This may
+          include isotropic atoms, vacancies, atoms with fixed anisotropic
+          properties, and molecular occupants. A seperate key and value is
+          required for all species with distinct anisotropic properties
+          (i.e. "H2_xy", "H2_xz", and "H2_yz" for distinct orientations,
+          or "A.up", and "A.down" for distinct collinear magnetic spins,
+          etc.).
       title : str, default="prim"
           A title for the prim. When the prim is used to construct a
           cluster expansion, this must consist of alphanumeric characters
@@ -1527,7 +1535,8 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the basis site positions, as columns of a matrix, in "
            "Cartesian coordinates")
       .def("occ_dof", &get_prim_occ_dof,
-           "Returns the labels of occupants allowed on each basis site")
+           "Returns the labels (orientation names) of occupants allowed on "
+           "each basis site")
       .def("local_dof", &get_prim_local_dof,
            "Returns the continuous DoF allowed on each basis site")
       .def(
@@ -2333,6 +2342,149 @@ PYBIND11_MODULE(_xtal, m) {
       symmetry_adapted_strain_basis: List[numpy.ndarray[numpy.float64[6, 6]]]
           The symmetry-adapted strain basis, :math:`B^{\vec{e}}`.
       )pbdoc");
+
+  py::class_<xtal::UnitCellCoord>(m, "IntegralSiteCoordinate", R"pbdoc(
+      Specify a site using integer sublattice and unit cell indices
+      )pbdoc")
+      .def(py::init(&make_integral_site_coordinate),
+           "Construct an IntegralSiteCoordinate", py::arg("sublattice"),
+           py::arg("unitcell"), R"pbdoc(
+
+      Parameters
+      ----------
+      sublattice : int
+          Specify a sublattice in a prim, in range [0, prim.basis().size()).
+      unitcell : array_like of int, shape=(3,)
+          Specify a unit cell, as multiples of the prim lattice vectors.
+      )pbdoc")
+      .def_static(
+          "from_coordinate_cart",
+          [](Eigen::Vector3d const &coordinate_cart,
+             xtal::BasicStructure const &prim, double tol) {
+            return xtal::UnitCellCoord::from_coordinate(
+                prim,
+                xtal::Coordinate(coordinate_cart, prim.lattice(), CASM::CART),
+                tol);
+          },
+          py::arg("coordinate_cart"), py::arg("prim"),
+          py::arg("tol") = CASM::TOL,
+          "Construct an integral site coordinate with given Cartesian "
+          "coordinate with respect to a particular Prim. An exception is "
+          "raised if not possible to the given tolerance.")
+      .def_static(
+          "from_coordinate_frac",
+          [](Eigen::Vector3d const &coordinate_frac,
+             xtal::BasicStructure const &prim, double tol) {
+            return xtal::UnitCellCoord::from_coordinate(
+                prim,
+                xtal::Coordinate(coordinate_frac, prim.lattice(), CASM::FRAC),
+                tol);
+          },
+          py::arg("coordinate_frac"), py::arg("prim"),
+          py::arg("tol") = CASM::TOL,
+          "Construct an integral site coordinate with given fractional "
+          "coordinate with respect to a particular Prim. An exception is "
+          "raised if not possible to the given tolerance.")
+      .def("sublattice", &xtal::UnitCellCoord::sublattice,
+           "Returns the sublattice index.")
+      .def(
+          "unitcell",
+          [](xtal::UnitCellCoord const &self) {
+            return static_cast<Eigen::Vector3l>(self.unitcell());
+          },
+          "Returns the unit cell indices.")
+      .def(
+          "__str__",
+          [](xtal::UnitCellCoord const &self) {
+            std::stringstream ss;
+            ss << self;
+            return ss.str();
+          },
+          "Represent IntegralSiteCoordinate as `b, i j k`, where `b` is the "
+          "sublattice index and `i j k` are the unit cell coordinates.")
+      .def(
+          "to_list",
+          [](xtal::UnitCellCoord const &self) {
+            std::vector<Index> list;
+            for (int i = 0; i < 4; ++i) {
+              list.push_back(self[i]);
+            }
+            return list;
+          },
+          "Represent IntegralSiteCoordinate as `[b, i, j, k]`.")
+      .def_static(
+          "from_list",
+          [](std::vector<int> const &list) {
+            if (list.size() != 4) {
+              throw std::runtime_error(
+                  "Error constructing IntegralSiteCoordinate from a list: size "
+                  "!= 4");
+            }
+            return xtal::UnitCellCoord(list[0], list[1], list[2], list[3]);
+          },
+          "Construct IntegralSiteCoordinate from a list `[b, i, j, k]`.")
+      .def(
+          "__iadd__",
+          [](xtal::UnitCellCoord &self, Eigen::Vector3l const &translation) {
+            self += xtal::UnitCell(translation);
+            return self;
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by adding unit cell indices")
+      .def(
+          "__add__",
+          [](xtal::UnitCellCoord const &self,
+             Eigen::Vector3l const &translation) {
+            return self + xtal::UnitCell(translation);
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by adding unit cell indices")
+      .def(
+          "__isub__",
+          [](xtal::UnitCellCoord &self, Eigen::Vector3l const &translation) {
+            self -= xtal::UnitCell(translation);
+            return self;
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by subtracting unit cell "
+          "indices")
+      .def(
+          "__sub__",
+          [](xtal::UnitCellCoord const &self,
+             Eigen::Vector3l const &translation) {
+            return self - xtal::UnitCell(translation);
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by subtracting unit cell "
+          "indices")
+      .def(
+          "coordinate_cart",
+          [](xtal::UnitCellCoord const &self,
+             xtal::BasicStructure const &prim) {
+            return self.coordinate(prim).const_cart();
+          },
+          py::arg("prim"),
+          "Return the Cartesian coordinate corresponding to this integral site "
+          "coordinate in the given Prim")
+      .def(
+          "coordinate_frac",
+          [](xtal::UnitCellCoord const &self,
+             xtal::BasicStructure const &prim) {
+            return self.coordinate(prim).const_frac();
+          },
+          py::arg("prim"),
+          "Return the fractional coordinate corresponding to this integral "
+          "site coordinate in the given Prim")
+      .def(py::self < py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self <= py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self > py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self >= py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self == py::self, "True if coordinates are equal")
+      .def(py::self != py::self, "True if coordinates are not equal");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

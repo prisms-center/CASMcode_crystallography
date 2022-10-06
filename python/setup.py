@@ -38,10 +38,7 @@ ext_modules_params = {
         '-D_LIBCPP_DISABLE_AVAILABILITY',
         '--std=c++17',
     ],
-    "extra_link_args": [
-        '-lcasm_global',
-        '-lcasm_crystallography'
-    ],
+    "extra_link_args": ['-lcasm_global', '-lcasm_crystallography'],
 }
 
 ext_modules = [
