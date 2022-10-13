@@ -11,11 +11,12 @@
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
-#include "casm/crystallography/Strain.hh"
+#include "casm/crystallography/StrainConverter.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
 #include "casm/crystallography/UnitCellCoord.hh"
+#include "casm/crystallography/UnitCellCoordRep.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
 #include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
@@ -722,172 +723,17 @@ std::vector<Eigen::VectorXd> make_equivalent_property_values(
   return std::vector<Eigen::VectorXd>(equivalent_x.begin(), equivalent_x.end());
 }
 
-/// \brief Holds strain metric and basis to facilitate conversions
-struct StrainConverter {
-  StrainConverter(std::string _metric, Eigen::MatrixXd const &_basis)
-      : metric(_metric),
-        basis(_basis),
-        basis_pinv(_xtal_impl::pseudoinverse(basis)) {}
-
-  /// \brief Name of strain metric (i.e. 'Hstrain', etc.)
-  std::string metric;
-
-  /// \brief Strain metric basis, such that E_standard = basis * E_basis
-  Eigen::MatrixXd basis;
-
-  /// \brief Pseudoinverse of basis
-  Eigen::MatrixXd basis_pinv;
-};
-
-/// \brief Decompose deformation tensor, F, as Q*U
-///
-/// \param F A deformation tensor
-/// \returns {Q, U}
-std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_QU(Eigen::Matrix3d const &F) {
-  Eigen::Matrix3d right_stretch = polar_decomposition(F);
-  Eigen::Matrix3d isometry = F * right_stretch.inverse();
-  return std::make_pair(isometry, right_stretch);
-}
-
-/// \brief Decompose deformation tensor, F, as V*Q
-///
-/// \param F A deformation tensor
-/// \returns {Q, V} Note the isometry matrix, Q, is returned first.
-std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_VQ(Eigen::Matrix3d const &F) {
-  auto result = F_to_QU(F);
-  result.second = F * result.first.transpose();
-  return result;
-}
-
-/// \brief Returns strain metric vector value in standard basis
-Eigen::VectorXd strain_metric_vector_in_standard_basis(
-    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
-  return converter.basis * E_vector;
-}
-
-/// \brief Returns strain metric vector value in converter basis
-Eigen::VectorXd strain_metric_vector_in_converter_basis(
-    StrainConverter const &converter,
-    Eigen::VectorXd const &E_vector_in_standard_basis) {
-  return converter.basis_pinv * E_vector_in_standard_basis;
-}
-
-/// \brief Converter strain metric vector value to matrix value
-///
-/// Strain metric vector value is:
-///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
-///
-/// \param converter Strain converter
-/// \param E_vector, strain metric vector value in basis converter.basis
-/// \returns E_matrix Strain metric matrix
-///
-Eigen::Matrix3d strain_metric_vector_to_matrix(
-    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
-  Eigen::VectorXd e = converter.basis * E_vector;
-  double w = sqrt(2.);
-  Eigen::Matrix3d E_matrix;
-  E_matrix <<  //
-      e(0),
-      e(5) / w, e(4) / w,        //
-      e(5) / w, e(1), e(3) / w,  //
-      e(4) / w, e(3) / w, e(2);  //
-  return E_matrix;
-}
-
-/// \brief Converter strain metric matrix value to vector value
-///
-/// Strain metric vector value is:
-///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
-///
-/// \param converter Strain converter
-/// \param E_matrix Strain metric matrix
-/// \return E_vector, strain metric vector value in converter.basis
-///
-Eigen::VectorXd strain_metric_matrix_to_vector(
-    StrainConverter const &converter, Eigen::Matrix3d const &E_matrix) {
-  Eigen::Matrix3d const &e = E_matrix;
-  Eigen::VectorXd E_vector = Eigen::VectorXd::Zero(6);
-  double w = std::sqrt(2.);
-  E_vector << e(0, 0), e(1, 1), e(2, 2), w * e(1, 2), w * e(0, 2), w * e(0, 1);
-  return converter.basis_pinv * E_vector;
-}
-
-/// \brief Converter strain metric value to deformation tensor
-///
-/// \param converter A StrainConverter
-/// \param E_vector Unrolled strain metric value, in converter.basis,
-///     such that E_standard = converter.basis * E_vector
-/// \returns F, the deformation tensor
-Eigen::Matrix3d strain_metric_vector_to_F(StrainConverter const &converter,
-                                          Eigen::VectorXd const &E_vector) {
-  using namespace strain;
-  Eigen::Matrix3d E_matrix =
-      strain_metric_vector_to_matrix(converter, E_vector);
-
-  if (converter.metric == "Hstrain") {
-    return metric_to_deformation_tensor<METRIC::HENCKY>(E_matrix);
-  } else if (converter.metric == "EAstrain") {
-    return metric_to_deformation_tensor<METRIC::EULER_ALMANSI>(E_matrix);
-  } else if (converter.metric == "GLstrain") {
-    return metric_to_deformation_tensor<METRIC::GREEN_LAGRANGE>(E_matrix);
-  } else if (converter.metric == "Bstrain") {
-    return metric_to_deformation_tensor<METRIC::BIOT>(E_matrix);
-  } else if (converter.metric == "Ustrain") {
-    return E_matrix;
-  } else {
-    std::stringstream ss;
-    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
-    throw std::runtime_error(ss.str());
-  }
-};
-
-/// \brief Converter strain metric value to deformation tensor
-///
-/// \param converter A StrainConverter
-/// \param F Deformation gradient tensor
-/// \returns Unrolled strain metric value, in converter.basis,
-///     such that E_standard = converter.basis * E_vector
-Eigen::VectorXd strain_metric_vector_from_F(StrainConverter const &converter,
-                                            Eigen::Matrix3d const &F) {
-  using namespace strain;
-  Eigen::Matrix3d E_matrix;
-
-  if (converter.metric == "Hstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::HENCKY>(F);
-  } else if (converter.metric == "EAstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::EULER_ALMANSI>(F);
-  } else if (converter.metric == "GLstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::GREEN_LAGRANGE>(F);
-  } else if (converter.metric == "Bstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::BIOT>(F);
-  } else if (converter.metric == "Ustrain") {
-    E_matrix = right_stretch_tensor(F);
-  } else {
-    std::stringstream ss;
-    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
-    throw std::runtime_error(ss.str());
-  }
-  return strain_metric_matrix_to_vector(converter, E_matrix);
-};
-
-Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
-  Eigen::MatrixXd B;
-  // clang-format off
-  B <<  //
-      1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3), 0, 0, 0,    //e1
-      1 / sqrt(2), -1 / sqrt(2), 0.0, 0, 0, 0,           //e2
-      -1 / sqrt(6), -1 / sqrt(6), 2 / sqrt(6), 0, 0, 0,  //e3
-      0, 0, 0, 1, 0, 0,                                  //e4
-      0, 0, 0, 0, 1, 0,                                  //e5
-      0, 0, 0, 0, 0, 1;                                  //e6
-  // clang-format on
-  return B.transpose();
-}
-
 // UnitCellCoord
 xtal::UnitCellCoord make_integral_site_coordinate(
     Index sublattice, Eigen::Vector3l const &unitcell) {
   return xtal::UnitCellCoord(sublattice, unitcell);
+}
+
+// UnitCellCoordRep
+xtal::UnitCellCoordRep make_unitcellcoord_rep(
+    xtal::SymOp const &op, xtal::BasicStructure const &prim) {
+  return xtal::make_unitcellcoord_rep(op, prim.lattice(),
+                                      xtal::symop_site_map(op, prim));
 }
 
 }  // namespace CASMpy
@@ -1778,7 +1624,26 @@ PYBIND11_MODULE(_xtal, m) {
       .def("translation", &xtal::get_translation,
            "Returns the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
-           "Returns the time reversal value.");
+           "Returns the time reversal value.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, Eigen::Matrix3d const &coordinate_cart) {
+            Eigen::Matrix3d transformed = get_matrix(op) * coordinate_cart;
+            for (Index i = 0; i < transformed.cols(); ++i) {
+              transformed.col(i) += get_translation(op);
+            }
+            return transformed;
+          },
+          py::arg("coordinate_cart"),
+          "Transform Cartesian coordinates, represented as columns of a "
+          "matrix.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
+            return lhs * rhs;
+          },
+          py::arg("coordinate_cart"),
+          "Construct the SymOp equivalent to applying first rhs, then this.");
 
   py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
       Symmetry operation type, axis, invariant point, etc.
@@ -2105,7 +1970,7 @@ PYBIND11_MODULE(_xtal, m) {
           equivalent under the point group.
       )pbdoc");
 
-  py::class_<StrainConverter>(m, "StrainConverter", R"pbdoc(
+  py::class_<xtal::StrainConverter>(m, "StrainConverter", R"pbdoc(
     Convert strain values
 
     Converts between strain metric vector values
@@ -2141,14 +2006,10 @@ PYBIND11_MODULE(_xtal, m) {
         The default value, shape=(6,6) identity matrix, chooses the standard basis.
 
     )pbdoc")
-      .def(
-          "metric",
-          [](StrainConverter const &converter) { return converter.metric; },
-          "Returns the strain metric name.")
-      .def(
-          "basis",
-          [](StrainConverter const &converter) { return converter.basis; },
-          R"pbdoc(
+      .def("metric", &xtal::StrainConverter::metric,
+           "Returns the strain metric name.")
+      .def("basis", &xtal::StrainConverter::basis,
+           R"pbdoc(
           Returns the basis used for strain metric vectors.
 
           Returns
@@ -2159,12 +2020,8 @@ PYBIND11_MODULE(_xtal, m) {
                   E_vector_in_standard_basis = basis @ E_vector
 
           )pbdoc")
-      .def(
-          "dim",
-          [](StrainConverter const &converter) {
-            return converter.basis.cols();
-          },
-          R"pbdoc(
+      .def("dim", &xtal::StrainConverter::dim,
+           R"pbdoc(
           Returns the strain space dimension.
 
           Returns
@@ -2173,10 +2030,8 @@ PYBIND11_MODULE(_xtal, m) {
               The strain space dimension, equivalent to the number of columns
               of the basis matrix.
           )pbdoc")
-      .def(
-          "basis_pinv",
-          [](StrainConverter const &converter) { return converter.basis_pinv; },
-          R"pbdoc(
+      .def("basis_pinv", &xtal::StrainConverter::basis_pinv,
+           R"pbdoc(
           Returns the strain metric basis pseudoinverse.
 
           Returns
@@ -2187,7 +2042,7 @@ PYBIND11_MODULE(_xtal, m) {
                   E_vector = basis_pinv @ E_vector_in_standard_basis
 
           )pbdoc")
-      .def_static("F_to_QU", &F_to_QU, py::arg("F"),
+      .def_static("F_to_QU", &xtal::StrainConverter::F_to_QU, py::arg("F"),
                   R"pbdoc(
            Decompose a deformation tensor as QU.
 
@@ -2205,7 +2060,7 @@ PYBIND11_MODULE(_xtal, m) {
                The shape=(3,3) right stretch tensor, :math:`U`, of
                the deformation tensor.
            )pbdoc")
-      .def_static("F_to_VQ", &F_to_VQ, py::arg("F"),
+      .def_static("F_to_VQ", &xtal::StrainConverter::F_to_VQ, py::arg("F"),
                   R"pbdoc(
             Decompose a deformation tensor as VQ.
 
@@ -2223,7 +2078,7 @@ PYBIND11_MODULE(_xtal, m) {
                 The shape=(3,3) left stretch tensor, :math:`V`, of
                 the deformation tensor.
             )pbdoc")
-      .def("to_F", &strain_metric_vector_to_F, py::arg("E_vector"),
+      .def("to_F", &xtal::StrainConverter::to_F, py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to deformation tensor.
 
@@ -2237,7 +2092,7 @@ PYBIND11_MODULE(_xtal, m) {
            F: numpy.ndarray[numpy.float64[3, 3]]
                The deformation tensor, :math:`F`.
            )pbdoc")
-      .def("from_F", &strain_metric_vector_from_F, py::arg("F"),
+      .def("from_F", &xtal::StrainConverter::from_F, py::arg("F"),
            R"pbdoc(
            Convert deformation tensor to strain metric vector.
 
@@ -2251,7 +2106,7 @@ PYBIND11_MODULE(_xtal, m) {
            E_vector: array_like, shape=(dim,1)
                Strain metric vector, expressed in the basis of this StrainConverter.
            )pbdoc")
-      .def("to_standard_basis", &strain_metric_vector_in_standard_basis,
+      .def("to_standard_basis", &xtal::StrainConverter::to_standard_basis,
            py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to standard basis
@@ -2267,7 +2122,7 @@ PYBIND11_MODULE(_xtal, m) {
                Strain metric vector, expressed in the standard basis. This is
                equivalent to `basis @ E_vector`.
            )pbdoc")
-      .def("from_standard_basis", &strain_metric_vector_in_converter_basis,
+      .def("from_standard_basis", &xtal::StrainConverter::from_standard_basis,
            py::arg("E_vector_in_standard_basis"),
            R"pbdoc(
            Convert strain metric vector from standard basis to converter basis.
@@ -2283,7 +2138,8 @@ PYBIND11_MODULE(_xtal, m) {
            E_vector: array_like, shape=(dim,1)
                Strain metric vector, expressed in the basis of this StrainConverter.
            )pbdoc")
-      .def("to_E_matrix", &strain_metric_vector_to_matrix, py::arg("E_vector"),
+      .def("to_E_matrix", &xtal::StrainConverter::to_E_matrix,
+           py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to strain metric matrix.
 
@@ -2297,7 +2153,7 @@ PYBIND11_MODULE(_xtal, m) {
            E_matrix: array_like, shape=(3,3)
                Strain metric matrix, :math:`E`, using the metric of this StrainConverter.
            )pbdoc")
-      .def("from_E_matrix", &strain_metric_matrix_to_vector,
+      .def("from_E_matrix", &xtal::StrainConverter::from_E_matrix,
            py::arg("E_matrix"),
            R"pbdoc(
            Convert strain metric matrix to strain metric vector.
@@ -2314,7 +2170,7 @@ PYBIND11_MODULE(_xtal, m) {
            )pbdoc");
 
   m.def("make_symmetry_adapted_strain_basis",
-        &make_symmetry_adapted_strain_basis,
+        &xtal::make_symmetry_adapted_strain_basis,
         R"pbdoc(
       Returns the symmetry-adapted strain basis.
 
@@ -2343,9 +2199,20 @@ PYBIND11_MODULE(_xtal, m) {
           The symmetry-adapted strain basis, :math:`B^{\vec{e}}`.
       )pbdoc");
 
-  py::class_<xtal::UnitCellCoord>(m, "IntegralSiteCoordinate", R"pbdoc(
+  // IntegralSiteCoordinate -- declaration
+  py::class_<xtal::UnitCellCoord> pyIntegralSiteCoordinate(
+      m, "IntegralSiteCoordinate", R"pbdoc(
       Specify a site using integer sublattice and unit cell indices
-      )pbdoc")
+    )pbdoc");
+
+  // IntegralSiteCoordinateRep -- declaration
+  py::class_<xtal::UnitCellCoordRep> pyIntegralSiteCoordinateRep(
+      m, "IntegralSiteCoordinateRep", R"pbdoc(
+      Symmetry representation for transforming IntegralSiteCoordinate"
+    )pbdoc");
+
+  // IntegralSiteCoordinate -- definition
+  pyIntegralSiteCoordinate
       .def(py::init(&make_integral_site_coordinate),
            "Construct an IntegralSiteCoordinate", py::arg("sublattice"),
            py::arg("unitcell"), R"pbdoc(
@@ -2485,6 +2352,48 @@ PYBIND11_MODULE(_xtal, m) {
            "Sorts coordinates by lexicographical order of [i, j, k] then b")
       .def(py::self == py::self, "True if coordinates are equal")
       .def(py::self != py::self, "True if coordinates are not equal");
+
+  // IntegralSiteCoordinateRep -- definition
+  pyIntegralSiteCoordinateRep
+      .def(py::init(&CASMpy::make_unitcellcoord_rep),
+           "Construct an IntegralSiteCoordinateRep", py::arg("op"),
+           py::arg("prim"), R"pbdoc(
+
+      Parameters
+      ----------
+      op : casm.xtal.SymOp
+          The symmetry operation.
+      prim : casm.xtal.Prim
+          The prim defining IntegralSiteCoordinate that will be transformed.
+      )pbdoc")
+      .def(
+          "__mul__",
+          [](xtal::UnitCellCoordRep const &rep,
+             xtal::UnitCellCoord const &integral_site_coordinate) {
+            return copy_apply(rep, integral_site_coordinate);
+          },
+          py::arg("integral_site_coordinate"),
+          "Transform an :class:`libcasm.xtal.IntegralSiteCoordinate`");
+
+  m.def(
+      "apply",
+      [](xtal::UnitCellCoordRep const &rep,
+         xtal::UnitCellCoord &integral_site_coordinate) {
+        return apply(rep, integral_site_coordinate);
+      },
+      py::arg("rep"), py::arg("integral_site_coordinate"),
+      "Applies the symmetry operation represented by the `rep` to "
+      "transform `integral_site_coordinate`.");
+
+  m.def(
+      "copy_apply",
+      [](xtal::UnitCellCoordRep const &rep,
+         xtal::UnitCellCoord const &integral_site_coordinate) {
+        return copy_apply(rep, integral_site_coordinate);
+      },
+      py::arg("rep"), py::arg("integral_site_coordinate"),
+      "Creates a copy of `integral_site_coordinate` and applies the symmetry "
+      "operation represented by `rep`.");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
