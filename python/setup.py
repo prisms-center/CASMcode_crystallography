@@ -9,6 +9,10 @@ from pybind11 import get_cmake_dir
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, find_namespace_packages
 
+casm_prefix = os.getenv('CASM_PREFIX')
+if casm_prefix is None:
+    raise Exception("CASM_PREFIX not set")
+
 with open(os.path.join('README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
@@ -28,11 +32,11 @@ ext_modules_params = {
     "cxx_std":
     17,
     "library_dirs": [
-        '/Users/bpuchala/.local/conda/envs/casm_modules_2.X/lib',
+        os.path.join(casm_prefix, 'lib'),
     ],
     "include_dirs": [
-        '/Users/bpuchala/.local/conda/envs/casm_modules_2.X/include/casm/external',
-        '/Users/bpuchala/.local/conda/envs/casm_modules_2.X/include'
+        os.path.join(casm_prefix, 'include/casm/external'),
+        os.path.join(casm_prefix, 'include'),
     ],
     "extra_compile_args": [
         '-D_LIBCPP_DISABLE_AVAILABILITY',
