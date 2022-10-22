@@ -30,6 +30,8 @@ class AnisoValTraits {
   static const unsigned char DESCRIBES_ORIENTATION = (1u << 2);
   static const unsigned char EXTENSIVE = (1u << 3);
 
+  static std::map<std::string, AnisoValTraits> const &registered();
+
   /// Named constructor for uninitialized AnisoValTraits
   static AnisoValTraits null();
 
