@@ -2,10 +2,14 @@ import math
 import pytest
 import numpy as np
 import libcasm.xtal as xtal
-from scipy.spatial.transform import Rotation
+#from scipy.spatial.transform import Rotation
 
 def test_strainconverter_F_to_QU():
-    Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    # Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    Qi = np.array([
+        [ 0.8660254, -0.5, 0.],
+        [ 0.5, 0.8660254, 0.],
+        [ 0., 0., 1.]])
     Ui = np.array([
         [1.0, 0.0, 0.0],
         [0.0, 1.01, 0.0],
@@ -17,7 +21,10 @@ def test_strainconverter_F_to_QU():
     assert np.allclose(U, Ui)
 
 def test_strainconverter_F_to_VQ():
-    Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    Qi = np.array([
+        [ 0.8660254, -0.5, 0.],
+        [ 0.5, 0.8660254, 0.],
+        [ 0., 0., 1.]])
     Vi = np.array([
         [1.0, 0.0, 0.0],
         [0.0, 1.01, 0.0],
@@ -29,7 +36,10 @@ def test_strainconverter_F_to_VQ():
     assert np.allclose(V, Vi)
 
 def test_strainconverter_Ustrain():
-    Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    Qi = np.array([
+        [ 0.8660254, -0.5, 0.],
+        [ 0.5, 0.8660254, 0.],
+        [ 0., 0., 1.]])
     Ui = np.array([
         [1.0, 0.01, 0.0],
         [0.01, 1.01, 0.0],
@@ -56,7 +66,10 @@ def test_strainconverter_conversions():
     strain_basis = xtal.make_symmetry_adapted_strain_basis()
     assert strain_basis.shape == (6,6)
 
-    Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    Qi = np.array([
+        [ 0.8660254, -0.5, 0.],
+        [ 0.5, 0.8660254, 0.],
+        [ 0., 0., 1.]])
     Ui = np.array([
         [1.0, 0.0, 0.0],
         [0.0, 1.1, 0.2],
@@ -103,7 +116,10 @@ def test_strainconverter_reduced_dim():
     reduced_strain_basis = xtal.make_symmetry_adapted_strain_basis()[:,:3]
     assert reduced_strain_basis.shape == (6,3)
 
-    Qi = Rotation.from_euler('z', 30, degrees=True).as_matrix()
+    Qi = np.array([
+        [ 0.8660254, -0.5, 0.],
+        [ 0.5, 0.8660254, 0.],
+        [ 0., 0., 1.]])
     Ui = np.array([
         [1.0, 0.0, 0.0],
         [0.0, 1.1, 0.1],
