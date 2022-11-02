@@ -156,23 +156,15 @@ double Coordinate::min_dist(const Coordinate &neighbor) const {
 Coordinate Coordinate::min_translation(const Coordinate &neighbor) const {
   assert(this->m_home && "Home lattice is null");
   assert(neighbor.m_home && "Neighbor home lattice is null");
-  Coordinate translation = (*this) - neighbor;
-
-  Eigen::Vector3d frac_lattice_translation =
-      lround(translation.const_frac()).cast<double>();
-
-  translation.frac() -= frac_lattice_translation;
-  return translation;
+  return Coordinate(fast_pbc_displacement_cart(home(), neighbor.const_cart(),
+                                               this->const_cart()),
+                    home(), CART);
 }
 
 double Coordinate::robust_min_dist(const Coordinate &neighbor) const {
-  Coordinate translation = this->min_translation(neighbor);
-  double fast_result = translation.const_cart().norm();
-
-  if (fast_result < (home().inner_voronoi_radius() + TOL)) return fast_result;
-
-  translation.voronoi_within();
-  return translation.const_cart().norm();
+  return robust_pbc_displacement_cart(home(), neighbor.const_cart(),
+                                      this->const_cart())
+      .norm();
 }
 
 double Coordinate::min_dist2(

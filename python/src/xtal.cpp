@@ -895,6 +895,44 @@ PYBIND11_MODULE(_xtal, m) {
         lattice unit cell.
     )pbdoc");
 
+  m.def(
+      "min_periodic_displacement",
+      [](xtal::Lattice const &lattice, Eigen::Vector3d const &r1,
+         Eigen::Vector3d const &r2, bool robust) {
+        if (robust) {
+          return robust_pbc_displacement_cart(lattice, r1, r2);
+        } else {
+          return fast_pbc_displacement_cart(lattice, r1, r2);
+        }
+      },
+      py::arg("lattice"), py::arg("r1"), py::arg("r2"),
+      py::arg("robust") = true,
+      R"pbdoc(
+      Return minimum length displacement (r2 - r1), accounting for periodic
+      boundary conditions.
+
+      Parameters
+      ----------
+      lattice : casm.xtal.Lattice
+          The lattice, defining the periodic boundaries.
+      r1 : array_like, shape (3, 1)
+          Position, r1, in Cartesian coordinates.
+      r2 : array_like, shape (3, 1)
+          Position, r2, in Cartesian coordinates.
+      robust : boolean, default=True
+          If True, use a "robust" method which uses the lattice's Wigner-Seitz
+          cell to determine the nearest image, which guarantees to find the
+          minimum distance. If False, use a "fast" method, which removes integer
+          multiples of lattice translations from the displacement, but may not
+          result in the true minimum distance.
+
+      Returns
+      -------
+      displacement: numpy.ndarray[numpy.float64[3, 1]]]
+          The displacement r2 - r1, in Cartesian coordinates, with minimum length,
+          accounting for periodic boundary conditions.
+      )pbdoc");
+
   m.def("make_point_group", &make_lattice_point_group, py::arg("lattice"),
         R"pbdoc(
       Returns the lattice point group

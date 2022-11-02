@@ -303,6 +303,22 @@ Eigen::Matrix3l make_transformation_matrix_to_super(const Lattice &tiling_unit,
                                                     const Lattice &superlattice,
                                                     double tol);
 
+/// \brief Return minimum length displacement (r2 - r1),
+///     accounting for periodic boundary conditions with a "fast" method
+///     which may not find the minimum pbc distance in all cases.
+Eigen::Vector3d fast_pbc_displacement_cart(xtal::Lattice const &lattice,
+                                           Eigen::Vector3d const &r1,
+                                           Eigen::Vector3d const &r2);
+
+/// \brief Return minimum length displacement (r2 - r1),
+///     accounting for periodic boundary conditions with a "robust"
+///     method which will find the minimum pbc distance in all cases.
+///
+/// This puts the displacement within the voronoi cell of the site.
+Eigen::Vector3d robust_pbc_displacement_cart(xtal::Lattice const &lattice,
+                                             Eigen::Vector3d const &r1,
+                                             Eigen::Vector3d const &r2);
+
 }  // namespace xtal
 }  // namespace CASM
 #endif

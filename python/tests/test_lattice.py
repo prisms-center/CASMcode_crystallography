@@ -41,6 +41,19 @@ def test_conversions(tetragonal_lattice):
         xtal.fractional_within(lattice, coordinate_frac_outside),
         coordinate_frac_within)
 
+def test_min_periodic_displacement():
+    lattice = xtal.Lattice(
+        np.array([
+            [1., 0., 0.],  # a (along x)
+            [0., 1., 0.],  # a (along y)
+            [0., 0., 1.],  # a (along z)
+        ]).transpose())
+    r1 = np.array([0.1, 0.2, 0.9])
+    r2 = np.array([0.1, 0.2, 0.1])
+    d = xtal.min_periodic_displacement(lattice, r1, r2)
+    assert np.allclose(d, np.array([0.0, 0.0, 0.2]))
+    d_fast = xtal.min_periodic_displacement(lattice, r1, r2, robust=False)
+    assert np.allclose(d_fast, np.array([0.0, 0.0, 0.2]))
 
 def test_make_canonical():
     tetragonal_lattice_noncanonical = xtal.Lattice(
