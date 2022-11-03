@@ -3,6 +3,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+// nlohmann::json binding
+#define JSON_USE_IMPLICIT_CONVERSIONS 0
+#include "pybind11_json/pybind11_json.hpp"
+
+// CASM
 #include "casm/casm_io/container/json_io.hh"
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
@@ -367,7 +372,7 @@ void init_prim(
 /// \brief Construct xtal::BasicStructure from JSON string
 std::shared_ptr<xtal::BasicStructure const> prim_from_json(
     std::string const &prim_json_str, double xtal_tol) {
-  jsonParser json{prim_json_str};
+  jsonParser json = jsonParser::parse(prim_json_str);
   ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
   return std::make_shared<xtal::BasicStructure>(
       read_prim(json, xtal_tol, aniso_val_dict));
@@ -661,7 +666,8 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
   return simple.properties;
 }
 
-xtal::SimpleStructure simplestructure_from_json(jsonParser const &json) {
+xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
+  jsonParser json = jsonParser::parse(json_str);
   xtal::SimpleStructure simple;
   from_json(simple, json);
   return simple;
@@ -1428,6 +1434,49 @@ PYBIND11_MODULE(_xtal, m) {
           "Returns the continuous DoF allowed for the entire crystal structure")
       .def("occupants", &get_prim_molecules,
            "Returns the :class:`Occupant` allowed in the crystal.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data, double xtal_tol) {
+            jsonParser json{data};
+            ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
+            return std::make_shared<xtal::BasicStructure>(
+                read_prim(json, xtal_tol, aniso_val_dict));
+          },
+          "Construct a Prim from a Python dict. The `Prim reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/BasicStructure/>`_ documents the expected "
+          "format.",
+          py::arg("data"), py::arg("xtal_tol") = TOL)
+      .def(
+          "to_dict",
+          [](std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
+             bool include_va) {
+            jsonParser json;
+            write_prim(*prim, json, FRAC);
+            return static_cast<nlohmann::json>(json);
+          },
+          py::arg("frac") = true, py::arg("include_va") = false,
+          R"pbdoc(
+            Represent the Prim as a Python dict
+
+            The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
+
+            Parameters
+            ----------
+            frac : boolean, default=True
+                If True, write basis site positions in fractional coordinates
+                relative to the lattice vectors. If False, write basis site positions
+                in Cartesian coordinates.
+            include_va : boolean, default=False
+                If a basis site only allows vacancies, it is not printed by default.
+                If this is True, basis sites with only vacancies will be included.
+
+            Returns
+            ----------
+            is_same : casm.xtal.Prim
+                Returns true if Prim are sharing the same data
+
+            )pbdoc")
       .def_static(
           "from_json", &prim_from_json,
           "Construct a Prim from a JSON-formatted string. The `Prim reference "
