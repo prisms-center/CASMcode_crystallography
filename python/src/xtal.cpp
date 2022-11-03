@@ -1900,7 +1900,7 @@ PYBIND11_MODULE(_xtal, m) {
           py::arg("structure_json_str"))
       .def_static("from_poscar", &simplestructure_from_poscar,
                   "Construct a Structure from a vasp formatted POSCAR",
-                  py::arg("poscar_path"), py::arg("tol"))
+                  py::arg("poscar_path"), py::arg("tol") = TOL)
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
