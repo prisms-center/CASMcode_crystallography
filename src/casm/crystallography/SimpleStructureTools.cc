@@ -115,6 +115,11 @@ SimpleStructure make_simple_structure(BasicStructure const &_struc) {
   return result;
 }
 
+SimpleStructure make_simple_structure(std::istream &poscar_stream, double tol) {
+  return make_simple_structure(
+      BasicStructure::from_poscar_stream(poscar_stream, tol));
+}
+
 BasicStructure make_basic_structure(
     SimpleStructure const &_sstruc, std::vector<DoFKey> const &_all_dofs,
     SimpleStructure::SpeciesMode mode,

@@ -3,6 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <fstream>
+
 #include "casm/casm_io/container/json_io.hh"
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
@@ -373,6 +375,12 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_json(
       read_prim(json, xtal_tol, aniso_val_dict));
 }
 
+xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
+                                                  double xtal_tol) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  return xtal::make_simple_structure(poscar_stream, xtal_tol);
+}
 /// \brief Format xtal::BasicStructure as JSON string
 std::string prim_to_json(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
@@ -1890,6 +1898,9 @@ PYBIND11_MODULE(_xtal, m) {
           "crystallography/SimpleStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("structure_json_str"))
+      .def_static("from_poscar", &simplestructure_from_poscar,
+                  "Construct a Structure from a vasp formatted POSCAR",
+                  py::arg("poscar_path"), py::arg("tol"))
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
