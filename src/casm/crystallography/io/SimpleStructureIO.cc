@@ -108,6 +108,9 @@ static jsonParser &_types_to_json(std::vector<std::string> const &names,
                                   jsonParser &json, std::string field_name,
                                   std::set<std::string> const &excluded_species,
                                   std::vector<Index> &permute) {
+  if (names.size() == 0) {
+    return json;
+  }
   jsonParser &names_json = json[field_name].put_array();
   for (Index i = 0; i < names.size(); ++i) {
     if (excluded_species.count(names[i])) continue;
@@ -125,6 +128,9 @@ static jsonParser &_coords_to_json(
     Eigen::MatrixXd const &coords, jsonParser &json, std::string field_name,
     std::vector<Index> const &permute,
     Eigen::Matrix3d const &to_coord_mode_matrix) {
+  if (permute.size() == 0) {
+    return json;
+  }
   jsonParser &tjson = json[field_name].put_array();
   for (Index i : permute) {
     tjson.push_back(to_coord_mode_matrix * coords.col(i),
@@ -162,12 +168,20 @@ static void _coords_from_json(Eigen::MatrixXd &coords, jsonParser const &json,
                               std::string field_name,
                               Eigen::Matrix3d const &to_cartesian_matrix) {
   if (json.contains(field_name)) {
-    coords = to_cartesian_matrix *
-             json[field_name].get<Eigen::MatrixXd>().transpose();
+    if (json[field_name].is_array() && json[field_name].size() == 0) {
+      return;
+    }
+    Eigen::Matrix init = json[field_name].get<Eigen::MatrixXd>();
+    if (init.cols() != 3) {
+      std::stringstream msg;
+      msg << "Error reading '" << field_name << "': #cols != 3";
+      throw std::runtime_error(msg.str());
+    }
+    coords = to_cartesian_matrix * init.transpose();
   }
 }
 
-/// Read SimpleStructure global, atom_info, and mol_info properties from JSON
+/// Read SimpleStructure atom_info, and mol_info properties from JSON
 static void _properties_from_json(
     std::map<std::string, Eigen::MatrixXd> &properties, jsonParser const &json,
     std::set<std::string> allowed_field_names) {
@@ -177,6 +191,20 @@ static void _properties_from_json(
       for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
         properties[it2.name()] =
             (*it2)["value"].get<Eigen::MatrixXd>().transpose();
+      }
+    }
+  }
+}
+
+/// Read SimpleStructure global properties from JSON
+static void _global_properties_from_json(
+    std::map<std::string, Eigen::MatrixXd> &properties, jsonParser const &json,
+    std::set<std::string> allowed_field_names) {
+  for (std::string const &field : allowed_field_names) {
+    auto it = json.find(field);
+    if (it != json.end()) {
+      for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
+        properties[it2.name()] = (*it2)["value"].get<Eigen::MatrixXd>();
       }
     }
   }
@@ -210,8 +238,8 @@ static void _from_json_current(xtal::SimpleStructure &simple_structure,
   }
 
   // Read global properties (if exists)
-  ::_properties_from_json(simple_structure.properties, json,
-                          {"global_properties"});
+  ::_global_properties_from_json(simple_structure.properties, json,
+                                 {"global_properties"});
 
   // Read atom_info (if exists)
   auto &atom_info = simple_structure.atom_info;

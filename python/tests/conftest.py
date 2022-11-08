@@ -335,3 +335,47 @@ def ZrO_prim():
                      local_dof=local_dof,
                      global_dof=global_dof,
                      occupants=occupants)
+
+@pytest.fixture
+def example_structure_1():
+    # Lattice vectors
+    lattice = xtal.Lattice(np.array([
+        [1., 0., 0.],  # a
+        [0., 1., 0.],  # a
+        [0., 0., 2.],  # c
+    ]).transpose())
+    atom_coordinate_cart = np.array([
+        [0., 0., 0.],
+        [0.5, 0.5, 0.5],
+        [0., 0., 1.],
+        [0.5, 0.5, 1.5],
+    ]).transpose()
+
+    # atom properties
+    atom_disp = np.array([
+        [0.1, 0., 0.],
+        [0.0, 0.1, 0.],
+        [0.0, 0., 0.1],
+        [0.1, 0.2, 0.3],
+    ]).transpose()
+    atom_properties={"disp": atom_disp}
+    print(atom_properties)
+
+    # global properties
+    F = np.array([
+        [1.01, 0., 0.],
+        [0., 1.0, 0.],
+        [0., 0., 1.0],
+    ])
+    # converter = xtal.StrainConverter('Hstrain')
+    # Hstrain_vector = converter.from_F(F)
+    Hstrain_vector = np.array([0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0])
+    global_properties={"Hstrain": Hstrain_vector}
+    print(global_properties)
+
+    return xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=xtal.cartesian_to_fractional(lattice, atom_coordinate_cart),
+        atom_type=["A", "A" , "B", "B"],
+        atom_properties=atom_properties,
+        global_properties=global_properties)

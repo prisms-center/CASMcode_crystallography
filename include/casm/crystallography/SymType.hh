@@ -52,6 +52,9 @@ struct SymOp {
 /// Get a new SymOp that is equivalent to subsequent application of both SymOps
 SymOp operator*(const SymOp &LHS, const SymOp &RHS);
 
+/// \brief Make the inverse SymOp
+SymOp make_inverse(SymOp const &op);
+
 /// This defines the type of the object representing symmetry operations within
 /// the crystallography classes. Any symmetry related operations within the
 /// crystallography module must be in terms of this type.
@@ -125,7 +128,7 @@ void close_group(SymOpVector *partial_group,
 }
 
 template <typename SymOpCompareType, typename... CompareArgs>
-void close_group(SymOpVector *partial_group, const CompareArgs &... args) {
+void close_group(SymOpVector *partial_group, const CompareArgs &...args) {
   SymOpCompareType symop_binary_comp(args...);
   return close_group(partial_group, symop_binary_comp);
 }

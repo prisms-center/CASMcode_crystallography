@@ -621,11 +621,17 @@ xtal::Lattice get_simplestructure_lattice(xtal::SimpleStructure const &simple) {
 
 Eigen::MatrixXd get_simplestructure_atom_coordinate_cart(
     xtal::SimpleStructure const &simple) {
+  if (simple.atom_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return simple.atom_info.coords;
 }
 
 Eigen::MatrixXd get_simplestructure_atom_coordinate_frac(
     xtal::SimpleStructure const &simple) {
+  if (simple.atom_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return get_simplestructure_lattice(simple).inv_lat_column_mat() *
          simple.atom_info.coords;
 }
@@ -642,11 +648,17 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_atom_properties(
 
 Eigen::MatrixXd get_simplestructure_mol_coordinate_cart(
     xtal::SimpleStructure const &simple) {
+  if (simple.mol_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return simple.mol_info.coords;
 }
 
 Eigen::MatrixXd get_simplestructure_mol_coordinate_frac(
     xtal::SimpleStructure const &simple) {
+  if (simple.mol_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return get_simplestructure_lattice(simple).inv_lat_column_mat() *
          simple.mol_info.coords;
 }
@@ -697,6 +709,13 @@ std::vector<xtal::SymOp> make_simplestructure_crystal_point_group(
     xtal::SimpleStructure const &simple) {
   auto fg = make_simplestructure_factor_group(simple);
   return xtal::make_crystal_point_group(fg, TOL);
+}
+
+xtal::SimpleStructure make_simplestructure_within(
+    xtal::SimpleStructure const &init_structure) {
+  xtal::SimpleStructure structure = init_structure;
+  structure.within();
+  return structure;
 }
 
 xtal::SimpleStructure make_superstructure(
@@ -766,6 +785,35 @@ PYBIND11_MODULE(_xtal, m) {
     )pbdoc";
 
   m.attr("TOL") = TOL;
+
+  py::class_<xtal::SimpleStructure> pyStructure(m, "Structure", R"pbdoc(
+    A crystal structure
+
+    Structure may specify atom and / or molecule coordinates and properties:
+
+    - lattice vectors
+    - atom coordinates
+    - atom type names
+    - continuous atom properties
+    - molecule coordinates
+    - molecule type names
+    - continuous molecule properties
+    - continuous global properties
+
+    Atom representation is most widely supported in CASM methods. In some limited cases the molecule representation is used.
+
+    Notes
+    -----
+
+    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
+
+    See the CASM `Degrees of Freedom (DoF) and Properties`_
+    documentation for the full list of supported properties and their
+    definitions.
+
+    .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
+
+    )pbdoc");
 
   py::class_<xtal::Lattice>(m, "Lattice", R"pbdoc(
       A 3-dimensional lattice
@@ -1459,8 +1507,6 @@ PYBIND11_MODULE(_xtal, m) {
           R"pbdoc(
             Represent the Prim as a Python dict
 
-            The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
-
             Parameters
             ----------
             frac : boolean, default=True
@@ -1473,8 +1519,8 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             ----------
-            is_same : casm.xtal.Prim
-                Returns true if Prim are sharing the same data
+            data : dict
+                The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
 
             )pbdoc")
       .def_static(
@@ -1546,7 +1592,7 @@ PYBIND11_MODULE(_xtal, m) {
 
             )pbdoc");
 
-  m.def("make_within", &make_within, py::arg("init_prim"), R"pbdoc(
+  m.def("make_prim_within", &make_within, py::arg("init_prim"), R"pbdoc(
             Returns an equivalent Prim with all basis site coordinates within the unit cell
 
             Parameters
@@ -1556,10 +1602,13 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             ----------
-            prim : Lattice
+            prim : casm.xtal.Prim
                 The prim with all basis site coordinates within the unit cell.
 
             )pbdoc");
+
+  m.def("make_within", &make_within, py::arg("init_prim"),
+        "Equivalent to :func:`~casm.xtal.make_prim_within`");
 
   m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
             Returns a primitive equivalent Prim
@@ -1714,23 +1763,79 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the time reversal value.")
       .def(
           "__mul__",
-          [](xtal::SymOp const &op, Eigen::Matrix3d const &coordinate_cart) {
-            Eigen::Matrix3d transformed = get_matrix(op) * coordinate_cart;
+          [](xtal::SymOp const &op, Eigen::Vector3d const &coordinate_cart) {
+            return get_matrix(op) * coordinate_cart + get_translation(op);
+          },
+          py::arg("coordinate_cart"),
+          "Transform Cartesian coordinates, represented as a 1d array")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, Eigen::MatrixXd const &coordinate_cart) {
+            Eigen::MatrixXd transformed = get_matrix(op) * coordinate_cart;
             for (Index i = 0; i < transformed.cols(); ++i) {
               transformed.col(i) += get_translation(op);
             }
             return transformed;
           },
           py::arg("coordinate_cart"),
-          "Transform Cartesian coordinates, represented as columns of a "
+          "Transform multiple Cartesian coordinates, represented as columns of "
+          "a "
           "matrix.")
       .def(
           "__mul__",
           [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
             return lhs * rhs;
           },
-          py::arg("coordinate_cart"),
-          "Construct the SymOp equivalent to applying first rhs, then this.");
+          py::arg("rhs"),
+          "Construct the SymOp equivalent to applying first rhs, then this.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op,
+             std::map<std::string, Eigen::MatrixXd> const &properties) {
+            return copy_apply(op, properties);
+          },
+          py::arg("rhs"),
+          "Transform CASM-supported properties (local or global).")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, xtal::SimpleStructure const &simple) {
+            return copy_apply(op, simple);
+          },
+          py::arg("structure"), "Transform a Structure.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data) {
+            jsonParser json{data};
+            Eigen::Matrix3d matrix;
+            from_json(matrix, json["matrix"]);
+            Eigen::Vector3d translation;
+            from_json(translation, json["tau"]);
+            bool time_reversal;
+            from_json(time_reversal, json["time_reversal"]);
+            return xtal::SymOp(matrix, translation, time_reversal);
+          },
+          "Construct a SymOp from a Python dict. The `Coordinate "
+          "Transformation Representation reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/"
+          "#coordinate-transformation-representation-json-object>`_ documents "
+          "the expected format.",
+          py::arg("data"))
+      .def(
+          "to_dict",
+          [](xtal::SymOp const &op) {
+            jsonParser json;
+            json["matrix"] = xtal::get_matrix(op);
+            to_json_array(xtal::get_translation(op), json["tau"]);
+            json["time_reversal"] = xtal::get_time_reversal(op);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent the SymOp as a Python dict. The `Coordinate "
+          "Transformation Representation reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/"
+          "#coordinate-transformation-representation-json-object>`_ documents "
+          "the format.");
 
   py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
       Symmetry operation type, axis, invariant point, etc.
@@ -1835,40 +1940,30 @@ PYBIND11_MODULE(_xtal, m) {
               following the conventions of (International Tables for Crystallography (2015). Vol.
               A. ch. 1.4, pp. 50-59).
           )pbdoc")
+      .def(
+          "to_dict",
+          [](xtal::SymInfo const &syminfo) {
+            jsonParser json;
+            to_json(syminfo, json);
+
+            to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(CART)),
+                    json["brief"]["CART"]);
+            to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC)),
+                    json["brief"]["FRAC"]);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent SymInfo as a Python dict. The `Symmetry Operation "
+          "Information reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents the "
+          "format.")
       .def("to_json", &syminfo_to_json, R"pbdoc(
           Represent the symmetry operation information as a JSON-formatted string.
 
           The `Symmetry Operation Information JSON Object reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents JSON format, except conjugacy class and inverse operation are not currently included.
           )pbdoc");
 
-  py::class_<xtal::SimpleStructure>(m, "Structure", R"pbdoc(
-    A crystal structure
-
-    Structure may specify atom and / or molecule coordinates and properties:
-
-    - lattice vectors
-    - atom coordinates
-    - atom type names
-    - continuous atom properties
-    - molecule coordinates
-    - molecule type names
-    - continuous molecule properties
-    - continuous global properties
-
-    Atom representation is most widely supported in CASM methods. In some limited cases the molecule representation is used.
-
-    Notes
-    -----
-
-    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
-
-    See the CASM `Degrees of Freedom (DoF) and Properties`_
-    documentation for the full list of supported properties and their
-    definitions.
-
-    .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
-
-    )pbdoc")
+  pyStructure
       .def(
           py::init(&make_simplestructure), py::arg("lattice"),
           py::arg("atom_coordinate_frac") = Eigen::MatrixXd(),
@@ -1901,8 +1996,8 @@ PYBIND11_MODULE(_xtal, m) {
         Molecule type names.
     mol_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
         Continuous properties associated with individual molecules, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
-    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
     )pbdoc")
       .def("lattice", &get_simplestructure_lattice, "Returns the lattice")
       .def("atom_coordinate_cart", &get_simplestructure_atom_coordinate_cart,
@@ -1931,6 +2026,30 @@ PYBIND11_MODULE(_xtal, m) {
       .def("global_properties", &get_simplestructure_global_properties,
            "Returns continuous properties associated with the entire crystal, "
            "if present.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data) {
+            jsonParser json{data};
+            std::cout << "JSON: " << json << std::endl;
+            xtal::SimpleStructure simple;
+            from_json(simple, json);
+            return simple;
+          },
+          "Construct a Structure from a Python dict. The `Structure reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/SimpleStructure/>`_ documents the expected "
+          "format.",
+          py::arg("data"))
+      .def(
+          "to_dict",
+          [](xtal::SimpleStructure const &simple) {
+            jsonParser json;
+            to_json(simple, json);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent the Structure as a Python dict. The `Structure reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/SimpleStructure/>`_ documents the format.")
       .def_static(
           "from_json", &simplestructure_from_json,
           "Construct a Structure from a JSON-formatted string. The `Structure "
@@ -1997,6 +2116,25 @@ PYBIND11_MODULE(_xtal, m) {
   m.def("make_crystal_point_group", &make_simplestructure_crystal_point_group,
         py::arg("structure"),
         "Equivalent to :func:`~casm.xtal.make_structure_crystal_point_group`");
+
+  m.def("make_structure_within", &make_simplestructure_within,
+        py::arg("init_structure"), R"pbdoc(
+            Returns an equivalent Structure with all atom and mol site coordinates within the unit cell
+
+            Parameters
+            ----------
+            init_structure : casm.xtal.Structure
+                The initial structure.
+
+            Returns
+            ----------
+            structure : casm.xtal.Structure
+                The structure with all atom and mol site coordinates within the unit cell.
+
+            )pbdoc");
+
+  m.def("make_within", &make_simplestructure_within, py::arg("init_structure"),
+        "Equivalent to :func:`~casm.xtal.make_structure_within`");
 
   m.def("make_superstructure", &make_superstructure,
         py::arg("transformation_matrix_to_super"), py::arg("structure"),
