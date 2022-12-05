@@ -67,6 +67,43 @@ def simple_cubic_binary_prim():
                      global_dof=global_dof,
                      occupants=occupants)
 
+@pytest.fixture
+def simple_cubic_binary_va_disp_Hstrain_prim():
+
+    # Lattice vectors
+    lattice_column_vector_matrix = np.array([
+        [1., 0., 0.],  # a
+        [0., 1., 0.],  # a
+        [0., 0., 1.],  # a
+    ]).transpose()
+    lattice = xtal.Lattice(lattice_column_vector_matrix)
+
+    # Basis sites positions, as columns of a matrix,
+    # in fractional coordinates with respect to the lattice vectors
+    coordinate_frac = np.array([
+        [0., 0., 0.],
+    ]).transpose()
+
+    # Occupation degrees of freedom (DoF)
+    occupants = {}
+    occ_dof = [["A", "B", "Va"]]
+
+    # Local continuous degrees of freedom (DoF)
+    disp_dof = xtal.DoFSetBasis("disp")  # Atomic displacement
+    local_dof = [
+        [disp_dof],  # local DoF, basis site b=0
+    ]
+
+    # Global continuous degrees of freedom (DoF)
+    GLstrain_dof = xtal.DoFSetBasis("Hstrain")  # Hencky strain metric
+    global_dof = [GLstrain_dof]
+
+    return xtal.Prim(lattice=lattice,
+                     coordinate_frac=coordinate_frac,
+                     occ_dof=occ_dof,
+                     local_dof=local_dof,
+                     global_dof=global_dof,
+                     occupants=occupants)
 
 @pytest.fixture
 def simple_cubic_ising_prim():
@@ -278,3 +315,85 @@ def test_nonprimitive_manydof_prim():
                      local_dof=local_dof,
                      global_dof=global_dof,
                      occupants=occupants)
+
+
+@pytest.fixture
+def ZrO_prim():
+
+    # Lattice vectors
+    lattice_column_vector_matrix = np.array([
+        [3.233986856383, 0.000000000000, 0.000000000000],  # a
+        [-1.616993428191, 2.800714773133, 0.000000000000],  # a
+        [0.000000000000, 0.000000000000, 5.168678340000]  # c
+    ]).transpose()
+    lattice = xtal.Lattice(lattice_column_vector_matrix)
+
+    # Basis sites positions, as columns of a matrix,
+    # in fractional coordinates with respect to the lattice vectors
+    coordinate_frac = np.array([
+        [0., 0., 0.],
+        [2. / 3., 1. / 3., 1. / 2.],
+        [1. / 3., 1. / 3., 1. / 4.],
+        [1. / 3., 1. / 3., 3. / 4.],
+    ]).transpose()
+
+    # Occupation degrees of freedom (DoF)
+    occupants = {}
+    occ_dof = [["Zr"], ["Zr"], ["O", "Va"], ["O", "Va"]]
+
+    # Local continuous degrees of freedom (DoF)
+    local_dof = []
+
+    # Global continuous degrees of freedom (DoF)
+    global_dof = []
+
+    return xtal.Prim(lattice=lattice,
+                     coordinate_frac=coordinate_frac,
+                     occ_dof=occ_dof,
+                     local_dof=local_dof,
+                     global_dof=global_dof,
+                     occupants=occupants)
+
+@pytest.fixture
+def example_structure_1():
+    # Lattice vectors
+    lattice = xtal.Lattice(np.array([
+        [1., 0., 0.],  # a
+        [0., 1., 0.],  # a
+        [0., 0., 2.],  # c
+    ]).transpose())
+    atom_coordinate_cart = np.array([
+        [0., 0., 0.],
+        [0.5, 0.5, 0.5],
+        [0., 0., 1.],
+        [0.5, 0.5, 1.5],
+    ]).transpose()
+
+    # atom properties
+    atom_disp = np.array([
+        [0.1, 0., 0.],
+        [0.0, 0.1, 0.],
+        [0.0, 0., 0.1],
+        [0.1, 0.2, 0.3],
+    ]).transpose()
+    atom_properties={"disp": atom_disp}
+    print(atom_properties)
+
+    # global properties
+    F = np.array([
+        [1.01, 0., 0.],
+        [0., 1.0, 0.],
+        [0., 0., 1.0],
+    ])
+    # converter = xtal.StrainConverter('Hstrain')
+    # Hstrain_vector = converter.from_F(F)
+    Hstrain_vector = np.array([0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0])
+    global_properties={"Hstrain": Hstrain_vector}
+    print(global_properties)
+
+    return xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=xtal.cartesian_to_fractional(lattice, atom_coordinate_cart),
+        atom_type=["A", "A" , "B", "B"],
+        atom_properties=atom_properties,
+        global_properties=global_properties)

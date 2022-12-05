@@ -12,6 +12,12 @@ SymOp operator*(const SymOp &LHS, const SymOp &RHS) {
                    RHS.is_time_reversal_active);  // This is an XOR operation
 }
 
+/// \brief Make the inverse SymOp
+SymOp make_inverse(SymOp const &op) {
+  return SymOp(op.matrix.transpose(), -(op.matrix.transpose() * op.translation),
+               op.time_reversal);
+}
+
 //**********************************************************************************//
 
 const SymOpMatrixType &get_matrix(const SymOp &op) { return op.matrix; }

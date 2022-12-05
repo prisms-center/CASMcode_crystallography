@@ -1,6 +1,7 @@
 #ifndef SIMPLESTRUCTURETOOLS_HH
 #define SIMPLESTRUCTURETOOLS_HH
 
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -75,6 +76,31 @@ std::vector<Eigen::MatrixXd> generate_invariant_shuffle_modes(
     const std::vector<xtal::SymOp> &factor_group,
     const std::vector<Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic,
                                                Index>> &permute_group);
+
+/// \brief Transform local or global properties
+std::map<std::string, Eigen::MatrixXd> &apply(
+    xtal::SymOp const &op, std::map<std::string, Eigen::MatrixXd> &properties);
+
+/// \brief Copy and transform local or global properties
+std::map<std::string, Eigen::MatrixXd> copy_apply(
+    xtal::SymOp const &op,
+    std::map<std::string, Eigen::MatrixXd> const &properties);
+
+/// \brief Transform global properties
+std::map<std::string, Eigen::VectorXd> &apply(
+    xtal::SymOp const &op, std::map<std::string, Eigen::VectorXd> &properties);
+
+/// \brief Copy and transform global properties
+std::map<std::string, Eigen::VectorXd> copy_apply(
+    xtal::SymOp const &op,
+    std::map<std::string, Eigen::VectorXd> const &properties);
+
+/// \brief Transform a SimpleStructure
+SimpleStructure apply(xtal::SymOp const &op, SimpleStructure &sstruc);
+
+/// \brief Copy and transform a SimpleStructure
+SimpleStructure copy_apply(xtal::SymOp const &op, SimpleStructure sstruc);
+
 /** @} */
 }  // namespace xtal
 

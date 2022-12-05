@@ -820,6 +820,7 @@ def main():
             "directory": "tests/unit/crystallography",
             "ldadd": [
                 "libcasm_crystallography.la",
+                "-lcasm_global",
             ],
         }
     ])

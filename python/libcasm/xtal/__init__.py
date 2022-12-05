@@ -16,6 +16,7 @@ __all__ = [
     "fractional_to_cartesian",
     "cartesian_to_fractional",
     "fractional_within",
+    "min_periodic_displacement",
     "make_point_group",
     "is_equivalent_to",
     "is_superlattice_of",

@@ -362,5 +362,93 @@ std::vector<std::set<Index>> atom_site_compatibility(
   }
   return result;
 }
+
+/// \brief Transform local or global properties
+std::map<std::string, Eigen::MatrixXd> &apply(
+    xtal::SymOp const &op, std::map<std::string, Eigen::MatrixXd> &properties) {
+  properties = copy_apply(op, properties);
+  return properties;
+}
+
+/// \brief Copy and transform local or global properties
+std::map<std::string, Eigen::MatrixXd> copy_apply(
+    xtal::SymOp const &op,
+    std::map<std::string, Eigen::MatrixXd> const &properties) {
+  std::map<std::string, Eigen::MatrixXd> result;
+  for (auto &pair : properties) {
+    std::string key = pair.first;
+    Eigen::MatrixXd const &value = pair.second;
+    try {
+      AnisoValTraits traits(key);
+      Eigen::MatrixXd M = traits.symop_to_matrix(
+          get_matrix(op), get_translation(op), get_time_reversal(op));
+      result.emplace(key, M * value);
+    } catch (std::exception &e) {
+      std::stringstream msg;
+      msg << "Error applying SymOp to properties: CASM does not know how to "
+             "transform the property '"
+          << key << "'.";
+      throw std::runtime_error(msg.str());
+    }
+  }
+  return result;
+}
+
+/// \brief Transform global properties
+std::map<std::string, Eigen::VectorXd> &apply(
+    xtal::SymOp const &op, std::map<std::string, Eigen::VectorXd> &properties) {
+  properties = copy_apply(op, properties);
+  return properties;
+}
+
+/// \brief Copy and transform global properties
+std::map<std::string, Eigen::VectorXd> copy_apply(
+    xtal::SymOp const &op,
+    std::map<std::string, Eigen::VectorXd> const &properties) {
+  std::map<std::string, Eigen::VectorXd> result;
+  for (auto &pair : properties) {
+    std::string key = pair.first;
+    Eigen::MatrixXd const &value = pair.second;
+    try {
+      AnisoValTraits traits(key);
+      Eigen::MatrixXd M = traits.symop_to_matrix(
+          get_matrix(op), get_translation(op), get_time_reversal(op));
+      result.emplace(key, M * value);
+    } catch (std::exception &e) {
+      std::stringstream msg;
+      msg << "Error applying SymOp to properties: CASM does not know how to "
+             "transform the property '"
+          << key << "'.";
+      throw std::runtime_error(msg.str());
+    }
+  }
+  return result;
+}
+
+/// \brief Transform a SimpleStructure
+SimpleStructure apply(xtal::SymOp const &op, SimpleStructure &sstruc) {
+  sstruc.rotate_coords(op.matrix);
+
+  // Transform local coords and properties
+  auto _translate = [](xtal::SymOp const &op, SimpleStructure::Info &info) {
+    for (Index l = 0; l < info.coords.cols(); ++l) {
+      info.coords.col(l) += get_translation(op);
+    }
+  };
+  _translate(op, sstruc.atom_info);
+  _translate(op, sstruc.mol_info);
+  sstruc.within();
+  apply(op, sstruc.atom_info.properties);
+  apply(op, sstruc.mol_info.properties);
+  apply(op, sstruc.properties);
+  return sstruc;
+}
+
+/// \brief Copy and transform a SimpleStructure
+SimpleStructure copy_apply(xtal::SymOp const &op, SimpleStructure sstruc) {
+  apply(op, sstruc);
+  return sstruc;
+}
+
 }  // namespace xtal
 }  // namespace CASM

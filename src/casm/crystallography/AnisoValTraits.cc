@@ -187,6 +187,10 @@ static AnisoValTraits const &traits(std::string const &name) {
 }
 }  // namespace Local
 
+std::map<std::string, AnisoValTraits> const &AnisoValTraits::registered() {
+  return Local::traits_map();
+}
+
 /// Construct a copy of an existing AnisoValTraits with matching name suffix
 ///
 /// Returns a copy of a previously explicitly initialized AnisoValTraits with

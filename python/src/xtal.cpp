@@ -5,6 +5,11 @@
 
 #include <fstream>
 
+// nlohmann::json binding
+#define JSON_USE_IMPLICIT_CONVERSIONS 0
+#include "pybind11_json/pybind11_json.hpp"
+
+// CASM
 #include "casm/casm_io/container/json_io.hh"
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
@@ -14,10 +19,12 @@
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
-#include "casm/crystallography/Strain.hh"
+#include "casm/crystallography/StrainConverter.hh"
 #include "casm/crystallography/SuperlatticeEnumerator.hh"
 #include "casm/crystallography/SymInfo.hh"
 #include "casm/crystallography/SymTools.hh"
+#include "casm/crystallography/UnitCellCoord.hh"
+#include "casm/crystallography/UnitCellCoordRep.hh"
 #include "casm/crystallography/io/BasicStructureIO.hh"
 #include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
@@ -368,7 +375,7 @@ void init_prim(
 /// \brief Construct xtal::BasicStructure from JSON string
 std::shared_ptr<xtal::BasicStructure const> prim_from_json(
     std::string const &prim_json_str, double xtal_tol) {
-  jsonParser json{prim_json_str};
+  jsonParser json = jsonParser::parse(prim_json_str);
   ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
   return std::make_shared<xtal::BasicStructure>(
       read_prim(json, xtal_tol, aniso_val_dict));
@@ -445,7 +452,7 @@ Eigen::MatrixXd get_prim_coordinate_cart(
 
 std::vector<std::vector<std::string>> get_prim_occ_dof(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
-  return xtal::allowed_molecule_names(*prim);
+  return prim->unique_names();
 }
 
 std::vector<std::vector<DoFSetBasis>> get_prim_local_dof(
@@ -640,11 +647,17 @@ xtal::Lattice get_simplestructure_lattice(xtal::SimpleStructure const &simple) {
 
 Eigen::MatrixXd get_simplestructure_atom_coordinate_cart(
     xtal::SimpleStructure const &simple) {
+  if (simple.atom_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return simple.atom_info.coords;
 }
 
 Eigen::MatrixXd get_simplestructure_atom_coordinate_frac(
     xtal::SimpleStructure const &simple) {
+  if (simple.atom_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return get_simplestructure_lattice(simple).inv_lat_column_mat() *
          simple.atom_info.coords;
 }
@@ -661,11 +674,17 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_atom_properties(
 
 Eigen::MatrixXd get_simplestructure_mol_coordinate_cart(
     xtal::SimpleStructure const &simple) {
+  if (simple.mol_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return simple.mol_info.coords;
 }
 
 Eigen::MatrixXd get_simplestructure_mol_coordinate_frac(
     xtal::SimpleStructure const &simple) {
+  if (simple.mol_info.coords.cols() == 0) {
+    return Eigen::MatrixXd::Zero(3, 0);
+  }
   return get_simplestructure_lattice(simple).inv_lat_column_mat() *
          simple.mol_info.coords;
 }
@@ -685,7 +704,8 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
   return simple.properties;
 }
 
-xtal::SimpleStructure simplestructure_from_json(jsonParser const &json) {
+xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
+  jsonParser json = jsonParser::parse(json_str);
   xtal::SimpleStructure simple;
   from_json(simple, json);
   return simple;
@@ -715,6 +735,13 @@ std::vector<xtal::SymOp> make_simplestructure_crystal_point_group(
     xtal::SimpleStructure const &simple) {
   auto fg = make_simplestructure_factor_group(simple);
   return xtal::make_crystal_point_group(fg, TOL);
+}
+
+xtal::SimpleStructure make_simplestructure_within(
+    xtal::SimpleStructure const &init_structure) {
+  xtal::SimpleStructure structure = init_structure;
+  structure.within();
+  return structure;
 }
 
 xtal::SimpleStructure make_superstructure(
@@ -747,166 +774,17 @@ std::vector<Eigen::VectorXd> make_equivalent_property_values(
   return std::vector<Eigen::VectorXd>(equivalent_x.begin(), equivalent_x.end());
 }
 
-/// \brief Holds strain metric and basis to facilitate conversions
-struct StrainConverter {
-  StrainConverter(std::string _metric, Eigen::MatrixXd const &_basis)
-      : metric(_metric),
-        basis(_basis),
-        basis_pinv(_xtal_impl::pseudoinverse(basis)) {}
-
-  /// \brief Name of strain metric (i.e. 'Hstrain', etc.)
-  std::string metric;
-
-  /// \brief Strain metric basis, such that E_standard = basis * E_basis
-  Eigen::MatrixXd basis;
-
-  /// \brief Pseudoinverse of basis
-  Eigen::MatrixXd basis_pinv;
-};
-
-/// \brief Decompose deformation tensor, F, as Q*U
-///
-/// \param F A deformation tensor
-/// \returns {Q, U}
-std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_QU(Eigen::Matrix3d const &F) {
-  Eigen::Matrix3d right_stretch = polar_decomposition(F);
-  Eigen::Matrix3d isometry = F * right_stretch.inverse();
-  return std::make_pair(isometry, right_stretch);
+// UnitCellCoord
+xtal::UnitCellCoord make_integral_site_coordinate(
+    Index sublattice, Eigen::Vector3l const &unitcell) {
+  return xtal::UnitCellCoord(sublattice, unitcell);
 }
 
-/// \brief Decompose deformation tensor, F, as V*Q
-///
-/// \param F A deformation tensor
-/// \returns {Q, V} Note the isometry matrix, Q, is returned first.
-std::pair<Eigen::Matrix3d, Eigen::Matrix3d> F_to_VQ(Eigen::Matrix3d const &F) {
-  auto result = F_to_QU(F);
-  result.second = F * result.first.transpose();
-  return result;
-}
-
-/// \brief Returns strain metric vector value in standard basis
-Eigen::VectorXd strain_metric_vector_in_standard_basis(
-    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
-  return converter.basis * E_vector;
-}
-
-/// \brief Returns strain metric vector value in converter basis
-Eigen::VectorXd strain_metric_vector_in_converter_basis(
-    StrainConverter const &converter,
-    Eigen::VectorXd const &E_vector_in_standard_basis) {
-  return converter.basis_pinv * E_vector_in_standard_basis;
-}
-
-/// \brief Converter strain metric vector value to matrix value
-///
-/// Strain metric vector value is:
-///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
-///
-/// \param converter Strain converter
-/// \param E_vector, strain metric vector value in basis converter.basis
-/// \returns E_matrix Strain metric matrix
-///
-Eigen::Matrix3d strain_metric_vector_to_matrix(
-    StrainConverter const &converter, Eigen::VectorXd const &E_vector) {
-  Eigen::VectorXd e = converter.basis * E_vector;
-  double w = sqrt(2.);
-  Eigen::Matrix3d E_matrix;
-  E_matrix <<  //
-      e(0),
-      e(5) / w, e(4) / w,        //
-      e(5) / w, e(1), e(3) / w,  //
-      e(4) / w, e(3) / w, e(2);  //
-  return E_matrix;
-}
-
-/// \brief Converter strain metric matrix value to vector value
-///
-/// Strain metric vector value is:
-///   [Exx, Eyy, Ezz, sqrt(2)*Eyz, sqrt(2)*Exz, sqrt(2)*Exy]
-///
-/// \param converter Strain converter
-/// \param E_matrix Strain metric matrix
-/// \return E_vector, strain metric vector value in converter.basis
-///
-Eigen::VectorXd strain_metric_matrix_to_vector(
-    StrainConverter const &converter, Eigen::Matrix3d const &E_matrix) {
-  Eigen::Matrix3d const &e = E_matrix;
-  Eigen::VectorXd E_vector = Eigen::VectorXd::Zero(6);
-  double w = std::sqrt(2.);
-  E_vector << e(0, 0), e(1, 1), e(2, 2), w * e(1, 2), w * e(0, 2), w * e(0, 1);
-  return converter.basis_pinv * E_vector;
-}
-
-/// \brief Converter strain metric value to deformation tensor
-///
-/// \param converter A StrainConverter
-/// \param E_vector Unrolled strain metric value, in converter.basis,
-///     such that E_standard = converter.basis * E_vector
-/// \returns F, the deformation tensor
-Eigen::Matrix3d strain_metric_vector_to_F(StrainConverter const &converter,
-                                          Eigen::VectorXd const &E_vector) {
-  using namespace strain;
-  Eigen::Matrix3d E_matrix =
-      strain_metric_vector_to_matrix(converter, E_vector);
-
-  if (converter.metric == "Hstrain") {
-    return metric_to_deformation_tensor<METRIC::HENCKY>(E_matrix);
-  } else if (converter.metric == "EAstrain") {
-    return metric_to_deformation_tensor<METRIC::EULER_ALMANSI>(E_matrix);
-  } else if (converter.metric == "GLstrain") {
-    return metric_to_deformation_tensor<METRIC::GREEN_LAGRANGE>(E_matrix);
-  } else if (converter.metric == "Bstrain") {
-    return metric_to_deformation_tensor<METRIC::BIOT>(E_matrix);
-  } else if (converter.metric == "Ustrain") {
-    return E_matrix;
-  } else {
-    std::stringstream ss;
-    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
-    throw std::runtime_error(ss.str());
-  }
-};
-
-/// \brief Converter strain metric value to deformation tensor
-///
-/// \param converter A StrainConverter
-/// \param F Deformation gradient tensor
-/// \returns Unrolled strain metric value, in converter.basis,
-///     such that E_standard = converter.basis * E_vector
-Eigen::VectorXd strain_metric_vector_from_F(StrainConverter const &converter,
-                                            Eigen::Matrix3d const &F) {
-  using namespace strain;
-  Eigen::Matrix3d E_matrix;
-
-  if (converter.metric == "Hstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::HENCKY>(F);
-  } else if (converter.metric == "EAstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::EULER_ALMANSI>(F);
-  } else if (converter.metric == "GLstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::GREEN_LAGRANGE>(F);
-  } else if (converter.metric == "Bstrain") {
-    E_matrix = deformation_tensor_to_metric<METRIC::BIOT>(F);
-  } else if (converter.metric == "Ustrain") {
-    E_matrix = right_stretch_tensor(F);
-  } else {
-    std::stringstream ss;
-    ss << "StrainConverter error: Unexpected metric: " << converter.metric;
-    throw std::runtime_error(ss.str());
-  }
-  return strain_metric_matrix_to_vector(converter, E_matrix);
-};
-
-Eigen::MatrixXd make_symmetry_adapted_strain_basis() {
-  Eigen::MatrixXd B;
-  // clang-format off
-  B <<  //
-      1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3), 0, 0, 0,    //e1
-      1 / sqrt(2), -1 / sqrt(2), 0.0, 0, 0, 0,           //e2
-      -1 / sqrt(6), -1 / sqrt(6), 2 / sqrt(6), 0, 0, 0,  //e3
-      0, 0, 0, 1, 0, 0,                                  //e4
-      0, 0, 0, 0, 1, 0,                                  //e5
-      0, 0, 0, 0, 0, 1;                                  //e6
-  // clang-format on
-  return B.transpose();
+// UnitCellCoordRep
+xtal::UnitCellCoordRep make_unitcellcoord_rep(
+    xtal::SymOp const &op, xtal::BasicStructure const &prim) {
+  return xtal::make_unitcellcoord_rep(op, prim.lattice(),
+                                      xtal::symop_site_map(op, prim));
 }
 
 }  // namespace CASMpy
@@ -933,6 +811,35 @@ PYBIND11_MODULE(_xtal, m) {
     )pbdoc";
 
   m.attr("TOL") = TOL;
+
+  py::class_<xtal::SimpleStructure> pyStructure(m, "Structure", R"pbdoc(
+    A crystal structure
+
+    Structure may specify atom and / or molecule coordinates and properties:
+
+    - lattice vectors
+    - atom coordinates
+    - atom type names
+    - continuous atom properties
+    - molecule coordinates
+    - molecule type names
+    - continuous molecule properties
+    - continuous global properties
+
+    Atom representation is most widely supported in CASM methods. In some limited cases the molecule representation is used.
+
+    Notes
+    -----
+
+    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
+
+    See the CASM `Degrees of Freedom (DoF) and Properties`_
+    documentation for the full list of supported properties and their
+    definitions.
+
+    .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
+
+    )pbdoc");
 
   py::class_<xtal::Lattice>(m, "Lattice", R"pbdoc(
       A 3-dimensional lattice
@@ -1067,6 +974,44 @@ PYBIND11_MODULE(_xtal, m) {
         with respect to the lattice vectors, translatd within the
         lattice unit cell.
     )pbdoc");
+
+  m.def(
+      "min_periodic_displacement",
+      [](xtal::Lattice const &lattice, Eigen::Vector3d const &r1,
+         Eigen::Vector3d const &r2, bool robust) {
+        if (robust) {
+          return robust_pbc_displacement_cart(lattice, r1, r2);
+        } else {
+          return fast_pbc_displacement_cart(lattice, r1, r2);
+        }
+      },
+      py::arg("lattice"), py::arg("r1"), py::arg("r2"),
+      py::arg("robust") = true,
+      R"pbdoc(
+      Return minimum length displacement (r2 - r1), accounting for periodic
+      boundary conditions.
+
+      Parameters
+      ----------
+      lattice : casm.xtal.Lattice
+          The lattice, defining the periodic boundaries.
+      r1 : array_like, shape (3, 1)
+          Position, r1, in Cartesian coordinates.
+      r2 : array_like, shape (3, 1)
+          Position, r2, in Cartesian coordinates.
+      robust : boolean, default=True
+          If True, use a "robust" method which uses the lattice's Wigner-Seitz
+          cell to determine the nearest image, which guarantees to find the
+          minimum distance. If False, use a "fast" method, which removes integer
+          multiples of lattice translations from the displacement, but may not
+          result in the true minimum distance.
+
+      Returns
+      -------
+      displacement: numpy.ndarray[numpy.float64[3, 1]]]
+          The displacement r2 - r1, in Cartesian coordinates, with minimum length,
+          accounting for periodic boundary conditions.
+      )pbdoc");
 
   m.def("make_point_group", &make_lattice_point_group, py::arg("lattice"),
         R"pbdoc(
@@ -1520,12 +1465,12 @@ PYBIND11_MODULE(_xtal, m) {
           Basis site positions, as columns of a matrix, in fractional
           coordinates with respect to the lattice vectors.
       occ_dof : List[List[str]]
-          Labels of occupants allowed on each basis site. The value
-          occ_dof[b] is the list of occupants allowed on the `b`-th basis
-          site. The values may either be (i) the name of an isotropic atom
-          (i.e. "Mg") or vacancy ("Va"), or (ii) a key in the occupants
-          dictionary (i.e. "H2O", or "H2_xx"). The names are case
-          sensitive, and "Va" is reserved for vacancies.
+          Labels ('orientation names') of occupants allowed on each basis
+          site. The value occ_dof[b] is the list of occupants allowed on
+          the `b`-th basis site. The values may either be (i) the name of
+          an isotropic atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
+          in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
+          are case sensitive, and "Va" is reserved for vacancies.
       local_dof : List[List[DoFSetBasis]], default=[[]]
           Continuous DoF allowed on each basis site. No effect if empty.
           If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
@@ -1534,12 +1479,13 @@ PYBIND11_MODULE(_xtal, m) {
           Global continuous DoF allowed for the entire crystal.
       occupants : Dict[str, Occupant], default=[]
           :class:`Occupant` allowed in the crystal. The keys are labels
-          used in the occ_dof parameter. This may include isotropic
-          atoms, vacancies, atoms with fixed anisotropic properties, and
-          molecular occupants. A seperate key and value is required for
-          all species with distinct anisotropic properties (i.e. "H2_xy",
-          "H2_xz", and "H2_yz" for distinct orientations, or "A.up", and
-          "A.down" for distinct collinear magnetic spins, etc.).
+          ('orientation names') used in the occ_dof parameter. This may
+          include isotropic atoms, vacancies, atoms with fixed anisotropic
+          properties, and molecular occupants. A seperate key and value is
+          required for all species with distinct anisotropic properties
+          (i.e. "H2_xy", "H2_xz", and "H2_yz" for distinct orientations,
+          or "A.up", and "A.down" for distinct collinear magnetic spins,
+          etc.).
       title : str, default="prim"
           A title for the prim. When the prim is used to construct a
           cluster expansion, this must consist of alphanumeric characters
@@ -1553,7 +1499,8 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the basis site positions, as columns of a matrix, in "
            "Cartesian coordinates")
       .def("occ_dof", &get_prim_occ_dof,
-           "Returns the labels of occupants allowed on each basis site")
+           "Returns the labels (orientation names) of occupants allowed on "
+           "each basis site")
       .def("local_dof", &get_prim_local_dof,
            "Returns the continuous DoF allowed on each basis site")
       .def(
@@ -1561,6 +1508,47 @@ PYBIND11_MODULE(_xtal, m) {
           "Returns the continuous DoF allowed for the entire crystal structure")
       .def("occupants", &get_prim_molecules,
            "Returns the :class:`Occupant` allowed in the crystal.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data, double xtal_tol) {
+            jsonParser json{data};
+            ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
+            return std::make_shared<xtal::BasicStructure>(
+                read_prim(json, xtal_tol, aniso_val_dict));
+          },
+          "Construct a Prim from a Python dict. The `Prim reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/BasicStructure/>`_ documents the expected "
+          "format.",
+          py::arg("data"), py::arg("xtal_tol") = TOL)
+      .def(
+          "to_dict",
+          [](std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
+             bool include_va) {
+            jsonParser json;
+            write_prim(*prim, json, FRAC);
+            return static_cast<nlohmann::json>(json);
+          },
+          py::arg("frac") = true, py::arg("include_va") = false,
+          R"pbdoc(
+            Represent the Prim as a Python dict
+
+            Parameters
+            ----------
+            frac : boolean, default=True
+                If True, write basis site positions in fractional coordinates
+                relative to the lattice vectors. If False, write basis site positions
+                in Cartesian coordinates.
+            include_va : boolean, default=False
+                If a basis site only allows vacancies, it is not printed by default.
+                If this is True, basis sites with only vacancies will be included.
+
+            Returns
+            ----------
+            data : dict
+                The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
+
+            )pbdoc")
       .def_static(
           "from_json", &prim_from_json,
           "Construct a Prim from a JSON-formatted string. The `Prim reference "
@@ -1639,7 +1627,7 @@ PYBIND11_MODULE(_xtal, m) {
 
             )pbdoc");
 
-  m.def("make_within", &make_within, py::arg("init_prim"), R"pbdoc(
+  m.def("make_prim_within", &make_within, py::arg("init_prim"), R"pbdoc(
             Returns an equivalent Prim with all basis site coordinates within the unit cell
 
             Parameters
@@ -1649,10 +1637,13 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             ----------
-            prim : Lattice
+            prim : casm.xtal.Prim
                 The prim with all basis site coordinates within the unit cell.
 
             )pbdoc");
+
+  m.def("make_within", &make_within, py::arg("init_prim"),
+        "Equivalent to :func:`~casm.xtal.make_prim_within`");
 
   m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
             Returns a primitive equivalent Prim
@@ -1804,7 +1795,82 @@ PYBIND11_MODULE(_xtal, m) {
       .def("translation", &xtal::get_translation,
            "Returns the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
-           "Returns the time reversal value.");
+           "Returns the time reversal value.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, Eigen::Vector3d const &coordinate_cart) {
+            return get_matrix(op) * coordinate_cart + get_translation(op);
+          },
+          py::arg("coordinate_cart"),
+          "Transform Cartesian coordinates, represented as a 1d array")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, Eigen::MatrixXd const &coordinate_cart) {
+            Eigen::MatrixXd transformed = get_matrix(op) * coordinate_cart;
+            for (Index i = 0; i < transformed.cols(); ++i) {
+              transformed.col(i) += get_translation(op);
+            }
+            return transformed;
+          },
+          py::arg("coordinate_cart"),
+          "Transform multiple Cartesian coordinates, represented as columns of "
+          "a "
+          "matrix.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
+            return lhs * rhs;
+          },
+          py::arg("rhs"),
+          "Construct the SymOp equivalent to applying first rhs, then this.")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op,
+             std::map<std::string, Eigen::MatrixXd> const &properties) {
+            return copy_apply(op, properties);
+          },
+          py::arg("rhs"),
+          "Transform CASM-supported properties (local or global).")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, xtal::SimpleStructure const &simple) {
+            return copy_apply(op, simple);
+          },
+          py::arg("structure"), "Transform a Structure.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data) {
+            jsonParser json{data};
+            Eigen::Matrix3d matrix;
+            from_json(matrix, json["matrix"]);
+            Eigen::Vector3d translation;
+            from_json(translation, json["tau"]);
+            bool time_reversal;
+            from_json(time_reversal, json["time_reversal"]);
+            return xtal::SymOp(matrix, translation, time_reversal);
+          },
+          "Construct a SymOp from a Python dict. The `Coordinate "
+          "Transformation Representation reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/"
+          "#coordinate-transformation-representation-json-object>`_ documents "
+          "the expected format.",
+          py::arg("data"))
+      .def(
+          "to_dict",
+          [](xtal::SymOp const &op) {
+            jsonParser json;
+            json["matrix"] = xtal::get_matrix(op);
+            to_json_array(xtal::get_translation(op), json["tau"]);
+            json["time_reversal"] = xtal::get_time_reversal(op);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent the SymOp as a Python dict. The `Coordinate "
+          "Transformation Representation reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/"
+          "#coordinate-transformation-representation-json-object>`_ documents "
+          "the format.");
 
   py::class_<xtal::SymInfo>(m, "SymInfo", R"pbdoc(
       Symmetry operation type, axis, invariant point, etc.
@@ -1909,40 +1975,30 @@ PYBIND11_MODULE(_xtal, m) {
               following the conventions of (International Tables for Crystallography (2015). Vol.
               A. ch. 1.4, pp. 50-59).
           )pbdoc")
+      .def(
+          "to_dict",
+          [](xtal::SymInfo const &syminfo) {
+            jsonParser json;
+            to_json(syminfo, json);
+
+            to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(CART)),
+                    json["brief"]["CART"]);
+            to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC)),
+                    json["brief"]["FRAC"]);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent SymInfo as a Python dict. The `Symmetry Operation "
+          "Information reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents the "
+          "format.")
       .def("to_json", &syminfo_to_json, R"pbdoc(
           Represent the symmetry operation information as a JSON-formatted string.
 
           The `Symmetry Operation Information JSON Object reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents JSON format, except conjugacy class and inverse operation are not currently included.
           )pbdoc");
 
-  py::class_<xtal::SimpleStructure>(m, "Structure", R"pbdoc(
-    A crystal structure
-
-    Structure may specify atom and / or molecule coordinates and properties:
-
-    - lattice vectors
-    - atom coordinates
-    - atom type names
-    - continuous atom properties
-    - molecule coordinates
-    - molecule type names
-    - continuous molecule properties
-    - continuous global properties
-
-    Atom representation is most widely supported in CASM methods. In some limited cases the molecule representation is used.
-
-    Notes
-    -----
-
-    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
-
-    See the CASM `Degrees of Freedom (DoF) and Properties`_
-    documentation for the full list of supported properties and their
-    definitions.
-
-    .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
-
-    )pbdoc")
+  pyStructure
       .def(
           py::init(&make_simplestructure), py::arg("lattice"),
           py::arg("atom_coordinate_frac") = Eigen::MatrixXd(),
@@ -1975,8 +2031,8 @@ PYBIND11_MODULE(_xtal, m) {
         Molecule type names.
     mol_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
         Continuous properties associated with individual molecules, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
-    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
     )pbdoc")
       .def("lattice", &get_simplestructure_lattice, "Returns the lattice")
       .def("atom_coordinate_cart", &get_simplestructure_atom_coordinate_cart,
@@ -2005,6 +2061,30 @@ PYBIND11_MODULE(_xtal, m) {
       .def("global_properties", &get_simplestructure_global_properties,
            "Returns continuous properties associated with the entire crystal, "
            "if present.")
+      .def_static(
+          "from_dict",
+          [](const nlohmann::json &data) {
+            jsonParser json{data};
+            std::cout << "JSON: " << json << std::endl;
+            xtal::SimpleStructure simple;
+            from_json(simple, json);
+            return simple;
+          },
+          "Construct a Structure from a Python dict. The `Structure reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/SimpleStructure/>`_ documents the expected "
+          "format.",
+          py::arg("data"))
+      .def(
+          "to_dict",
+          [](xtal::SimpleStructure const &simple) {
+            jsonParser json;
+            to_json(simple, json);
+            return static_cast<nlohmann::json>(json);
+          },
+          "Represent the Structure as a Python dict. The `Structure reference "
+          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
+          "crystallography/SimpleStructure/>`_ documents the format.")
       .def_static(
           "from_json", &simplestructure_from_json,
           "Construct a Structure from a JSON-formatted string. The `Structure "
@@ -2072,6 +2152,25 @@ PYBIND11_MODULE(_xtal, m) {
         py::arg("structure"),
         "Equivalent to :func:`~casm.xtal.make_structure_crystal_point_group`");
 
+  m.def("make_structure_within", &make_simplestructure_within,
+        py::arg("init_structure"), R"pbdoc(
+            Returns an equivalent Structure with all atom and mol site coordinates within the unit cell
+
+            Parameters
+            ----------
+            init_structure : casm.xtal.Structure
+                The initial structure.
+
+            Returns
+            ----------
+            structure : casm.xtal.Structure
+                The structure with all atom and mol site coordinates within the unit cell.
+
+            )pbdoc");
+
+  m.def("make_within", &make_simplestructure_within, py::arg("init_structure"),
+        "Equivalent to :func:`~casm.xtal.make_structure_within`");
+
   m.def("make_superstructure", &make_superstructure,
         py::arg("transformation_matrix_to_super"), py::arg("structure"),
         R"pbdoc(
@@ -2131,7 +2230,7 @@ PYBIND11_MODULE(_xtal, m) {
           equivalent under the point group.
       )pbdoc");
 
-  py::class_<StrainConverter>(m, "StrainConverter", R"pbdoc(
+  py::class_<xtal::StrainConverter>(m, "StrainConverter", R"pbdoc(
     Convert strain values
 
     Converts between strain metric vector values
@@ -2167,14 +2266,10 @@ PYBIND11_MODULE(_xtal, m) {
         The default value, shape=(6,6) identity matrix, chooses the standard basis.
 
     )pbdoc")
-      .def(
-          "metric",
-          [](StrainConverter const &converter) { return converter.metric; },
-          "Returns the strain metric name.")
-      .def(
-          "basis",
-          [](StrainConverter const &converter) { return converter.basis; },
-          R"pbdoc(
+      .def("metric", &xtal::StrainConverter::metric,
+           "Returns the strain metric name.")
+      .def("basis", &xtal::StrainConverter::basis,
+           R"pbdoc(
           Returns the basis used for strain metric vectors.
 
           Returns
@@ -2185,12 +2280,8 @@ PYBIND11_MODULE(_xtal, m) {
                   E_vector_in_standard_basis = basis @ E_vector
 
           )pbdoc")
-      .def(
-          "dim",
-          [](StrainConverter const &converter) {
-            return converter.basis.cols();
-          },
-          R"pbdoc(
+      .def("dim", &xtal::StrainConverter::dim,
+           R"pbdoc(
           Returns the strain space dimension.
 
           Returns
@@ -2199,10 +2290,8 @@ PYBIND11_MODULE(_xtal, m) {
               The strain space dimension, equivalent to the number of columns
               of the basis matrix.
           )pbdoc")
-      .def(
-          "basis_pinv",
-          [](StrainConverter const &converter) { return converter.basis_pinv; },
-          R"pbdoc(
+      .def("basis_pinv", &xtal::StrainConverter::basis_pinv,
+           R"pbdoc(
           Returns the strain metric basis pseudoinverse.
 
           Returns
@@ -2213,7 +2302,7 @@ PYBIND11_MODULE(_xtal, m) {
                   E_vector = basis_pinv @ E_vector_in_standard_basis
 
           )pbdoc")
-      .def_static("F_to_QU", &F_to_QU, py::arg("F"),
+      .def_static("F_to_QU", &xtal::StrainConverter::F_to_QU, py::arg("F"),
                   R"pbdoc(
            Decompose a deformation tensor as QU.
 
@@ -2231,7 +2320,7 @@ PYBIND11_MODULE(_xtal, m) {
                The shape=(3,3) right stretch tensor, :math:`U`, of
                the deformation tensor.
            )pbdoc")
-      .def_static("F_to_VQ", &F_to_VQ, py::arg("F"),
+      .def_static("F_to_VQ", &xtal::StrainConverter::F_to_VQ, py::arg("F"),
                   R"pbdoc(
             Decompose a deformation tensor as VQ.
 
@@ -2249,7 +2338,7 @@ PYBIND11_MODULE(_xtal, m) {
                 The shape=(3,3) left stretch tensor, :math:`V`, of
                 the deformation tensor.
             )pbdoc")
-      .def("to_F", &strain_metric_vector_to_F, py::arg("E_vector"),
+      .def("to_F", &xtal::StrainConverter::to_F, py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to deformation tensor.
 
@@ -2263,7 +2352,7 @@ PYBIND11_MODULE(_xtal, m) {
            F: numpy.ndarray[numpy.float64[3, 3]]
                The deformation tensor, :math:`F`.
            )pbdoc")
-      .def("from_F", &strain_metric_vector_from_F, py::arg("F"),
+      .def("from_F", &xtal::StrainConverter::from_F, py::arg("F"),
            R"pbdoc(
            Convert deformation tensor to strain metric vector.
 
@@ -2277,7 +2366,7 @@ PYBIND11_MODULE(_xtal, m) {
            E_vector: array_like, shape=(dim,1)
                Strain metric vector, expressed in the basis of this StrainConverter.
            )pbdoc")
-      .def("to_standard_basis", &strain_metric_vector_in_standard_basis,
+      .def("to_standard_basis", &xtal::StrainConverter::to_standard_basis,
            py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to standard basis
@@ -2293,7 +2382,7 @@ PYBIND11_MODULE(_xtal, m) {
                Strain metric vector, expressed in the standard basis. This is
                equivalent to `basis @ E_vector`.
            )pbdoc")
-      .def("from_standard_basis", &strain_metric_vector_in_converter_basis,
+      .def("from_standard_basis", &xtal::StrainConverter::from_standard_basis,
            py::arg("E_vector_in_standard_basis"),
            R"pbdoc(
            Convert strain metric vector from standard basis to converter basis.
@@ -2309,7 +2398,8 @@ PYBIND11_MODULE(_xtal, m) {
            E_vector: array_like, shape=(dim,1)
                Strain metric vector, expressed in the basis of this StrainConverter.
            )pbdoc")
-      .def("to_E_matrix", &strain_metric_vector_to_matrix, py::arg("E_vector"),
+      .def("to_E_matrix", &xtal::StrainConverter::to_E_matrix,
+           py::arg("E_vector"),
            R"pbdoc(
            Convert strain metric vector to strain metric matrix.
 
@@ -2323,7 +2413,7 @@ PYBIND11_MODULE(_xtal, m) {
            E_matrix: array_like, shape=(3,3)
                Strain metric matrix, :math:`E`, using the metric of this StrainConverter.
            )pbdoc")
-      .def("from_E_matrix", &strain_metric_matrix_to_vector,
+      .def("from_E_matrix", &xtal::StrainConverter::from_E_matrix,
            py::arg("E_matrix"),
            R"pbdoc(
            Convert strain metric matrix to strain metric vector.
@@ -2340,7 +2430,7 @@ PYBIND11_MODULE(_xtal, m) {
            )pbdoc");
 
   m.def("make_symmetry_adapted_strain_basis",
-        &make_symmetry_adapted_strain_basis,
+        &xtal::make_symmetry_adapted_strain_basis,
         R"pbdoc(
       Returns the symmetry-adapted strain basis.
 
@@ -2368,6 +2458,202 @@ PYBIND11_MODULE(_xtal, m) {
       symmetry_adapted_strain_basis: List[numpy.ndarray[numpy.float64[6, 6]]]
           The symmetry-adapted strain basis, :math:`B^{\vec{e}}`.
       )pbdoc");
+
+  // IntegralSiteCoordinate -- declaration
+  py::class_<xtal::UnitCellCoord> pyIntegralSiteCoordinate(
+      m, "IntegralSiteCoordinate", R"pbdoc(
+      Specify a site using integer sublattice and unit cell indices
+    )pbdoc");
+
+  // IntegralSiteCoordinateRep -- declaration
+  py::class_<xtal::UnitCellCoordRep> pyIntegralSiteCoordinateRep(
+      m, "IntegralSiteCoordinateRep", R"pbdoc(
+      Symmetry representation for transforming IntegralSiteCoordinate"
+    )pbdoc");
+
+  // IntegralSiteCoordinate -- definition
+  pyIntegralSiteCoordinate
+      .def(py::init(&make_integral_site_coordinate),
+           "Construct an IntegralSiteCoordinate", py::arg("sublattice"),
+           py::arg("unitcell"), R"pbdoc(
+
+      Parameters
+      ----------
+      sublattice : int
+          Specify a sublattice in a prim, in range [0, prim.basis().size()).
+      unitcell : array_like of int, shape=(3,)
+          Specify a unit cell, as multiples of the prim lattice vectors.
+      )pbdoc")
+      .def_static(
+          "from_coordinate_cart",
+          [](Eigen::Vector3d const &coordinate_cart,
+             xtal::BasicStructure const &prim, double tol) {
+            return xtal::UnitCellCoord::from_coordinate(
+                prim,
+                xtal::Coordinate(coordinate_cart, prim.lattice(), CASM::CART),
+                tol);
+          },
+          py::arg("coordinate_cart"), py::arg("prim"),
+          py::arg("tol") = CASM::TOL,
+          "Construct an integral site coordinate with given Cartesian "
+          "coordinate with respect to a particular Prim. An exception is "
+          "raised if not possible to the given tolerance.")
+      .def_static(
+          "from_coordinate_frac",
+          [](Eigen::Vector3d const &coordinate_frac,
+             xtal::BasicStructure const &prim, double tol) {
+            return xtal::UnitCellCoord::from_coordinate(
+                prim,
+                xtal::Coordinate(coordinate_frac, prim.lattice(), CASM::FRAC),
+                tol);
+          },
+          py::arg("coordinate_frac"), py::arg("prim"),
+          py::arg("tol") = CASM::TOL,
+          "Construct an integral site coordinate with given fractional "
+          "coordinate with respect to a particular Prim. An exception is "
+          "raised if not possible to the given tolerance.")
+      .def("sublattice", &xtal::UnitCellCoord::sublattice,
+           "Returns the sublattice index.")
+      .def(
+          "unitcell",
+          [](xtal::UnitCellCoord const &self) {
+            return static_cast<Eigen::Vector3l>(self.unitcell());
+          },
+          "Returns the unit cell indices.")
+      .def(
+          "__str__",
+          [](xtal::UnitCellCoord const &self) {
+            std::stringstream ss;
+            ss << self;
+            return ss.str();
+          },
+          "Represent IntegralSiteCoordinate as `b, i j k`, where `b` is the "
+          "sublattice index and `i j k` are the unit cell coordinates.")
+      .def(
+          "to_list",
+          [](xtal::UnitCellCoord const &self) {
+            std::vector<Index> list;
+            for (int i = 0; i < 4; ++i) {
+              list.push_back(self[i]);
+            }
+            return list;
+          },
+          "Represent IntegralSiteCoordinate as `[b, i, j, k]`.")
+      .def_static(
+          "from_list",
+          [](std::vector<int> const &list) {
+            if (list.size() != 4) {
+              throw std::runtime_error(
+                  "Error constructing IntegralSiteCoordinate from a list: size "
+                  "!= 4");
+            }
+            return xtal::UnitCellCoord(list[0], list[1], list[2], list[3]);
+          },
+          "Construct IntegralSiteCoordinate from a list `[b, i, j, k]`.")
+      .def(
+          "__iadd__",
+          [](xtal::UnitCellCoord &self, Eigen::Vector3l const &translation) {
+            self += xtal::UnitCell(translation);
+            return self;
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by adding unit cell indices")
+      .def(
+          "__add__",
+          [](xtal::UnitCellCoord const &self,
+             Eigen::Vector3l const &translation) {
+            return self + xtal::UnitCell(translation);
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by adding unit cell indices")
+      .def(
+          "__isub__",
+          [](xtal::UnitCellCoord &self, Eigen::Vector3l const &translation) {
+            self -= xtal::UnitCell(translation);
+            return self;
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by subtracting unit cell "
+          "indices")
+      .def(
+          "__sub__",
+          [](xtal::UnitCellCoord const &self,
+             Eigen::Vector3l const &translation) {
+            return self - xtal::UnitCell(translation);
+          },
+          py::arg("translation"),
+          "Translates the integral site coordinate by subtracting unit cell "
+          "indices")
+      .def(
+          "coordinate_cart",
+          [](xtal::UnitCellCoord const &self,
+             xtal::BasicStructure const &prim) {
+            return self.coordinate(prim).const_cart();
+          },
+          py::arg("prim"),
+          "Return the Cartesian coordinate corresponding to this integral site "
+          "coordinate in the given Prim")
+      .def(
+          "coordinate_frac",
+          [](xtal::UnitCellCoord const &self,
+             xtal::BasicStructure const &prim) {
+            return self.coordinate(prim).const_frac();
+          },
+          py::arg("prim"),
+          "Return the fractional coordinate corresponding to this integral "
+          "site coordinate in the given Prim")
+      .def(py::self < py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self <= py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self > py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self >= py::self,
+           "Sorts coordinates by lexicographical order of [i, j, k] then b")
+      .def(py::self == py::self, "True if coordinates are equal")
+      .def(py::self != py::self, "True if coordinates are not equal");
+
+  // IntegralSiteCoordinateRep -- definition
+  pyIntegralSiteCoordinateRep
+      .def(py::init(&CASMpy::make_unitcellcoord_rep),
+           "Construct an IntegralSiteCoordinateRep", py::arg("op"),
+           py::arg("prim"), R"pbdoc(
+
+      Parameters
+      ----------
+      op : casm.xtal.SymOp
+          The symmetry operation.
+      prim : casm.xtal.Prim
+          The prim defining IntegralSiteCoordinate that will be transformed.
+      )pbdoc")
+      .def(
+          "__mul__",
+          [](xtal::UnitCellCoordRep const &rep,
+             xtal::UnitCellCoord const &integral_site_coordinate) {
+            return copy_apply(rep, integral_site_coordinate);
+          },
+          py::arg("integral_site_coordinate"),
+          "Transform an :class:`libcasm.xtal.IntegralSiteCoordinate`");
+
+  m.def(
+      "apply",
+      [](xtal::UnitCellCoordRep const &rep,
+         xtal::UnitCellCoord &integral_site_coordinate) {
+        return apply(rep, integral_site_coordinate);
+      },
+      py::arg("rep"), py::arg("integral_site_coordinate"),
+      "Applies the symmetry operation represented by the `rep` to "
+      "transform `integral_site_coordinate`.");
+
+  m.def(
+      "copy_apply",
+      [](xtal::UnitCellCoordRep const &rep,
+         xtal::UnitCellCoord const &integral_site_coordinate) {
+        return copy_apply(rep, integral_site_coordinate);
+      },
+      py::arg("rep"), py::arg("integral_site_coordinate"),
+      "Creates a copy of `integral_site_coordinate` and applies the symmetry "
+      "operation represented by `rep`.");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
