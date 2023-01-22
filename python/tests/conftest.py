@@ -1,5 +1,6 @@
 import numpy as np
 import libcasm.xtal as xtal
+import libcasm.xtal.lattices as xtal_lattices
 import pytest
 
 
@@ -18,14 +19,6 @@ def tetragonal_lattice():
 @pytest.fixture
 def simple_cubic_binary_prim():
 
-    # Lattice vectors
-    lattice_column_vector_matrix = np.array([
-        [1., 0., 0.],  # a
-        [0., 1., 0.],  # a
-        [0., 0., 1.],  # a
-    ]).transpose()
-    lattice = xtal.Lattice(lattice_column_vector_matrix)
-
     # Basis sites positions, as columns of a matrix,
     # in fractional coordinates with respect to the lattice vectors
     coordinate_frac = np.array([
@@ -42,7 +35,7 @@ def simple_cubic_binary_prim():
     # Global continuous degrees of freedom (DoF)
     global_dof = []
 
-    return xtal.Prim(lattice=lattice,
+    return xtal.Prim(lattice=xtal_lattices.cubic(1.0),
                      coordinate_frac=coordinate_frac,
                      occ_dof=occ_dof,
                      local_dof=local_dof,
