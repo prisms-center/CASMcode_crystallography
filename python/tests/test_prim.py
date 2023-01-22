@@ -42,6 +42,7 @@ def test_simple_cubic_1d_disp_factor_group(simple_cubic_1d_disp_prim):
     factor_group = xtal.make_factor_group(prim)
     assert len(factor_group) == 16
 
+
 def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
     prim = simple_cubic_1d_disp_prim
     prim2 = simple_cubic_binary_prim
@@ -70,6 +71,7 @@ def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
     assert second != first
     assert xtal._xtal._is_same_prim(second, first) == False
 
+
 def test_to_dict(simple_cubic_binary_va_disp_Hstrain_prim):
     prim = simple_cubic_binary_va_disp_Hstrain_prim
 
@@ -85,22 +87,26 @@ def test_to_dict(simple_cubic_binary_va_disp_Hstrain_prim):
     assert 'dofs' in data
     assert 'Hstrain' in data['dofs']
 
+
 def test_from_dict():
     L1 = np.array([
-        [1.0, 0.0, 0.0], # v1
-        [-0.5, 1.0, 0.0], # v2
-        [0.0, 0.0, 2.0], # v3
+        [1.0, 0.0, 0.0],  # v1
+        [-0.5, 1.0, 0.0],  # v2
+        [0.0, 0.0, 2.0],  # v3
     ]).transpose()
     basis_frac = np.array([
-        [0.0, 0.0, 0.0], # b1
+        [0.0, 0.0, 0.0],  # b1
     ]).transpose()
     data = {
-        'title': 'test',
-        'lattice_vectors': L1.transpose().tolist(),
-        'coordinate_mode': 'Fractional',
+        'title':
+        'test',
+        'lattice_vectors':
+        L1.transpose().tolist(),
+        'coordinate_mode':
+        'Fractional',
         'basis': [
             {
-                'coordinate': basis_frac[:,0].tolist(),
+                'coordinate': basis_frac[:, 0].tolist(),
                 'occupants': ['A', 'B', 'Va'],
                 'dofs': {
                     'disp': {}
@@ -126,6 +132,7 @@ def test_from_dict():
     assert len(prim_global_dof) == 1
     assert prim_global_dof[0].dofname() == 'Hstrain'
 
+
 def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
     prim = simple_cubic_binary_va_disp_Hstrain_prim
 
@@ -142,22 +149,26 @@ def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
     assert 'dofs' in data
     assert 'Hstrain' in data['dofs']
 
+
 def test_from_json():
     L1 = np.array([
-        [1.0, 0.0, 0.0], # v1
-        [-0.5, 1.0, 0.0], # v2
-        [0.0, 0.0, 2.0], # v3
+        [1.0, 0.0, 0.0],  # v1
+        [-0.5, 1.0, 0.0],  # v2
+        [0.0, 0.0, 2.0],  # v3
     ]).transpose()
     basis_frac = np.array([
-        [0.0, 0.0, 0.0], # b1
+        [0.0, 0.0, 0.0],  # b1
     ]).transpose()
     data = {
-        'title': 'test',
-        'lattice_vectors': L1.transpose().tolist(),
-        'coordinate_mode': 'Fractional',
+        'title':
+        'test',
+        'lattice_vectors':
+        L1.transpose().tolist(),
+        'coordinate_mode':
+        'Fractional',
         'basis': [
             {
-                'coordinate': basis_frac[:,0].tolist(),
+                'coordinate': basis_frac[:, 0].tolist(),
                 'occupants': ['A', 'B', 'Va'],
                 'dofs': {
                     'disp': {}

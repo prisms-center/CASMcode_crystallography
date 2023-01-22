@@ -4,12 +4,12 @@ from typing import Optional
 from libcasm.xtal import Structure
 import libcasm.xtal.lattices as xtal_lattices
 
-def BCC(
-    r: Optional[float] = None,
-    a: Optional[float] = None,
-    atom_type: str = "A",
-    atom_properties : dict[str,  np.ndarray] = {},
-    global_properties : dict[str,  np.ndarray] = {}) -> Structure:
+
+def BCC(r: Optional[float] = None,
+        a: Optional[float] = None,
+        atom_type: str = "A",
+        atom_properties: dict[str, np.ndarray] = {},
+        global_properties: dict[str, np.ndarray] = {}) -> Structure:
     r"""Construct a primitive BCC structure
 
     Parameters
@@ -31,19 +31,18 @@ def BCC(
     structure : xtal.Structure
         A primitive BCC structure
     """
-    return Structure(
-        lattice=xtal_lattices.BCC(r=r, a=a),
-        atom_coordinate_frac=np.array([0., 0., 0.]),
-        atom_type=[atom_type],
-        atom_properties=atom_properties,
-        global_properties=global_properties)
+    return Structure(lattice=xtal_lattices.BCC(r=r, a=a),
+                     atom_coordinate_frac=np.array([0., 0., 0.]),
+                     atom_type=[atom_type],
+                     atom_properties=atom_properties,
+                     global_properties=global_properties)
 
-def FCC(
-    r: Optional[float] = None,
-    a: Optional[float] = None,
-    atom_type: str = "A",
-    atom_properties : dict[str,  np.ndarray] = {},
-    global_properties : dict[str,  np.ndarray] = {}) -> Structure:
+
+def FCC(r: Optional[float] = None,
+        a: Optional[float] = None,
+        atom_type: str = "A",
+        atom_properties: dict[str, np.ndarray] = {},
+        global_properties: dict[str, np.ndarray] = {}) -> Structure:
     r"""Construct a primitive FCC structure
 
     Parameters
@@ -65,20 +64,19 @@ def FCC(
     structure : xtal.Structure
         A primitive FCC structure
     """
-    return Structure(
-        lattice=xtal_lattices.FCC(r=r, a=a),
-        atom_coordinate_frac=np.array([0., 0., 0.]),
-        atom_type=[atom_type],
-        atom_properties=atom_properties,
-        global_properties=global_properties)
+    return Structure(lattice=xtal_lattices.FCC(r=r, a=a),
+                     atom_coordinate_frac=np.array([0., 0., 0.]),
+                     atom_type=[atom_type],
+                     atom_properties=atom_properties,
+                     global_properties=global_properties)
 
-def HCP(
-    r: Optional[float] = None,
-    a: Optional[float] = None,
-    c: Optional[float] = None,
-    atom_type: str = "A",
-    atom_properties : dict[str,  np.ndarray] = {},
-    global_properties : dict[str,  np.ndarray] = {}) -> Structure:
+
+def HCP(r: Optional[float] = None,
+        a: Optional[float] = None,
+        c: Optional[float] = None,
+        atom_type: str = "A",
+        atom_properties: dict[str, np.ndarray] = {},
+        global_properties: dict[str, np.ndarray] = {}) -> Structure:
     r"""Construct a primitive HCP structure
 
     Parameters
@@ -103,12 +101,11 @@ def HCP(
     structure : xtal.Structure
         A primitive HCP structure
     """
-    return Structure(
-        lattice=xtal_lattices.HCP(r=r, a=a, c=c),
-        atom_coordinate_frac=np.array([
-            [1./3., 2./3., 0.25],
-            [2./3., 1./3., 0.75],
-        ]).transpose(),
-        atom_type=[atom_type],
-        atom_properties=atom_properties,
-        global_properties=global_properties)
+    return Structure(lattice=xtal_lattices.HCP(r=r, a=a, c=c),
+                     atom_coordinate_frac=np.array([
+                         [1. / 3., 2. / 3., 0.25],
+                         [2. / 3., 1. / 3., 0.75],
+                     ]).transpose(),
+                     atom_type=[atom_type],
+                     atom_properties=atom_properties,
+                     global_properties=global_properties)
