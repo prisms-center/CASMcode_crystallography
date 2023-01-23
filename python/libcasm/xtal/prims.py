@@ -5,6 +5,58 @@ from libcasm.xtal import Prim, DoFSetBasis, Occupant
 import libcasm.xtal.lattices as xtal_lattices
 
 
+def cubic(a: Optional[float] = None,
+          occ_dof: list[str] = ["A", "B"],
+          local_dof: list[DoFSetBasis] = [],
+          global_dof: list[DoFSetBasis] = [],
+          occupants: dict[str, Occupant] = {},
+          title: str = "prim") -> Prim:
+    r"""Construct a simle cubic Prim
+
+    Parameters
+    ----------
+    a: Optional[float] = None
+        Specify the cubic lattice parameter :math:`a`.
+    occ_dof : list[str] = ["A", "B"]
+        Labels ('orientation names') of occupants allowed on the basis
+        site. The values may either be (i) the name of an isotropic
+        atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
+        in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
+        are case sensitive, and "Va" is reserved for vacancies.
+    local_dof : list[DoFSetBasis]=[]
+        Continuous DoF allowed on each basis site. No effect if empty.
+        If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
+        objects describing the DoF allowed on the `b`-th basis site.
+    global_dof : list[DoFSetBasis]=[]
+        Global continuous DoF allowed for the entire crystal.
+    occupants : dict[str, Occupant]=[]
+        :class:`Occupant` allowed in the crystal. The keys are labels
+        ('orientation names') used in the occ_dof parameter. This may
+        include isotropic atoms, vacancies, atoms with fixed anisotropic
+        properties, and molecular occupants. A seperate key and value is
+        required for all species with distinct anisotropic properties
+        (i.e. "H2_xy", "H2_xz", and "H2_yz" for distinct orientations,
+        or "A.up", and "A.down" for distinct collinear magnetic spins,
+        etc.).
+    title : str="prim"
+        A title for the prim. When the prim is used to construct a
+        cluster expansion, this must consist of alphanumeric characters
+        and underscores only. The first character may not be a number.
+
+    Returns
+    -------
+    prim : xtal.Prim
+        A simple cubic Prim
+    """
+    return Prim(lattice=xtal_lattices.cubic(a=a),
+                coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
+                occ_dof=[occ_dof],
+                local_dof=[local_dof],
+                global_dof=global_dof,
+                occupants=occupants,
+                title=title)
+
+
 def BCC(r: Optional[float] = None,
         a: Optional[float] = None,
         occ_dof: list[str] = ["A", "B"],

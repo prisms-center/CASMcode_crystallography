@@ -106,6 +106,6 @@ def HCP(r: Optional[float] = None,
                          [1. / 3., 2. / 3., 0.25],
                          [2. / 3., 1. / 3., 0.75],
                      ]).transpose(),
-                     atom_type=[atom_type],
+                     atom_type=[atom_type, atom_type],
                      atom_properties=atom_properties,
                      global_properties=global_properties)

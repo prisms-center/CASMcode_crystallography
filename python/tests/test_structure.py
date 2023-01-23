@@ -66,6 +66,8 @@ def test_structure_to_dict(example_structure_1):
     assert len(data['global_properties']) == 1
     assert 'Hstrain' in data['global_properties']
 
+    assert isinstance(xtal.pretty_json(data), str)
+
 
 def test_structure_from_dict():
     data = {

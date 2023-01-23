@@ -2620,6 +2620,16 @@ PYBIND11_MODULE(_xtal, m) {
       "Creates a copy of `integral_site_coordinate` and applies the symmetry "
       "operation represented by `rep`.");
 
+  m.def(
+      "pretty_json",
+      [](const nlohmann::json &data) -> std::string {
+        jsonParser json{data};
+        std::stringstream ss;
+        ss << json << std::endl;
+        return ss.str();
+      },
+      "Pretty-print JSON to string.", py::arg("data"));
+
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
 #else
