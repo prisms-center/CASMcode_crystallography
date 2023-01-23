@@ -5,24 +5,6 @@ import pytest
 
 
 @pytest.fixture
-def root_pytest_dir(request: pytest.FixtureRequest) -> str:
-    """Get pytest root dir (wherever pytest.ini/tox.ini/setup.cfg exists)
-    Useful for resolving absolute paths of input files that are used in
-    tests
-
-    Parameters
-    ----------
-    request : pytest.FixtureRequest
-
-    Returns
-    -------
-    str
-
-    """
-    return str(request.config.rootdir)
-
-
-@pytest.fixture
 def tetragonal_lattice():
 
     # Lattice vectors

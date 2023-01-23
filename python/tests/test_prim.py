@@ -47,8 +47,8 @@ def lial_lattice_and_coords() -> tuple[np.array, np.array]:
     return lial_lattice, lial_frac_coords
 
 
-def test_prim_from_poscar(root_pytest_dir):
-    prim_path = os.path.join(root_pytest_dir, "tests", "input_files", "lial.vasp")
+def test_prim_from_poscar(shared_datadir):
+    prim_path = os.path.join(shared_datadir, "lial.vasp")
 
     # with no occ dofs
     prim = xtal.Prim.from_poscar(prim_path)
