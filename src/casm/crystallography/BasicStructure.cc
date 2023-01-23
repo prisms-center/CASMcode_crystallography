@@ -20,6 +20,8 @@ BasicStructure BasicStructure::from_poscar_stream(std::istream &poscar_stream,
                                                   double tol) {
   BasicStructure poscar_structure;
   poscar_structure.read(poscar_stream, tol);
+  poscar_structure.set_unique_names(
+      allowed_molecule_unique_names(poscar_structure));
   return poscar_structure;
 }
 

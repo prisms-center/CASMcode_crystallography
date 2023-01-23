@@ -1,8 +1,78 @@
-import copy
+import os
 import json
-import pytest
-import libcasm.xtal as xtal
 import numpy as np
+import libcasm.xtal as xtal
+
+
+def lial_lattice_and_coords() -> tuple[np.array, np.array]:
+    """Populate lattice and coordinates
+    of lial to compare
+
+    Returns
+    -------
+    tuple[np.array, np.array]
+        Tuple of lattice and fractional coordinates
+
+    """
+    lial_lattice = np.array(
+        [
+            [4.471006, 0.000000, -2.235503],
+            [0.000000, 1.411149, -9.345034],
+            [0.000000, 5.179652, 0.000000],
+        ]
+    )
+
+    lial_frac_coords = np.array(
+        [
+            [
+                0.232895,
+                0.307941,
+                0.15082,
+                0.84918,
+            ],
+            [
+                0.842594,
+                0.472885,
+                0.216684,
+                0.783316,
+            ],
+            [
+                0.46579,
+                0.615882,
+                0.30164,
+                0.69836,
+            ],
+        ]
+    )
+    return lial_lattice, lial_frac_coords
+
+
+def test_prim_from_poscar(root_pytest_dir):
+    prim_path = os.path.join(root_pytest_dir, "tests", "input_files", "lial.vasp")
+
+    # with no occ dofs
+    prim = xtal.Prim.from_poscar(prim_path)
+    lattice, frac_coords = lial_lattice_and_coords()
+    assert (
+        np.allclose(lattice, prim.lattice().column_vector_matrix(), 1e-4, 1e-4) is True
+    )
+    assert np.allclose(frac_coords, prim.coordinate_frac(), 1e-4, 1e-4) is True
+    assert prim.occ_dof() == [["Li"], ["Li"], ["Al"], ["Al"]]
+
+    # change occ dofs
+    occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
+    prim_with_occ_dofs = xtal.Prim.from_poscar(prim_path, occ_dofs)
+    assert (
+        np.allclose(
+            lattice, prim_with_occ_dofs.lattice().column_vector_matrix(), 1e-4, 1e-4
+        )
+        is True
+    )
+    assert (
+        np.allclose(frac_coords, prim_with_occ_dofs.coordinate_frac(), 1e-4, 1e-4)
+        is True
+    )
+    assert prim_with_occ_dofs.occ_dof() == occ_dofs
 
 
 def test_make_primitive_occ(nonprimitive_cubic_occ_prim):
@@ -49,7 +119,7 @@ def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
 
     assert prim is not prim2
     assert prim != prim2
-    assert xtal._xtal._is_same_prim(prim, prim2) == False
+    assert xtal._xtal._is_same_prim(prim, prim2) is False
 
     other = prim
     assert other is prim
@@ -64,12 +134,13 @@ def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
     first = xtal._xtal._copy_prim(prim)
     assert first is not prim
     assert first != prim
-    assert xtal._xtal._is_same_prim(first, prim) == False
+    assert xtal._xtal._is_same_prim(first, prim) is False
 
     second = xtal._xtal._share_prim(prim2)
     assert second is not first
     assert second != first
-    assert xtal._xtal._is_same_prim(second, first) == False
+    assert xtal._xtal._is_same_prim(second, first) is False
+
 
 
 def test_to_dict(simple_cubic_binary_va_disp_Hstrain_prim):
@@ -78,59 +149,58 @@ def test_to_dict(simple_cubic_binary_va_disp_Hstrain_prim):
     # convert to dict
     data = prim.to_dict()
 
-    assert 'lattice_vectors' in data
-    assert 'basis' in data
-    assert len(data['basis']) == 1
-    assert 'dofs' in data['basis'][0]
-    assert 'disp' in data['basis'][0]['dofs']
-    assert 'coordinate_mode' in data
-    assert 'dofs' in data
-    assert 'Hstrain' in data['dofs']
+    assert "lattice_vectors" in data
+    assert "basis" in data
+    assert len(data["basis"]) == 1
+    assert "dofs" in data["basis"][0]
+    assert "disp" in data["basis"][0]["dofs"]
+    assert "coordinate_mode" in data
+    assert "dofs" in data
+    assert "Hstrain" in data["dofs"]
+
 
 
 def test_from_dict():
-    L1 = np.array([
-        [1.0, 0.0, 0.0],  # v1
-        [-0.5, 1.0, 0.0],  # v2
-        [0.0, 0.0, 2.0],  # v3
-    ]).transpose()
-    basis_frac = np.array([
-        [0.0, 0.0, 0.0],  # b1
-    ]).transpose()
+    L1 = np.array(
+        [
+            [1.0, 0.0, 0.0],  # v1
+            [-0.5, 1.0, 0.0],  # v2
+            [0.0, 0.0, 2.0],  # v3
+        ]
+    ).transpose()
+    basis_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],  # b1
+        ]
+    ).transpose()
     data = {
-        'title':
-        'test',
-        'lattice_vectors':
-        L1.transpose().tolist(),
-        'coordinate_mode':
-        'Fractional',
-        'basis': [
+        "title": "test",
+        "lattice_vectors": L1.transpose().tolist(),
+        "coordinate_mode": "Fractional",
+        "basis": [
             {
-                'coordinate': basis_frac[:, 0].tolist(),
-                'occupants': ['A', 'B', 'Va'],
-                'dofs': {
-                    'disp': {}
-                },
+                "coordinate": basis_frac[:, 0].tolist(),
+                "occupants": ["A", "B", "Va"],
+                "dofs": {"disp": {}},
             },
         ],
-        'dofs': {
-            'Hstrain': {}
-        }
+        "dofs": {"Hstrain": {}},
     }
     prim = xtal.Prim.from_dict(data)
 
     assert np.allclose(prim.lattice().column_vector_matrix(), L1)
     assert np.allclose(prim.coordinate_frac(), basis_frac)
-    assert prim.occ_dof() == [['A', 'B', 'Va']]
+    assert prim.occ_dof() == [["A", "B", "Va"]]
 
     prim_local_dof = prim.local_dof()
     assert len(prim_local_dof) == 1
     assert len(prim_local_dof[0]) == 1
-    assert prim_local_dof[0][0].dofname() == 'disp'
+    assert prim_local_dof[0][0].dofname() == "disp"
 
     prim_global_dof = prim.global_dof()
     assert len(prim_global_dof) == 1
-    assert prim_global_dof[0].dofname() == 'Hstrain'
+    assert prim_global_dof[0].dofname() == "Hstrain"
+
 
 
 def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
@@ -140,44 +210,42 @@ def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
     json_str = prim.to_json()
 
     data = json.loads(json_str)
-    assert 'lattice_vectors' in data
-    assert 'basis' in data
-    assert len(data['basis']) == 1
-    assert 'dofs' in data['basis'][0]
-    assert 'disp' in data['basis'][0]['dofs']
-    assert 'coordinate_mode' in data
-    assert 'dofs' in data
-    assert 'Hstrain' in data['dofs']
+    assert "lattice_vectors" in data
+    assert "basis" in data
+    assert len(data["basis"]) == 1
+    assert "dofs" in data["basis"][0]
+    assert "disp" in data["basis"][0]["dofs"]
+    assert "coordinate_mode" in data
+    assert "dofs" in data
+    assert "Hstrain" in data["dofs"]
+
 
 
 def test_from_json():
-    L1 = np.array([
-        [1.0, 0.0, 0.0],  # v1
-        [-0.5, 1.0, 0.0],  # v2
-        [0.0, 0.0, 2.0],  # v3
-    ]).transpose()
-    basis_frac = np.array([
-        [0.0, 0.0, 0.0],  # b1
-    ]).transpose()
+    L1 = np.array(
+        [
+            [1.0, 0.0, 0.0],  # v1
+            [-0.5, 1.0, 0.0],  # v2
+            [0.0, 0.0, 2.0],  # v3
+        ]
+    ).transpose()
+    basis_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],  # b1
+        ]
+    ).transpose()
     data = {
-        'title':
-        'test',
-        'lattice_vectors':
-        L1.transpose().tolist(),
-        'coordinate_mode':
-        'Fractional',
-        'basis': [
+        "title": "test",
+        "lattice_vectors": L1.transpose().tolist(),
+        "coordinate_mode": "Fractional",
+        "basis": [
             {
-                'coordinate': basis_frac[:, 0].tolist(),
-                'occupants': ['A', 'B', 'Va'],
-                'dofs': {
-                    'disp': {}
-                },
+                "coordinate": basis_frac[:, 0].tolist(),
+                "occupants": ["A", "B", "Va"],
+                "dofs": {"disp": {}},
             },
         ],
-        'dofs': {
-            'Hstrain': {}
-        }
+        "dofs": {"Hstrain": {}},
     }
 
     json_str = json.dumps(data)
@@ -186,13 +254,13 @@ def test_from_json():
 
     assert np.allclose(prim.lattice().column_vector_matrix(), L1)
     assert np.allclose(prim.coordinate_frac(), basis_frac)
-    assert prim.occ_dof() == [['A', 'B', 'Va']]
+    assert prim.occ_dof() == [["A", "B", "Va"]]
 
     prim_local_dof = prim.local_dof()
     assert len(prim_local_dof) == 1
     assert len(prim_local_dof[0]) == 1
-    assert prim_local_dof[0][0].dofname() == 'disp'
+    assert prim_local_dof[0][0].dofname() == "disp"
 
     prim_global_dof = prim.global_dof()
     assert len(prim_global_dof) == 1
-    assert prim_global_dof[0].dofname() == 'Hstrain'
+    assert prim_global_dof[0].dofname() == "Hstrain"

@@ -3,6 +3,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <fstream>
+
 // nlohmann::json binding
 #define JSON_USE_IMPLICIT_CONVERSIONS 0
 #include "pybind11_json/pybind11_json.hpp"
@@ -13,6 +15,7 @@
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/CanonicalForm.hh"
+#include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
@@ -376,6 +379,29 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_json(
   ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
   return std::make_shared<xtal::BasicStructure>(
       read_prim(json, xtal_tol, aniso_val_dict));
+}
+
+/// \brief Construct xtal::BasicStructure from poscar path
+std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
+    std::string &poscar_path,
+    std::vector<std::vector<std::string>> const &occ_dof = {},
+    double xtal_tol = TOL) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  auto prim = std::make_shared<xtal::BasicStructure>(
+      xtal::BasicStructure::from_poscar_stream(poscar_stream, xtal_tol));
+  if (occ_dof.size() == 0) {
+    return prim;
+  }
+
+  Eigen::MatrixXd frac_coords(3, prim->basis().size());
+  for (int index = 0; index < prim->basis().size(); ++index) {
+    frac_coords.block<3, 1>(0, index) = prim->basis()[index].const_frac();
+  }
+  xtal::Lattice lattice = prim->lattice();
+  std::string title = prim->title();
+  prim.reset();
+  return make_prim(lattice, frac_coords, occ_dof, {}, {}, {}, title);
 }
 
 /// \brief Format xtal::BasicStructure as JSON string
@@ -1530,6 +1556,15 @@ PYBIND11_MODULE(_xtal, m) {
           "crystallography/BasicStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("prim_json_str"), py::arg("xtal_tol") = TOL)
+      .def_static(
+          "from_poscar", &prim_from_poscar,
+          "Construct a Prim from poscar path provided as a string"
+          "By default uses atom types from poscar as occupatinal degrees of "
+          "freedom. It can be overridden by explicitly providing occ_dof as "
+          "an argument.",
+          py::arg("poscar_path"),
+          py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
+          py::arg("xtal_tol") = TOL)
       .def("to_json", &prim_to_json,
            "Represent the Prim as a JSON-formatted string. The `Prim reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
