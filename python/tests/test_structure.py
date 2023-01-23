@@ -101,3 +101,42 @@ def test_structure_from_dict():
     assert len(structure.atom_type()) == 4
     assert len(structure.atom_properties()) == 1
     assert len(structure.global_properties()) == 1
+
+def test_structure_to_poscar_str_1(example_structure_2):
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure",
+        sort=False,
+        cart_coordinate_mode=False)
+    # print(poscar_str)
+    lines = poscar_str.split('\n')
+
+    assert lines[0] == 'test structure'
+    assert lines[5] == 'A B A '
+    assert lines[6] == '1 1 1 '
+    assert lines[7] == 'Direct'
+
+def test_structure_to_poscar_str_2(example_structure_2):
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure",
+        sort=True,
+        cart_coordinate_mode=True)
+    # print(poscar_str)
+    lines = poscar_str.split('\n')
+
+    assert lines[0] == 'test structure'
+    assert lines[5] == 'A B '
+    assert lines[6] == '2 1 '
+    assert lines[7] == 'Cartesian'
+
+def test_structure_to_poscar_str_3(example_structure_2):
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure",
+        sort=True,
+        ignore=[])
+    print(poscar_str)
+    lines = poscar_str.split('\n')
+
+    assert lines[0] == 'test structure'
+    assert lines[5] == 'A B Va '
+    assert lines[6] == '2 1 1 '
+    assert lines[7] == 'Direct'

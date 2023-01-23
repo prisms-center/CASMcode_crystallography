@@ -46,12 +46,7 @@ def lial_lattice_and_coords() -> tuple[np.array, np.array]:
     )
     return lial_lattice, lial_frac_coords
 
-
-def test_prim_from_poscar(shared_datadir):
-    prim_path = os.path.join(shared_datadir, "lial.vasp")
-
-    # with no occ dofs
-    prim = xtal.Prim.from_poscar(prim_path)
+def check_lial(prim):
     lattice, frac_coords = lial_lattice_and_coords()
     assert (
         np.allclose(lattice, prim.lattice().column_vector_matrix(), 1e-4, 1e-4) is True
@@ -59,9 +54,8 @@ def test_prim_from_poscar(shared_datadir):
     assert np.allclose(frac_coords, prim.coordinate_frac(), 1e-4, 1e-4) is True
     assert prim.occ_dof() == [["Li"], ["Li"], ["Al"], ["Al"]]
 
-    # change occ dofs
-    occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
-    prim_with_occ_dofs = xtal.Prim.from_poscar(prim_path, occ_dofs)
+def check_lial_with_occ_dofs(prim_with_occ_dofs, occ_dofs):
+    lattice, frac_coords = lial_lattice_and_coords()
     assert (
         np.allclose(
             lattice, prim_with_occ_dofs.lattice().column_vector_matrix(), 1e-4, 1e-4
@@ -74,6 +68,54 @@ def test_prim_from_poscar(shared_datadir):
     )
     assert prim_with_occ_dofs.occ_dof() == occ_dofs
 
+def test_prim_from_poscar(shared_datadir):
+    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+
+    # with no occ dofs
+    prim = xtal.Prim.from_poscar(poscar_path)
+    check_lial(prim)
+
+def test_prim_from_poscar_with_occ_dof(shared_datadir):
+    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+
+    # with occ dofs
+    occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
+    prim = xtal.Prim.from_poscar(poscar_path, occ_dofs)
+    check_lial_with_occ_dofs(prim, occ_dofs)
+
+def test_prim_from_poscar_str(shared_datadir):
+    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+
+    with open(poscar_path, 'r') as f:
+        poscar_str = f.read()
+
+    # with no occ dofs
+    prim = xtal.Prim.from_poscar_str(poscar_str)
+    check_lial(prim)
+
+def test_prim_from_poscar_str_with_occ_dof(shared_datadir):
+    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+
+    with open(poscar_path, 'r') as f:
+        poscar_str = f.read()
+
+    # with occ dofs
+    occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
+    prim = xtal.Prim.from_poscar_str(poscar_str, occ_dofs)
+    check_lial_with_occ_dofs(prim, occ_dofs)
+
+def test_prim_to_poscar_str(shared_datadir):
+    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+    prim = xtal.Prim.from_poscar(poscar_path)
+    structure = xtal.Structure(
+        lattice=prim.lattice(),
+        atom_coordinate_frac=prim.coordinate_frac(),
+        atom_type=[ x[0] for x in prim.occ_dof()])
+    lines = structure.to_poscar_str(title="Li2Al2").split('\n')
+    assert lines[0] == "Li2Al2"
+    assert lines[5] == "Al Li "
+    assert lines[6] == "2 2 "
+    assert lines[7] == "Direct"
 
 def test_make_primitive_occ(nonprimitive_cubic_occ_prim):
     assert nonprimitive_cubic_occ_prim.coordinate_frac().shape[1] == 2

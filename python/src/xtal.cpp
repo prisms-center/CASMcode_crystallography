@@ -29,6 +29,7 @@
 #include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
 #include "casm/crystallography/io/SymInfo_stream_io.hh"
+#include "casm/crystallography/io/VaspIO.hh"
 
 #define STRINGIFY(x) #x
 #define MACRO_STRINGIFY(x) STRINGIFY(x)
@@ -381,13 +382,11 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_json(
       read_prim(json, xtal_tol, aniso_val_dict));
 }
 
-/// \brief Construct xtal::BasicStructure from poscar path
-std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
-    std::string &poscar_path,
+/// \brief Construct xtal::BasicStructure from poscar stream
+std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_stream(
+    std::istream &poscar_stream,
     std::vector<std::vector<std::string>> const &occ_dof = {},
     double xtal_tol = TOL) {
-  std::filesystem::path path(poscar_path);
-  std::ifstream poscar_stream(path);
   auto prim = std::make_shared<xtal::BasicStructure>(
       xtal::BasicStructure::from_poscar_stream(poscar_stream, xtal_tol));
   if (occ_dof.size() == 0) {
@@ -404,12 +403,38 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
   return make_prim(lattice, frac_coords, occ_dof, {}, {}, {}, title);
 }
 
+/// \brief Construct xtal::BasicStructure from poscar path
+std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
+    std::string &poscar_path,
+    std::vector<std::vector<std::string>> const &occ_dof = {},
+    double xtal_tol = TOL) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  return prim_from_poscar_stream(poscar_stream, occ_dof, xtal_tol);
+}
+
+/// \brief Construct xtal::BasicStructure from poscar string
+std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_str(
+    std::string &poscar_str,
+    std::vector<std::vector<std::string>> const &occ_dof = {},
+    double xtal_tol = TOL) {
+  std::istringstream poscar_stream(poscar_str);
+  return prim_from_poscar_stream(poscar_stream, occ_dof, xtal_tol);
+}
+
 xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
                                                   double xtal_tol) {
   std::filesystem::path path(poscar_path);
   std::ifstream poscar_stream(path);
   return xtal::make_simple_structure(poscar_stream, xtal_tol);
 }
+
+xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
+                                                      double xtal_tol) {
+  std::istringstream poscar_stream(poscar_str);
+  return xtal::make_simple_structure(poscar_stream, xtal_tol);
+}
+
 /// \brief Format xtal::BasicStructure as JSON string
 std::string prim_to_json(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
@@ -1562,15 +1587,58 @@ PYBIND11_MODULE(_xtal, m) {
           "crystallography/BasicStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("prim_json_str"), py::arg("xtal_tol") = TOL)
-      .def_static(
-          "from_poscar", &prim_from_poscar,
-          "Construct a Prim from poscar path provided as a string"
-          "By default uses atom types from poscar as occupatinal degrees of "
-          "freedom. It can be overridden by explicitly providing occ_dof as "
-          "an argument.",
-          py::arg("poscar_path"),
-          py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
-          py::arg("xtal_tol") = TOL)
+      .def_static("from_poscar", &prim_from_poscar,
+                  R"pbdoc(
+            Construct a Prim from a VASP POSCAR file
+
+            Parameters
+            ----------
+            poscar_path : str
+                Path to the POSCAR file
+
+            occ_dof : list[list[str]] = []
+                By default, the occupation degrees of freedom (DoF) are
+                set to only allow the POSCAR atom types. This may be
+                provided, to explicitly set the occupation DoF.
+
+            xtal_tol: float = xtal.TOL
+                Tolerance used for lattice.
+
+            Returns
+            ----------
+            prim : casm.xtal.Prim
+                A Prim
+
+            )pbdoc",
+                  py::arg("poscar_path"),
+                  py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
+                  py::arg("xtal_tol") = TOL)
+      .def_static("from_poscar_str", &prim_from_poscar_str,
+                  R"pbdoc(
+            Construct a Prim from a VASP POSCAR string
+
+            Parameters
+            ----------
+            poscar_str : str
+                VASP POSCAR as a string
+
+            occ_dof : list[list[str]] = []
+                By default, the occupation degrees of freedom (DoF) are
+                set to only allow the POSCAR atom types. This may be
+                provided, to explicitly set the occupation DoF.
+
+            xtal_tol: float = xtal.TOL
+                Tolerance used for lattice.
+
+            Returns
+            ----------
+            prim : casm.xtal.Prim
+                A Prim
+
+            )pbdoc",
+                  py::arg("poscar_str"),
+                  py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
+                  py::arg("xtal_tol") = TOL)
       .def("to_json", &prim_to_json,
            "Represent the Prim as a JSON-formatted string. The `Prim reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
@@ -2100,14 +2168,98 @@ PYBIND11_MODULE(_xtal, m) {
           "format.",
           py::arg("structure_json_str"))
       .def_static("from_poscar", &simplestructure_from_poscar,
-                  "Construct a Structure from a vasp formatted POSCAR",
+                  R"pbdoc(
+            Construct a Structure from a VASP POSCAR file
+
+            Parameters
+            ----------
+            poscar_path : str
+                Path to the POSCAR file
+
+            xtal_tol: float = xtal.TOL
+                Tolerance used for lattice.
+
+            Returns
+            ----------
+            struture : casm.xtal.Structure
+                A Structure
+
+            )pbdoc",
                   py::arg("poscar_path"), py::arg("tol") = TOL)
+      .def_static("from_poscar_str", &simplestructure_from_poscar_str,
+                  R"pbdoc(
+            Construct a Structure from a VASP POSCAR string
+
+            Parameters
+            ----------
+            poscar_str : str
+                The POSCAR as a string
+
+            xtal_tol: float = xtal.TOL
+                Tolerance used for lattice.
+
+            Returns
+            ----------
+            struture : casm.xtal.Structure
+                A Structure
+
+            )pbdoc",
+                  py::arg("poscar_str"), py::arg("tol") = TOL)
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
            "crystallography/SimpleStructure/>`_ documents the expected JSON "
-           "format.");
+           "format.")
+      //
+      .def(
+          "to_poscar_str",
+          [](xtal::SimpleStructure const &structure, bool sort,
+             std::string title, std::vector<std::string> ignore,
+             bool cart_coordinate_mode) -> std::string {
+            VaspIO::PrintPOSCAR p{structure, title};
+            p.ignore() = {};
+            for (auto const &atom_type : ignore) {
+              p.ignore().insert(atom_type);
+            }
+            if (sort) {
+              p.sort();
+            }
+            if (cart_coordinate_mode) {
+              p.set_cart();
+            }
+            std::stringstream ss;
+            p.print(ss);
+            return ss.str();
+          },
+          R"pbdoc(
+            Convert a Structure to a VASP POSCAR string
+
+            Parameters
+            ----------
+            sort: bool = True
+                If True, sort atoms by atom type name. Otherwise, print in the
+                order appearing in the structure.
+
+            title: str
+                The POSCAR title line
+
+            ignore: list[str] = ["Va", "VA", "va"]
+                Atom names to ignore and not include in the POSCAR. By default,
+                vacancies are not included. To include vacancies, use `ignore=[]`.
+
+            cart_coordinate_mode: bool = False
+                If True, write POSCAR using Cartesian coordinates.
+
+            Returns
+            ----------
+            struture : casm.xtal.Structure
+                A Structure
+
+            )pbdoc",
+          py::arg("sort") = true, py::arg("title") = "<title>",
+          py::arg("ignore") = std::vector<std::string>{"VA", "Va", "va"},
+          py::arg("cart_coordinate_mode") = false);
 
   m.def("make_structure_factor_group", &make_simplestructure_factor_group,
         py::arg("structure"), R"pbdoc(

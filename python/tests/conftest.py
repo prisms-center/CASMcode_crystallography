@@ -376,3 +376,29 @@ def example_structure_1():
                           atom_type=["A", "A", "B", "B"],
                           atom_properties=atom_properties,
                           global_properties=global_properties)
+
+@pytest.fixture
+def example_structure_2():
+    lattice=xtal.Lattice(np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 2.0]
+    ]).transpose())
+
+    atom_coordinate_cart = np.array([
+        [0.0, 0.0, 0.0],
+        [0.5, 0.5, 0.5],
+        [0.0, 0.0, 1.0],
+        [0.5, 0.5, 1.5],
+    ]).transpose()
+
+    return xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=xtal.cartesian_to_fractional(
+            lattice, atom_coordinate_cart),
+        atom_type=["A", "Va", "B", "A"])
+
+    poscar_str = structure.to_poscar_str(
+        title="test structure",
+        sort=False,
+        cart_coordinate_mode=False)
