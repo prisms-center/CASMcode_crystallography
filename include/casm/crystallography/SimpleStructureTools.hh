@@ -42,6 +42,10 @@ std::vector<Index> superstructure_basis_idx(
 /// \brief Construct from decorated structure
 SimpleStructure make_simple_structure(BasicStructure const &_struc);
 
+/// \brief Construct SimpleStructure from poscar stream
+SimpleStructure make_simple_structure(std::istream &poscar_stream,
+                                      double tol = TOL);
+
 /// \brief Determine which sites of a BasicStructure can host each atom of a
 /// SimpleStructure result[i] is set of site indices in @param _prim that can
 /// host atom 'i' of @param sstruc

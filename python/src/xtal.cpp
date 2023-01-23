@@ -404,6 +404,12 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar(
   return make_prim(lattice, frac_coords, occ_dof, {}, {}, {}, title);
 }
 
+xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
+                                                  double xtal_tol) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  return xtal::make_simple_structure(poscar_stream, xtal_tol);
+}
 /// \brief Format xtal::BasicStructure as JSON string
 std::string prim_to_json(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
@@ -2093,6 +2099,9 @@ PYBIND11_MODULE(_xtal, m) {
           "crystallography/SimpleStructure/>`_ documents the expected JSON "
           "format.",
           py::arg("structure_json_str"))
+      .def_static("from_poscar", &simplestructure_from_poscar,
+                  "Construct a Structure from a vasp formatted POSCAR",
+                  py::arg("poscar_path"), py::arg("tol") = TOL)
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
