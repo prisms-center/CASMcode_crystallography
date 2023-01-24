@@ -864,6 +864,8 @@ PYBIND11_MODULE(_xtal, m) {
 
     The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
 
+    Structure may be copied with `copy.copy` or `copy.deepcopy`.
+
     See the CASM `Degrees of Freedom (DoF) and Properties`_
     documentation for the full list of supported properties and their
     definitions.
@@ -2259,7 +2261,14 @@ PYBIND11_MODULE(_xtal, m) {
             )pbdoc",
           py::arg("sort") = true, py::arg("title") = "<title>",
           py::arg("ignore") = std::vector<std::string>{"VA", "Va", "va"},
-          py::arg("cart_coordinate_mode") = false);
+          py::arg("cart_coordinate_mode") = false)
+      .def("__copy__",
+           [](xtal::SimpleStructure const &self) {
+             return xtal::SimpleStructure(self);
+           })
+      .def("__deepcopy__", [](xtal::SimpleStructure const &self) {
+        return xtal::SimpleStructure(self);
+      });
 
   m.def("make_structure_factor_group", &make_simplestructure_factor_group,
         py::arg("structure"), R"pbdoc(

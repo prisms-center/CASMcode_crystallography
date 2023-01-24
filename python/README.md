@@ -16,10 +16,12 @@ Installation of `libcasm-xtal` requires:
 
 Normal installation:
 
+    export CASM_PREFIX=/path/to/casm/install/location
     pip install .
 
 Editable installation:
 
+    export CASM_PREFIX=/path/to/casm/install/location
     pip install -e .
 
 

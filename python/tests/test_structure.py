@@ -140,3 +140,11 @@ def test_structure_to_poscar_str_3(example_structure_2):
     assert lines[5] == 'A B Va '
     assert lines[6] == '2 1 1 '
     assert lines[7] == 'Direct'
+
+def test_copy_structure(example_structure_1):
+    import copy
+    structure = copy.copy(example_structure_1)
+
+    assert isinstance(example_structure_1, xtal.Structure)
+    assert isinstance(structure, xtal.Structure)
+    assert structure is not example_structure_1
