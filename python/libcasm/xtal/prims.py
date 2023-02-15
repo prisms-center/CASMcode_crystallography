@@ -1,16 +1,16 @@
 import math
 import numpy as np
 from typing import Optional
-from libcasm.xtal import Prim, DoFSetBasis, Occupant
+import libcasm.xtal as xtal
 import libcasm.xtal.lattices as xtal_lattices
 
 
 def cubic(a: Optional[float] = None,
           occ_dof: list[str] = ["A", "B"],
-          local_dof: list[DoFSetBasis] = [],
-          global_dof: list[DoFSetBasis] = [],
-          occupants: dict[str, Occupant] = {},
-          title: str = "prim") -> Prim:
+          local_dof: list[xtal.DoFSetBasis] = [],
+          global_dof: list[xtal.DoFSetBasis] = [],
+          occupants: dict[str, xtal.Occupant] = {},
+          title: str = "prim") -> xtal.Prim:
     r"""Construct a simle cubic Prim
 
     Parameters
@@ -23,14 +23,14 @@ def cubic(a: Optional[float] = None,
         atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
-    local_dof : list[DoFSetBasis]=[]
+    local_dof : list[xtal.DoFSetBasis]=[]
         Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
+        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
         objects describing the DoF allowed on the `b`-th basis site.
-    global_dof : list[DoFSetBasis]=[]
+    global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
-    occupants : dict[str, Occupant]=[]
-        :class:`Occupant` allowed in the crystal. The keys are labels
+    occupants : dict[str, xtal.Occupant]=[]
+        :class:`~xtal.Occupant` allowed in the crystal. The keys are labels
         ('orientation names') used in the occ_dof parameter. This may
         include isotropic atoms, vacancies, atoms with fixed anisotropic
         properties, and molecular occupants. A seperate key and value is
@@ -48,22 +48,22 @@ def cubic(a: Optional[float] = None,
     prim : xtal.Prim
         A simple cubic Prim
     """
-    return Prim(lattice=xtal_lattices.cubic(a=a),
-                coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                occ_dof=[occ_dof],
-                local_dof=[local_dof],
-                global_dof=global_dof,
-                occupants=occupants,
-                title=title)
+    return xtal.Prim(lattice=xtal_lattices.cubic(a=a),
+                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
+                     occ_dof=[occ_dof],
+                     local_dof=[local_dof],
+                     global_dof=global_dof,
+                     occupants=occupants,
+                     title=title)
 
 
 def BCC(r: Optional[float] = None,
         a: Optional[float] = None,
         occ_dof: list[str] = ["A", "B"],
-        local_dof: list[DoFSetBasis] = [],
-        global_dof: list[DoFSetBasis] = [],
-        occupants: dict[str, Occupant] = {},
-        title: str = "prim") -> Prim:
+        local_dof: list[xtal.DoFSetBasis] = [],
+        global_dof: list[xtal.DoFSetBasis] = [],
+        occupants: dict[str, xtal.Occupant] = {},
+        title: str = "prim") -> xtal.Prim:
     r"""Construct a BCC Prim
 
     Parameters
@@ -79,14 +79,14 @@ def BCC(r: Optional[float] = None,
         atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
-    local_dof : list[DoFSetBasis]=[]
+    local_dof : list[xtal.DoFSetBasis]=[]
         Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
+        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
         objects describing the DoF allowed on the `b`-th basis site.
-    global_dof : list[DoFSetBasis]=[]
+    global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
-    occupants : dict[str, Occupant]=[]
-        :class:`Occupant` allowed in the crystal. The keys are labels
+    occupants : dict[str, xtal.Occupant]=[]
+        :class:`~xtal.Occupant` allowed in the crystal. The keys are labels
         ('orientation names') used in the occ_dof parameter. This may
         include isotropic atoms, vacancies, atoms with fixed anisotropic
         properties, and molecular occupants. A seperate key and value is
@@ -104,22 +104,22 @@ def BCC(r: Optional[float] = None,
     prim : xtal.Prim
         A BCC Prim
     """
-    return Prim(lattice=xtal_lattices.BCC(r=r, a=a),
-                coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                occ_dof=[occ_dof],
-                local_dof=[local_dof],
-                global_dof=global_dof,
-                occupants=occupants,
-                title=title)
+    return xtal.Prim(lattice=xtal_lattices.BCC(r=r, a=a),
+                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
+                     occ_dof=[occ_dof],
+                     local_dof=[local_dof],
+                     global_dof=global_dof,
+                     occupants=occupants,
+                     title=title)
 
 
 def FCC(r: Optional[float] = None,
         a: Optional[float] = None,
         occ_dof: list[str] = ["A", "B"],
-        local_dof: list[DoFSetBasis] = [],
-        global_dof: list[DoFSetBasis] = [],
-        occupants: dict[str, Occupant] = {},
-        title: str = "prim") -> Prim:
+        local_dof: list[xtal.DoFSetBasis] = [],
+        global_dof: list[xtal.DoFSetBasis] = [],
+        occupants: dict[str, xtal.Occupant] = {},
+        title: str = "prim") -> xtal.Prim:
     r"""Construct a FCC Prim
 
     Parameters
@@ -135,14 +135,14 @@ def FCC(r: Optional[float] = None,
         atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
-    local_dof : list[DoFSetBasis]=[]
+    local_dof : list[xtal.DoFSetBasis]=[]
         Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
+        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
         objects describing the DoF allowed on the `b`-th basis site.
-    global_dof : list[DoFSetBasis]=[]
+    global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
-    occupants : dict[str, Occupant]=[]
-        :class:`Occupant` allowed in the crystal. The keys are labels
+    occupants : dict[str, xtal.Occupant]=[]
+        :class:`~xtal.Occupant` allowed in the crystal. The keys are labels
         ('orientation names') used in the occ_dof parameter. This may
         include isotropic atoms, vacancies, atoms with fixed anisotropic
         properties, and molecular occupants. A seperate key and value is
@@ -160,23 +160,23 @@ def FCC(r: Optional[float] = None,
     prim : xtal.Prim
         A FCC Prim
     """
-    return Prim(lattice=xtal_lattices.FCC(r=r, a=a),
-                coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                occ_dof=[occ_dof],
-                local_dof=[local_dof],
-                global_dof=global_dof,
-                occupants=occupants,
-                title=title)
+    return xtal.Prim(lattice=xtal_lattices.FCC(r=r, a=a),
+                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
+                     occ_dof=[occ_dof],
+                     local_dof=[local_dof],
+                     global_dof=global_dof,
+                     occupants=occupants,
+                     title=title)
 
 
 def HCP(r: Optional[float] = None,
         a: Optional[float] = None,
         c: Optional[float] = None,
         occ_dof: list[str] = ["A", "B"],
-        local_dof: list[DoFSetBasis] = [],
-        global_dof: list[DoFSetBasis] = [],
-        occupants: dict[str, Occupant] = {},
-        title: str = "prim") -> Prim:
+        local_dof: list[xtal.DoFSetBasis] = [],
+        global_dof: list[xtal.DoFSetBasis] = [],
+        occupants: dict[str, xtal.Occupant] = {},
+        title: str = "prim") -> xtal.Prim:
     r"""Construct a HCP Prim
 
     Parameters
@@ -195,14 +195,14 @@ def HCP(r: Optional[float] = None,
         atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
-    local_dof : list[DoFSetBasis]=[]
+    local_dof : list[xtal.DoFSetBasis]=[]
         Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
+        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
         objects describing the DoF allowed on the `b`-th basis site.
-    global_dof : list[DoFSetBasis]=[]
+    global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
-    occupants : dict[str, Occupant]=[]
-        :class:`Occupant` allowed in the crystal. The keys are labels
+    occupants : dict[str, xtal.Occupant]=[]
+        :class:`~xtal.Occupant` allowed in the crystal. The keys are labels
         ('orientation names') used in the occ_dof parameter. This may
         include isotropic atoms, vacancies, atoms with fixed anisotropic
         properties, and molecular occupants. A seperate key and value is
@@ -220,13 +220,13 @@ def HCP(r: Optional[float] = None,
     prim : xtal.Prim
         A HCP Prim
     """
-    return Prim(lattice=xtal_lattices.HCP(r=r, a=a, c=c),
-                coordinate_frac=np.array([
-                    [1. / 3., 2. / 3., 0.25],
-                    [2. / 3., 1. / 3., 0.75],
-                ]).transpose(),
-                occ_dof=[occ_dof, occ_dof],
-                local_dof=[local_dof, local_dof],
-                global_dof=global_dof,
-                occupants=occupants,
-                title=title)
+    return xtal.Prim(lattice=xtal_lattices.HCP(r=r, a=a, c=c),
+                     coordinate_frac=np.array([
+                         [1. / 3., 2. / 3., 0.25],
+                         [2. / 3., 1. / 3., 0.75],
+                     ]).transpose(),
+                     occ_dof=[occ_dof, occ_dof],
+                     local_dof=[local_dof, local_dof],
+                     global_dof=global_dof,
+                     occupants=occupants,
+                     title=title)
