@@ -1,7 +1,7 @@
 Primitive crystal structure construction and symmetry analysis
 ==============================================================
 
-The primitive crystal structure and allowed degrees of freedom (DoF) (the “prim”) specify:
+The :py:class:`~libcasm.xtal.Prim` class is used to represent a primitive crystal structure and allowed degrees of freedom (DoF). It specifies the:
 
 - lattice vectors
 - crystal basis sites
@@ -330,6 +330,35 @@ It is possible to restrict the dimension of allowed strain DoF, or rotate the st
             [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0]]).transpose())
     global_dof = [Hstrain_dof]
     prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+
+
+Common prim
+-----------
+
+Some common prim can be constructed using the convenience methods in :py:mod:`libcasm.xtal.prims`:
+
+.. code-block:: Python
+
+    >>> import libcasm.xtal.prims as xtal_prims
+
+    # Binary FCC Prim, specified by conventional cubic lattice parameter `a`
+    >>> fcc_prim = xtal_prims.FCC(a=6.60, occ_dof=["A", "B"])
+    >>> print(fcc_prim.to_json())
+    {
+      "basis": [
+        {
+          "coordinate": [0.0, 0.0, 0.0],
+          "occupants": ["A", "B"]
+        }
+      ],
+      "coordinate_mode": "Fractional",
+      "lattice_vectors": [
+        [0.0, 3.3, 3.3],
+        [3.3, 0.0, 3.3],
+        [3.3, 3.3, 0.0]
+      ],
+      "title": "prim"
+    }
 
 
 Primitive cell

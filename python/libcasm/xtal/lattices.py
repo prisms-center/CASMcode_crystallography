@@ -1,40 +1,40 @@
 import math
 import numpy as np
 from typing import Optional
-from libcasm.xtal import Lattice
+import libcasm.xtal
 
 
 def from_lattice_parameters(a: float, b: float, c: float, alpha: float,
-                            beta: float, gamma: float) -> Lattice:
-    r"""Construct a triclinic lattice
+                            beta: float, gamma: float) -> libcasm.xtal.Lattice:
+    r"""Construct a lattice from lattice parameters
 
     Parameters
     ----------
     a: float
-        Specify the triclinic lattice parameter :math:`a`.
+        Specify the lattice parameter :math:`a`.
 
     b: float
-        Specify the triclinic lattice parameter :math:`b`.
+        Specify the lattice parameter :math:`b`.
 
     c: float
-        Specify the triclinic lattice parameter :math:`c`.
+        Specify the lattice parameter :math:`c`.
 
     alpha: float
-        Specify the triclinic lattice parameter :math:`\alpha`,
+        Specify the lattice parameter :math:`\alpha`,
         in degrees.
 
     beta: float
-        Specify the triclinic lattice parameter :math:`\beta`,
+        Specify the lattice parameter :math:`\beta`,
         in degrees.
 
     gamma: float
-        Specify the triclinic lattice parameter :math:`\gamma`,
+        Specify the lattice parameter :math:`\gamma`,
         in degrees.
 
     Returns
     -------
     lattice : xtal.Lattice
-        A triclinic lattice
+        A lattice with the specified lattice parameters
     """
     from math import cos, sin, radians, pow
 
@@ -52,7 +52,7 @@ def from_lattice_parameters(a: float, b: float, c: float, alpha: float,
     # c_y **2 + c_z **2 = pow(c * sin(_beta), 2.)
     c_z = math.sqrt(pow(c * sin(_beta), 2.) - c_y * c_y)
 
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [a, 0.0, 0.0],
             [b_x, b_y, 0.0],
@@ -60,7 +60,7 @@ def from_lattice_parameters(a: float, b: float, c: float, alpha: float,
         ]).transpose())
 
 
-def cubic(a: float) -> Lattice:
+def cubic(a: float) -> libcasm.xtal.Lattice:
     r"""Construct a cubic lattice
 
     Parameters
@@ -73,10 +73,10 @@ def cubic(a: float) -> Lattice:
     lattice : xtal.Lattice
         A cubic lattice
     """
-    return Lattice(np.eye(3) * a)
+    return libcasm.xtal.Lattice(np.eye(3) * a)
 
 
-def tetragonal(a: float, c: float) -> Lattice:
+def tetragonal(a: float, c: float) -> libcasm.xtal.Lattice:
     r"""Construct a tetragonal lattice
 
     Parameters
@@ -92,7 +92,7 @@ def tetragonal(a: float, c: float) -> Lattice:
     lattice : xtal.Lattice
         A tetragonal lattice
     """
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [a, 0., 0.],
             [0., a, 0.],
@@ -100,7 +100,7 @@ def tetragonal(a: float, c: float) -> Lattice:
         ]).transpose())
 
 
-def hexagonal(a: float, c: float) -> Lattice:
+def hexagonal(a: float, c: float) -> libcasm.xtal.Lattice:
     r"""Construct a hexagonal lattice
 
     Parameters
@@ -116,7 +116,7 @@ def hexagonal(a: float, c: float) -> Lattice:
     lattice : xtal.Lattice
         A hexagonal lattice
     """
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [a, 0.0, 0.0],  # a
             [-a / 2., a * math.sqrt(3.) / 2., 0.],  # a
@@ -124,7 +124,7 @@ def hexagonal(a: float, c: float) -> Lattice:
         ]).transpose())
 
 
-def orthorhombic(a: float, b: float, c: float) -> Lattice:
+def orthorhombic(a: float, b: float, c: float) -> libcasm.xtal.Lattice:
     r"""Construct an orthorhombic lattice
 
     Parameters
@@ -143,7 +143,7 @@ def orthorhombic(a: float, b: float, c: float) -> Lattice:
     lattice : xtal.Lattice
         A orthorhombic lattice
     """
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [a, 0., 0.],
             [0., b, 0.],
@@ -151,27 +151,27 @@ def orthorhombic(a: float, b: float, c: float) -> Lattice:
         ]).transpose())
 
 
-def rhomohedral(a: float, alpha: float) -> Lattice:
-    r"""Construct a rhomohedral lattice
+def rhombohedral(a: float, alpha: float) -> libcasm.xtal.Lattice:
+    r"""Construct a rhombohedral lattice
 
     Parameters
     ----------
     a: float
-        Specify the rhomohedral lattice parameter :math:`a`.
+        Specify the rhombohedral lattice parameter :math:`a`.
 
     alpha: float
-        Specify the rhomohedral lattice parameter :math:`\alpha`,
+        Specify the rhombohedral lattice parameter :math:`\alpha`,
         in degrees.
 
     Returns
     -------
     lattice : xtal.Lattice
-        A rhomohedral lattice
+        A rhombohedral lattice
     """
     return from_lattice_parameters(a, a, a, alpha, alpha, alpha)
 
 
-def monoclinic(a: float, b: float, c: float, beta: float) -> Lattice:
+def monoclinic(a: float, b: float, c: float, beta: float) -> libcasm.xtal.Lattice:
     r"""Construct a monoclinic lattice
 
     Parameters
@@ -198,7 +198,7 @@ def monoclinic(a: float, b: float, c: float, beta: float) -> Lattice:
 
 
 def triclinic(a: float, b: float, c: float, alpha: float, beta: float,
-              gamma: float) -> Lattice:
+              gamma: float) -> libcasm.xtal.Lattice:
     r"""Construct a triclinic lattice
 
     Parameters
@@ -232,7 +232,7 @@ def triclinic(a: float, b: float, c: float, alpha: float, beta: float,
     return from_lattice_parameters(a, b, c, alpha, beta, gamma)
 
 
-def BCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
+def BCC(r: Optional[float] = None, a: Optional[float] = None) -> libcasm.xtal.Lattice:
     r"""Construct a primitive BCC lattice
 
     Parameters
@@ -254,7 +254,7 @@ def BCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
         r = a * math.sqrt(3.0) / 4.0
     else:
         raise Exception("Error in BCC: one of `r` or `a` is required")
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [-a / 2., a / 2., a / 2.],  # a
             [a / 2., -a / 2., a / 2.],  # a
@@ -262,7 +262,7 @@ def BCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
         ]).transpose())
 
 
-def FCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
+def FCC(r: Optional[float] = None, a: Optional[float] = None) -> libcasm.xtal.Lattice:
     r"""Construct a primitive FCC lattice
 
     Parameters
@@ -285,7 +285,7 @@ def FCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
         r = a * math.sqrt(2.0) / 4.0
     else:
         raise Exception("Error in FCC: one of `r` or `a` is required")
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [0.0, a / 2.0, a / 2.0],
             [a / 2.0, 0.0, a / 2.0],
@@ -295,7 +295,7 @@ def FCC(r: Optional[float] = None, a: Optional[float] = None) -> Lattice:
 
 def HCP(r: Optional[float] = None,
         a: Optional[float] = None,
-        c: Optional[float] = None) -> Lattice:
+        c: Optional[float] = None) -> libcasm.xtal.Lattice:
     r"""Construct a primitive HCP lattice
 
     Parameters
@@ -326,7 +326,7 @@ def HCP(r: Optional[float] = None,
     if c is None:
         c = a * math.sqrt(8. / 3.)
 
-    return Lattice(
+    return libcasm.xtal.Lattice(
         np.array([
             [a, 0.0, 0.0],  # a
             [-a / 2., a * math.sqrt(3.) / 2., 0.],  # a

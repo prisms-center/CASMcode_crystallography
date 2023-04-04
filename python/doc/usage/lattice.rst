@@ -4,7 +4,7 @@ Lattice construction and symmetry analysis
 Lattice construction
 --------------------
 
-The :class:`~libcasm.xtal.Lattice` class represents a three-dimensional lattice. It is constructed by providing the lattice vectors as columns of a shape=(3,3) array.
+The :class:`~libcasm.xtal.Lattice` class is used to represent a three-dimensional lattice. It is constructed by providing the lattice vectors as columns of a shape=(3,3) array.
 
 .. code-block:: Python
 
@@ -23,10 +23,34 @@ The :class:`~libcasm.xtal.Lattice` class represents a three-dimensional lattice.
     lattice = xtal.Lattice(lattice_column_vector_matrix)
 
 
+Common lattices
+---------------
+
+Some common lattices can be constructed using the convenience methods in :py:mod:`libcasm.xtal.lattices`:
+
+.. code-block:: Python
+
+    >>> import libcasm.xtal.lattices as xtal_lattices
+
+    # Primitive BCC lattice, specified by conventional cubic lattice parameter `a`
+    >>> bcc_lattice = xtal_lattices.BCC(a=6.60)
+    >>> print(bcc_lattice.column_vector_matrix())
+    [[-3.3  3.3  3.3]
+     [ 3.3 -3.3  3.3]
+     [ 3.3  3.3 -3.3]]
+
+    # Primitive BCC lattice, specified by atomic radius `r`
+    >>> bcc_lattice = xtal_lattices.BCC(r=math.sqrt(3.0)*6.60/4.0)
+    >>> print(bcc_lattice.column_vector_matrix())
+    [[-3.3  3.3  3.3]
+     [ 3.3 -3.3  3.3]
+     [ 3.3  3.3 -3.3]]
+
+
 Coordinate conversions
 ----------------------
 
-This column-vector convention is used throughout CASM to represent basis vectors and values because it allows easily transforming values between different bases. For instance, coordinates stored as columns in shape=(3,n) arrays can be transformed between fractional and Cartesian coordinates using:
+The column-vector convention is used throughout CASM to represent basis vectors and values because it allows easily transforming values between different bases. For instance, coordinates stored as columns in shape=(3,n) arrays can be transformed between fractional and Cartesian coordinates using:
 
 .. code-block:: Python
 
@@ -40,7 +64,7 @@ For clarity and ease of use, libcasm-xtal also includes equivalent methods, :fun
     coordinate_cart = xtal.fractional_to_cartesian(lattice, coordinate_frac)
     coordinate_frac = xtal.cartesian_to_fractional(lattice, coordinate_cart)
 
-Additionally, the :func:`~libcasm.xtal.fractional_within()` can be used to set fractional coordinates with values less than 0. or greater than or equal to 1. to the equivalent values within the lattice unit cell.
+Additionally, the method :func:`~libcasm.xtal.fractional_within()` can be used to set fractional coordinates with values less than 0.0 or greater than or equal to 1.0 to the equivalent values within the lattice unit cell.
 
 
 Symmetry operations
@@ -156,7 +180,7 @@ A lattice can be represented using any choice of lattice vectors that results in
 Lattice canonical form
 ----------------------
 
-For clarity and comparison purposes it useful to have a canonical choice of equivalent lattice vectors. The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
+For clarity and comparison purposes it is useful to have a canonical choice of equivalent lattice vectors. The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
 
 .. code-block:: Python
 
