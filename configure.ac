@@ -27,7 +27,6 @@ AX_CHECK_ZLIB(,[AC_MSG_ERROR([Could not find zlib])])
 
 #I added this
 LT_INIT([shared disable-static])
-AC_PROG_LIBTOOL
 LT_LIB_DLLOAD
 AC_DISABLE_STATIC
 
