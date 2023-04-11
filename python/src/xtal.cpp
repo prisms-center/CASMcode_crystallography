@@ -437,9 +437,11 @@ xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
 
 /// \brief Format xtal::BasicStructure as JSON string
 std::string prim_to_json(
-    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+    std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
+    bool include_va) {
   jsonParser json;
-  write_prim(*prim, json, FRAC);
+  COORD_TYPE mode = frac ? FRAC : CART;
+  write_prim(*prim, json, mode, include_va);
   std::stringstream ss;
   ss << json;
   return ss.str();
@@ -1559,7 +1561,8 @@ PYBIND11_MODULE(_xtal, m) {
           [](std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
              bool include_va) {
             jsonParser json;
-            write_prim(*prim, json, FRAC);
+            COORD_TYPE mode = frac ? FRAC : CART;
+            write_prim(*prim, json, mode, include_va);
             return static_cast<nlohmann::json>(json);
           },
           py::arg("frac") = true, py::arg("include_va") = false,
@@ -1641,11 +1644,27 @@ PYBIND11_MODULE(_xtal, m) {
                   py::arg("poscar_str"),
                   py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
                   py::arg("xtal_tol") = TOL)
-      .def("to_json", &prim_to_json,
-           "Represent the Prim as a JSON-formatted string. The `Prim reference "
-           "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
-           "crystallography/BasicStructure/>`_ documents the expected JSON "
-           "format.");
+      .def("to_json", &prim_to_json, py::arg("frac") = true,
+           py::arg("include_va") = false,
+           R"pbdoc(
+            Represent the Prim as a JSON-formatted string.
+
+            Parameters
+            ----------
+            frac : boolean, default=True
+                If True, write basis site positions in fractional coordinates
+                relative to the lattice vectors. If False, write basis site positions
+                in Cartesian coordinates.
+            include_va : boolean, default=False
+                If a basis site only allows vacancies, it is not printed by default.
+                If this is True, basis sites with only vacancies will be included.
+
+            Returns
+            ----------
+            data : dict
+                The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected JSON format.
+
+            )pbdoc");
 
   m.def("_is_same_prim", &is_same_prim, py::arg("first"), py::arg("second"),
         R"pbdoc(
@@ -2213,7 +2232,6 @@ PYBIND11_MODULE(_xtal, m) {
            "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
            "crystallography/SimpleStructure/>`_ documents the expected JSON "
            "format.")
-      //
       .def(
           "to_poscar_str",
           [](xtal::SimpleStructure const &structure, bool sort,
