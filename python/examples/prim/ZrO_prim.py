@@ -2,21 +2,25 @@ import numpy as np
 import casm.xtal as xtal
 
 # Lattice vectors
-lattice_column_vector_matrix = np.array([
-    [3.233986860000, 0.000000000000, 0.000000000000],  # a, along x
-    [-1.616993430000, 2.800714770000, 0.000000000000],  # a
-    [0.000000000000, 0.000000000000, 5.168678340000],  # c, along z
-]).transpose()  # <--- note transpose
+lattice_column_vector_matrix = np.array(
+    [
+        [3.233986860000, 0.000000000000, 0.000000000000],  # a, along x
+        [-1.616993430000, 2.800714770000, 0.000000000000],  # a
+        [0.000000000000, 0.000000000000, 5.168678340000],  # c, along z
+    ]
+).transpose()  # <--- note transpose
 lattice = xtal.Lattice(lattice_column_vector_matrix)
 
 # Basis sites positions, as columns of a matrix,
 # in fractional coordinates with respect to the lattice vectors
-coordinate_frac = np.array([
-    [0., 0., 0.],  # coordinates of basis site, b=0
-    [2. / 3., 1. / 3., 1. / 2.],  # coordinates of basis site, b=1
-    [1. / 3., 2. / 3., 1. / 4.],  # coordinates of basis site, b=2
-    [1. / 3., 2. / 3., 3. / 4.],  # coordinates of basis site, b=3
-]).transpose()
+coordinate_frac = np.array(
+    [
+        [0.0, 0.0, 0.0],  # coordinates of basis site, b=0
+        [2.0 / 3.0, 1.0 / 3.0, 1.0 / 2.0],  # coordinates of basis site, b=1
+        [1.0 / 3.0, 2.0 / 3.0, 1.0 / 4.0],  # coordinates of basis site, b=2
+        [1.0 / 3.0, 2.0 / 3.0, 3.0 / 4.0],  # coordinates of basis site, b=3
+    ]
+).transpose()
 
 # Occupation degrees of freedom (DoF)
 occ_dof = [
@@ -27,10 +31,9 @@ occ_dof = [
 ]
 
 # Construct the prim
-prim = xtal.Prim(lattice=lattice,
-                 coordinate_frac=coordinate_frac,
-                 occ_dof=occ_dof,
-                 title="ZrO")
+prim = xtal.Prim(
+    lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof, title="ZrO"
+)
 
 # Print the factor group
 i = 1
@@ -41,5 +44,5 @@ for op in factor_group:
     i += 1
 
 # Format as JSON
-with open('../../doc/examples/prim/json/ZrO_prim.json', 'w') as f:
+with open("../../doc/examples/prim/json/ZrO_prim.json", "w") as f:
     f.write(prim.to_json())

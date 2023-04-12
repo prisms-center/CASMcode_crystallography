@@ -13,83 +13,95 @@ def test_make_structure(example_structure_1):
     assert len(structure.atom_type()) == 4
 
     assert len(structure.atom_properties()) == 1
-    assert 'disp' in structure.atom_properties()
-    assert structure.atom_properties()['disp'].shape == (3, 4)
+    assert "disp" in structure.atom_properties()
+    assert structure.atom_properties()["disp"].shape == (3, 4)
 
     assert len(structure.mol_properties()) == 0
 
     assert len(structure.global_properties()) == 1
-    assert 'Hstrain' in structure.global_properties()
-    assert structure.global_properties()['Hstrain'].shape == (6, 1)
+    assert "Hstrain" in structure.global_properties()
+    assert structure.global_properties()["Hstrain"].shape == (6, 1)
 
 
 def test_make_structure_within():
     # Lattice vectors
     lattice = xtal.Lattice(
-        np.array([
-            [1., 0., 0.],  # a
-            [0., 1., 0.],  # a
-            [0., 0., 1.],  # c
-        ]).transpose())
-    atom_coordinate_cart = np.array([
-        [0., 0., 1.1],
-    ]).transpose()
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [0.0, 1.0, 0.0],  # a
+                [0.0, 0.0, 1.0],  # c
+            ]
+        ).transpose()
+    )
+    atom_coordinate_cart = np.array(
+        [
+            [0.0, 0.0, 1.1],
+        ]
+    ).transpose()
 
     init_structure = xtal.Structure(
         lattice=lattice,
         atom_coordinate_frac=xtal.fractional_to_cartesian(
-            lattice, atom_coordinate_cart),
-        atom_type=["A"])
+            lattice, atom_coordinate_cart
+        ),
+        atom_type=["A"],
+    )
 
     structure = xtal.make_structure_within(init_structure)
-    expected_atom_coordinate_cart = np.array([
-        [0., 0., 0.1],
-    ]).transpose()
-    assert np.allclose(structure.atom_coordinate_cart(),
-                       expected_atom_coordinate_cart)
+    expected_atom_coordinate_cart = np.array(
+        [
+            [0.0, 0.0, 0.1],
+        ]
+    ).transpose()
+    assert np.allclose(structure.atom_coordinate_cart(), expected_atom_coordinate_cart)
 
     structure = xtal.make_within(init_structure)
-    assert np.allclose(structure.atom_coordinate_cart(),
-                       expected_atom_coordinate_cart)
+    assert np.allclose(structure.atom_coordinate_cart(), expected_atom_coordinate_cart)
 
 
 def test_structure_to_dict(example_structure_1):
     structure = example_structure_1
     data = structure.to_dict()
 
-    assert 'lattice_vectors' in data
-    assert 'coordinate_mode' in data
-    assert 'atom_coords' in data
-    assert 'atom_properties' in data
-    assert len(data['atom_properties']) == 1
-    assert 'disp' in data['atom_properties']
-    assert len(data['global_properties']) == 1
-    assert 'Hstrain' in data['global_properties']
+    assert "lattice_vectors" in data
+    assert "coordinate_mode" in data
+    assert "atom_coords" in data
+    assert "atom_properties" in data
+    assert len(data["atom_properties"]) == 1
+    assert "disp" in data["atom_properties"]
+    assert len(data["global_properties"]) == 1
+    assert "Hstrain" in data["global_properties"]
 
     assert isinstance(xtal.pretty_json(data), str)
 
 
 def test_structure_from_dict():
     data = {
-        'atom_coords': [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5], [0.0, 0.0, 1.0],
-                        [0.5, 0.5, 1.5]],
-        'atom_properties': {
-            'disp': {
-                'value': [[0.1, 0.0, 0.0], [0.1, 0.0, 0.1], [0.1, 0.1, 0.0],
-                          [0.1, 0.2, 0.3]]
+        "atom_coords": [
+            [0.0, 0.0, 0.0],
+            [0.5, 0.5, 0.5],
+            [0.0, 0.0, 1.0],
+            [0.5, 0.5, 1.5],
+        ],
+        "atom_properties": {
+            "disp": {
+                "value": [
+                    [0.1, 0.0, 0.0],
+                    [0.1, 0.0, 0.1],
+                    [0.1, 0.1, 0.0],
+                    [0.1, 0.2, 0.3],
+                ]
             }
         },
-        'atom_type': ['A', 'A', 'B', 'B'],
-        'coordinate_mode':
-        'Cartesian',
-        'global_properties': {
-            'Hstrain': {
-                'value': [0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0]
-            }
+        "atom_type": ["A", "A", "B", "B"],
+        "coordinate_mode": "Cartesian",
+        "global_properties": {
+            "Hstrain": {"value": [0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0]}
         },
-        'lattice_vectors': [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 2.0]],
-        'mol_coords': [],
-        'mol_type': []
+        "lattice_vectors": [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 2.0]],
+        "mol_coords": [],
+        "mol_type": [],
     }
     structure = xtal.Structure.from_dict(data)
 
@@ -104,46 +116,47 @@ def test_structure_from_dict():
 
 
 def test_structure_to_poscar_str_1(example_structure_2):
-    poscar_str = example_structure_2.to_poscar_str(title="test structure",
-                                                   sort=False,
-                                                   cart_coordinate_mode=False)
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure", sort=False, cart_coordinate_mode=False
+    )
     # print(poscar_str)
-    lines = poscar_str.split('\n')
+    lines = poscar_str.split("\n")
 
-    assert lines[0] == 'test structure'
-    assert lines[5] == 'A B A '
-    assert lines[6] == '1 1 1 '
-    assert lines[7] == 'Direct'
+    assert lines[0] == "test structure"
+    assert lines[5] == "A B A "
+    assert lines[6] == "1 1 1 "
+    assert lines[7] == "Direct"
 
 
 def test_structure_to_poscar_str_2(example_structure_2):
-    poscar_str = example_structure_2.to_poscar_str(title="test structure",
-                                                   sort=True,
-                                                   cart_coordinate_mode=True)
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure", sort=True, cart_coordinate_mode=True
+    )
     # print(poscar_str)
-    lines = poscar_str.split('\n')
+    lines = poscar_str.split("\n")
 
-    assert lines[0] == 'test structure'
-    assert lines[5] == 'A B '
-    assert lines[6] == '2 1 '
-    assert lines[7] == 'Cartesian'
+    assert lines[0] == "test structure"
+    assert lines[5] == "A B "
+    assert lines[6] == "2 1 "
+    assert lines[7] == "Cartesian"
 
 
 def test_structure_to_poscar_str_3(example_structure_2):
-    poscar_str = example_structure_2.to_poscar_str(title="test structure",
-                                                   sort=True,
-                                                   ignore=[])
+    poscar_str = example_structure_2.to_poscar_str(
+        title="test structure", sort=True, ignore=[]
+    )
     print(poscar_str)
-    lines = poscar_str.split('\n')
+    lines = poscar_str.split("\n")
 
-    assert lines[0] == 'test structure'
-    assert lines[5] == 'A B Va '
-    assert lines[6] == '2 1 1 '
-    assert lines[7] == 'Direct'
+    assert lines[0] == "test structure"
+    assert lines[5] == "A B Va "
+    assert lines[6] == "2 1 1 "
+    assert lines[7] == "Direct"
 
 
 def test_copy_structure(example_structure_1):
     import copy
+
     structure = copy.copy(example_structure_1)
 
     assert isinstance(example_structure_1, xtal.Structure)

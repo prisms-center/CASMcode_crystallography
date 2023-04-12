@@ -13,16 +13,13 @@ def test_DoFSetBasis_constructor_disp():
 def test_DoFSetBasis_constructor_error():
     # len(axis_names) must equal basis.shape[1]
     with pytest.raises(RuntimeError):
-        disp_dof = xtal.DoFSetBasis("disp",
-                                    axis_names=["d_{1}"],
-                                    basis=np.eye(3))
+        disp_dof = xtal.DoFSetBasis("disp", axis_names=["d_{1}"], basis=np.eye(3))
 
 
 def test_DoFSetBasis_constructor_1d_disp():
-    disp_dof = xtal.DoFSetBasis("disp",
-                                axis_names=["d_{1}"],
-                                basis=np.array([[1.0, 0.0, 0.0]]).transpose())
+    disp_dof = xtal.DoFSetBasis(
+        "disp", axis_names=["d_{1}"], basis=np.array([[1.0, 0.0, 0.0]]).transpose()
+    )
     assert disp_dof.dofname() == "disp"
     assert disp_dof.axis_names() == ["d_{1}"]
-    assert np.allclose(disp_dof.basis(),
-                       np.array([[1.0, 0.0, 0.0]]).transpose())
+    assert np.allclose(disp_dof.basis(), np.array([[1.0, 0.0, 0.0]]).transpose())

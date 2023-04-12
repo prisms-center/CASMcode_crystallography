@@ -1580,7 +1580,7 @@ PYBIND11_MODULE(_xtal, m) {
                 If this is True, basis sites with only vacancies will be included.
 
             Returns
-            ----------
+            -------
             data : dict
                 The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
 
@@ -1610,7 +1610,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Tolerance used for lattice.
 
             Returns
-            ----------
+            -------
             prim : casm.xtal.Prim
                 A Prim
 
@@ -1636,7 +1636,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Tolerance used for lattice.
 
             Returns
-            ----------
+            -------
             prim : casm.xtal.Prim
                 A Prim
 
@@ -1660,7 +1660,7 @@ PYBIND11_MODULE(_xtal, m) {
                 If this is True, basis sites with only vacancies will be included.
 
             Returns
-            ----------
+            -------
             data : dict
                 The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected JSON format.
 
@@ -1682,7 +1682,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Second Prim.
 
             Returns
-            ----------
+            -------
             is_same : casm.xtal.Prim
                 Returns true if Prim are sharing the same data
 
@@ -1699,7 +1699,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Initial prim.
 
             Returns
-            ----------
+            -------
             prim : casm.xtal.Prim
                 A copy of the initial prim, sharing the same data.
 
@@ -1716,7 +1716,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Initial prim.
 
             Returns
-            ----------
+            -------
             prim : casm.xtal.Prim
                 A copy of the initial prim, not sharing the same data.
 
@@ -1731,7 +1731,7 @@ PYBIND11_MODULE(_xtal, m) {
                 The initial prim.
 
             Returns
-            ----------
+            -------
             prim : casm.xtal.Prim
                 The prim with all basis site coordinates within the unit cell.
 
@@ -1756,7 +1756,7 @@ PYBIND11_MODULE(_xtal, m) {
                 The initial prim.
 
             Returns
-            ----------
+            -------
             prim : Lattice
                 The primitive equivalent prim.
             )pbdoc");
@@ -1779,7 +1779,7 @@ PYBIND11_MODULE(_xtal, m) {
               The initial prim.
 
           Returns
-          ----------
+          -------
           prim : Lattice
               The prim with canonical lattice.
 
@@ -2201,7 +2201,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Tolerance used for lattice.
 
             Returns
-            ----------
+            -------
             struture : casm.xtal.Structure
                 A Structure
 
@@ -2220,7 +2220,7 @@ PYBIND11_MODULE(_xtal, m) {
                 Tolerance used for lattice.
 
             Returns
-            ----------
+            -------
             struture : casm.xtal.Structure
                 A Structure
 
@@ -2272,7 +2272,7 @@ PYBIND11_MODULE(_xtal, m) {
                 If True, write POSCAR using Cartesian coordinates.
 
             Returns
-            ----------
+            -------
             struture : casm.xtal.Structure
                 A Structure
 
@@ -2350,7 +2350,7 @@ PYBIND11_MODULE(_xtal, m) {
                 The initial structure.
 
             Returns
-            ----------
+            -------
             structure : casm.xtal.Structure
                 The structure with all atom and mol site coordinates within the unit cell.
 

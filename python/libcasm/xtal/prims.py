@@ -5,12 +5,14 @@ import libcasm.xtal as xtal
 import libcasm.xtal.lattices as xtal_lattices
 
 
-def cubic(a: Optional[float] = None,
-          occ_dof: list[str] = ["A", "B"],
-          local_dof: list[xtal.DoFSetBasis] = [],
-          global_dof: list[xtal.DoFSetBasis] = [],
-          occupants: dict[str, xtal.Occupant] = {},
-          title: str = "prim") -> xtal.Prim:
+def cubic(
+    a: Optional[float] = None,
+    occ_dof: list[str] = ["A", "B"],
+    local_dof: list[xtal.DoFSetBasis] = [],
+    global_dof: list[xtal.DoFSetBasis] = [],
+    occupants: dict[str, xtal.Occupant] = {},
+    title: str = "prim",
+) -> xtal.Prim:
     r"""Construct a simle cubic Prim
 
     Parameters
@@ -48,22 +50,26 @@ def cubic(a: Optional[float] = None,
     prim : xtal.Prim
         A simple cubic Prim
     """
-    return xtal.Prim(lattice=xtal_lattices.cubic(a=a),
-                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                     occ_dof=[occ_dof],
-                     local_dof=[local_dof],
-                     global_dof=global_dof,
-                     occupants=occupants,
-                     title=title)
+    return xtal.Prim(
+        lattice=xtal_lattices.cubic(a=a),
+        coordinate_frac=np.array([[0.0, 0.0, 0.0]]).transpose(),
+        occ_dof=[occ_dof],
+        local_dof=[local_dof],
+        global_dof=global_dof,
+        occupants=occupants,
+        title=title,
+    )
 
 
-def BCC(r: Optional[float] = None,
-        a: Optional[float] = None,
-        occ_dof: list[str] = ["A", "B"],
-        local_dof: list[xtal.DoFSetBasis] = [],
-        global_dof: list[xtal.DoFSetBasis] = [],
-        occupants: dict[str, xtal.Occupant] = {},
-        title: str = "prim") -> xtal.Prim:
+def BCC(
+    r: Optional[float] = None,
+    a: Optional[float] = None,
+    occ_dof: list[str] = ["A", "B"],
+    local_dof: list[xtal.DoFSetBasis] = [],
+    global_dof: list[xtal.DoFSetBasis] = [],
+    occupants: dict[str, xtal.Occupant] = {},
+    title: str = "prim",
+) -> xtal.Prim:
     r"""Construct a BCC Prim
 
     Parameters
@@ -104,22 +110,26 @@ def BCC(r: Optional[float] = None,
     prim : xtal.Prim
         A BCC Prim
     """
-    return xtal.Prim(lattice=xtal_lattices.BCC(r=r, a=a),
-                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                     occ_dof=[occ_dof],
-                     local_dof=[local_dof],
-                     global_dof=global_dof,
-                     occupants=occupants,
-                     title=title)
+    return xtal.Prim(
+        lattice=xtal_lattices.BCC(r=r, a=a),
+        coordinate_frac=np.array([[0.0, 0.0, 0.0]]).transpose(),
+        occ_dof=[occ_dof],
+        local_dof=[local_dof],
+        global_dof=global_dof,
+        occupants=occupants,
+        title=title,
+    )
 
 
-def FCC(r: Optional[float] = None,
-        a: Optional[float] = None,
-        occ_dof: list[str] = ["A", "B"],
-        local_dof: list[xtal.DoFSetBasis] = [],
-        global_dof: list[xtal.DoFSetBasis] = [],
-        occupants: dict[str, xtal.Occupant] = {},
-        title: str = "prim") -> xtal.Prim:
+def FCC(
+    r: Optional[float] = None,
+    a: Optional[float] = None,
+    occ_dof: list[str] = ["A", "B"],
+    local_dof: list[xtal.DoFSetBasis] = [],
+    global_dof: list[xtal.DoFSetBasis] = [],
+    occupants: dict[str, xtal.Occupant] = {},
+    title: str = "prim",
+) -> xtal.Prim:
     r"""Construct a FCC Prim
 
     Parameters
@@ -160,23 +170,27 @@ def FCC(r: Optional[float] = None,
     prim : xtal.Prim
         A FCC Prim
     """
-    return xtal.Prim(lattice=xtal_lattices.FCC(r=r, a=a),
-                     coordinate_frac=np.array([[0., 0., 0.]]).transpose(),
-                     occ_dof=[occ_dof],
-                     local_dof=[local_dof],
-                     global_dof=global_dof,
-                     occupants=occupants,
-                     title=title)
+    return xtal.Prim(
+        lattice=xtal_lattices.FCC(r=r, a=a),
+        coordinate_frac=np.array([[0.0, 0.0, 0.0]]).transpose(),
+        occ_dof=[occ_dof],
+        local_dof=[local_dof],
+        global_dof=global_dof,
+        occupants=occupants,
+        title=title,
+    )
 
 
-def HCP(r: Optional[float] = None,
-        a: Optional[float] = None,
-        c: Optional[float] = None,
-        occ_dof: list[str] = ["A", "B"],
-        local_dof: list[xtal.DoFSetBasis] = [],
-        global_dof: list[xtal.DoFSetBasis] = [],
-        occupants: dict[str, xtal.Occupant] = {},
-        title: str = "prim") -> xtal.Prim:
+def HCP(
+    r: Optional[float] = None,
+    a: Optional[float] = None,
+    c: Optional[float] = None,
+    occ_dof: list[str] = ["A", "B"],
+    local_dof: list[xtal.DoFSetBasis] = [],
+    global_dof: list[xtal.DoFSetBasis] = [],
+    occupants: dict[str, xtal.Occupant] = {},
+    title: str = "prim",
+) -> xtal.Prim:
     r"""Construct a HCP Prim
 
     Parameters
@@ -220,13 +234,17 @@ def HCP(r: Optional[float] = None,
     prim : xtal.Prim
         A HCP Prim
     """
-    return xtal.Prim(lattice=xtal_lattices.HCP(r=r, a=a, c=c),
-                     coordinate_frac=np.array([
-                         [1. / 3., 2. / 3., 0.25],
-                         [2. / 3., 1. / 3., 0.75],
-                     ]).transpose(),
-                     occ_dof=[occ_dof, occ_dof],
-                     local_dof=[local_dof, local_dof],
-                     global_dof=global_dof,
-                     occupants=occupants,
-                     title=title)
+    return xtal.Prim(
+        lattice=xtal_lattices.HCP(r=r, a=a, c=c),
+        coordinate_frac=np.array(
+            [
+                [1.0 / 3.0, 2.0 / 3.0, 0.25],
+                [2.0 / 3.0, 1.0 / 3.0, 0.75],
+            ]
+        ).transpose(),
+        occ_dof=[occ_dof, occ_dof],
+        local_dof=[local_dof, local_dof],
+        global_dof=global_dof,
+        occupants=occupants,
+        title=title,
+    )

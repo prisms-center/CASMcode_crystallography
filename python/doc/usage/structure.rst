@@ -174,6 +174,9 @@ The `factor group` of a structure is the set of transformations, with translatio
     ...     syminfo = xtal.SymInfo(op, lattice)
     ...     print(str(i) + ":", syminfo.brief_cart())
     ...     i += 1
+
+::
+
     1: 1
     2: 3⁺ 0.5773503*x, 0.5773503*x, 0.5773503*x
     3: 3⁻ 0.5773503*x, 0.5773503*x, 0.5773503*x

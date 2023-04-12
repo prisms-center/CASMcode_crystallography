@@ -19,36 +19,49 @@ def test_conversions(tetragonal_lattice):
     lattice = tetragonal_lattice
     assert lattice.column_vector_matrix().shape == (3, 3)
 
-    coordinate_frac = np.array([
-        [0.0, 0.5, 0.5],
-    ]).transpose()
-    coordinate_cart = np.array([
-        [0.0, 0.5, 1.0],
-    ]).transpose()
+    coordinate_frac = np.array(
+        [
+            [0.0, 0.5, 0.5],
+        ]
+    ).transpose()
+    coordinate_cart = np.array(
+        [
+            [0.0, 0.5, 1.0],
+        ]
+    ).transpose()
 
-    assert np.allclose(xtal.fractional_to_cartesian(lattice, coordinate_frac),
-                       coordinate_cart)
-    assert np.allclose(xtal.cartesian_to_fractional(lattice, coordinate_cart),
-                       coordinate_frac)
-
-    coordinate_frac_outside = np.array([
-        [1.1, -0.1, 0.5],
-    ]).transpose()
-    coordinate_frac_within = np.array([
-        [0.1, 0.9, 0.5],
-    ]).transpose()
     assert np.allclose(
-        xtal.fractional_within(lattice, coordinate_frac_outside),
-        coordinate_frac_within)
+        xtal.fractional_to_cartesian(lattice, coordinate_frac), coordinate_cart
+    )
+    assert np.allclose(
+        xtal.cartesian_to_fractional(lattice, coordinate_cart), coordinate_frac
+    )
+
+    coordinate_frac_outside = np.array(
+        [
+            [1.1, -0.1, 0.5],
+        ]
+    ).transpose()
+    coordinate_frac_within = np.array(
+        [
+            [0.1, 0.9, 0.5],
+        ]
+    ).transpose()
+    assert np.allclose(
+        xtal.fractional_within(lattice, coordinate_frac_outside), coordinate_frac_within
+    )
 
 
 def test_min_periodic_displacement():
     lattice = xtal.Lattice(
-        np.array([
-            [1., 0., 0.],  # a (along x)
-            [0., 1., 0.],  # a (along y)
-            [0., 0., 1.],  # a (along z)
-        ]).transpose())
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a (along x)
+                [0.0, 1.0, 0.0],  # a (along y)
+                [0.0, 0.0, 1.0],  # a (along z)
+            ]
+        ).transpose()
+    )
     r1 = np.array([0.1, 0.2, 0.9])
     r2 = np.array([0.1, 0.2, 0.1])
     d = xtal.min_periodic_displacement(lattice, r1, r2)
@@ -59,34 +72,46 @@ def test_min_periodic_displacement():
 
 def test_make_canonical():
     tetragonal_lattice_noncanonical = xtal.Lattice(
-        np.array([
-            [0., 0., 2.],  # c (along z)
-            [1., 0., 0.],  # a (along x)
-            [0., 1., 0.],  # a (along y)
-        ]).transpose())
+        np.array(
+            [
+                [0.0, 0.0, 2.0],  # c (along z)
+                [1.0, 0.0, 0.0],  # a (along x)
+                [0.0, 1.0, 0.0],  # a (along y)
+            ]
+        ).transpose()
+    )
     lattice = xtal.make_canonical(tetragonal_lattice_noncanonical)
     assert np.allclose(
         lattice.column_vector_matrix(),
-        np.array([
-            [1., 0., 0.],  # a
-            [0., 1., 0.],  # a
-            [0., 0., 2.],  # c
-        ]).transpose())
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [0.0, 1.0, 0.0],  # a
+                [0.0, 0.0, 2.0],  # c
+            ]
+        ).transpose(),
+    )
 
 
 def test_lattice_comparison():
     L1 = xtal.Lattice(
-        np.array([
-            [0., 0., 2.],
-            [1., 0., 0.],
-            [0., 1., 0.],
-        ]).transpose())
+        np.array(
+            [
+                [0.0, 0.0, 2.0],
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+            ]
+        ).transpose()
+    )
     L2 = xtal.Lattice(
-        np.array([
-            [1., 0., 0.],
-            [0., 1., 0.],
-            [0., 0., 2.],
-        ]).transpose())
+        np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 2.0],
+            ]
+        ).transpose()
+    )
     assert L1 < L2
     assert L1 <= L2
     assert L2 > L1
@@ -101,11 +126,14 @@ def test_lattice_comparison():
 def test_is_superlattice_of():
     unit_lattice = xtal.Lattice(np.eye(3))
     lattice1 = xtal.Lattice(
-        np.array([
-            [1., 0., 0.],
-            [0., 1., 0.],
-            [0., 0., 2.],
-        ]).transpose())
+        np.array(
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 2.0],
+            ]
+        ).transpose()
+    )
 
     is_superlattice_of, T = xtal.is_superlattice_of(lattice1, unit_lattice)
     assert is_superlattice_of == True
@@ -117,11 +145,14 @@ def test_is_superlattice_of():
     assert np.allclose(T, np.eye(3) * 2)
 
     lattice3 = xtal.Lattice(
-        np.array([
-            [4., 0., 0.],
-            [0., 1., 0.],
-            [0., 0., 1.],
-        ]).transpose())
+        np.array(
+            [
+                [4.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ]
+        ).transpose()
+    )
     is_superlattice_of, T = xtal.is_superlattice_of(lattice3, lattice1)
     assert is_superlattice_of == False
 
@@ -130,24 +161,29 @@ def test_is_equivalent_superlattice_of():
 
     L = np.eye(3)
 
-    S1 = np.array([
-        [1., 0., 0.],
-        [0., 1., 0.],
-        [0., 0., 2.],
-    ]).transpose()
+    S1 = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 2.0],
+        ]
+    ).transpose()
 
-    S2 = np.array([
-        [4., 0., 0.],
-        [0., 1., 0.],
-        [0., 0., 1.],
-    ]).transpose()
+    S2 = np.array(
+        [
+            [4.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    ).transpose()
 
     unit_lattice = xtal.Lattice(L)
     point_group = xtal.make_point_group(unit_lattice)
     lattice1 = xtal.Lattice(S1)
     lattice2 = xtal.Lattice(S2)
 
-    is_equivalent_superlattice_of, T, p = \
-        xtal.is_equivalent_superlattice_of(lattice2, lattice1, point_group)
+    is_equivalent_superlattice_of, T, p = xtal.is_equivalent_superlattice_of(
+        lattice2, lattice1, point_group
+    )
     assert is_equivalent_superlattice_of == True
     assert np.allclose(S2, point_group[p].matrix() @ S1 @ T)

@@ -16,8 +16,7 @@ def test_integral_site_coordinate_constructor(ZrO_prim):
 def test_integral_site_coordinate_from_list(ZrO_prim):
     b = 0
     unitcell = np.array([1, 2, 3])
-    integral_site_coordinate = xtal.IntegralSiteCoordinate.from_list(
-        [0, 1, 2, 3])
+    integral_site_coordinate = xtal.IntegralSiteCoordinate.from_list([0, 1, 2, 3])
     assert b == integral_site_coordinate.sublattice()
     assert (unitcell == integral_site_coordinate.unitcell()).all()
 
@@ -97,8 +96,10 @@ def test_integral_site_coordinate_coordinate_cart(ZrO_prim):
     unitcell = np.array([0, 0, 0])
     for b in range(N_basis):
         integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
-        assert np.allclose(integral_site_coordinate.coordinate_cart(ZrO_prim),
-                           basis_coordinate_cart[:, b])
+        assert np.allclose(
+            integral_site_coordinate.coordinate_cart(ZrO_prim),
+            basis_coordinate_cart[:, b],
+        )
 
 
 def test_integral_site_coordinate_coordinate_frac(ZrO_prim):
@@ -107,8 +108,10 @@ def test_integral_site_coordinate_coordinate_frac(ZrO_prim):
     unitcell = np.array([0, 0, 0])
     for b in range(N_basis):
         integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
-        assert np.allclose(integral_site_coordinate.coordinate_frac(ZrO_prim),
-                           basis_coordinate_frac[:, b])
+        assert np.allclose(
+            integral_site_coordinate.coordinate_frac(ZrO_prim),
+            basis_coordinate_frac[:, b],
+        )
 
 
 def test_integral_site_coordinate_from_coordinate_cart(ZrO_prim):
@@ -116,7 +119,8 @@ def test_integral_site_coordinate_from_coordinate_cart(ZrO_prim):
     N_basis = basis_coordinate_cart.shape[1]
     for b in range(N_basis):
         site = xtal.IntegralSiteCoordinate.from_coordinate_cart(
-            basis_coordinate_cart[:, b], ZrO_prim)
+            basis_coordinate_cart[:, b], ZrO_prim
+        )
         assert site.to_list() == [b, 0, 0, 0]
 
 
@@ -125,5 +129,6 @@ def test_integral_site_coordinate_from_coordinate_frac(ZrO_prim):
     N_basis = basis_coordinate_frac.shape[1]
     for b in range(N_basis):
         site = xtal.IntegralSiteCoordinate.from_coordinate_frac(
-            basis_coordinate_frac[:, b], ZrO_prim)
+            basis_coordinate_frac[:, b], ZrO_prim
+        )
         assert site.to_list() == [b, 0, 0, 0]

@@ -140,6 +140,9 @@ A brief description can also be printed following the conventions of Internation
     ...     print(str(i) + ":", syminfo.brief_cart())
     ...     i += 1
     ...
+
+::
+
     1: -1 0.0000000 0.0000000 0.0000000
     2: 2 x, 0, 0
     3: 2 0.7071068*x, -0.7071068*x, 0
