@@ -1,10 +1,8 @@
-{{ fullname | escape | underline}}
+{{ name | escape | underline}}
 
 .. currentmodule:: {{ module }}
 
 .. autoclass:: {{ objname }}
-   :members:
-   :special-members: __call__, __add__, __sub__, __mul__, __truediv__, __iadd__, __isub__, __lt__, __le__, __gt__, __ge__, __eq__, __ne__
 
    {% block methods %}
    {% if methods %}
@@ -12,6 +10,8 @@
 
    .. autosummary::
       :nosignatures:
+      :toctree:
+      :template: custom-function-template.rst
    {% for item in methods %}
       {%- if not item.startswith('_') %}
       ~{{ name }}.{{ item }}
@@ -25,6 +25,8 @@
    .. rubric:: {{ _('Attributes') }}
 
    .. autosummary::
+      :nosignatures:
+      :toctree:
    {% for item in attributes %}
       ~{{ name }}.{{ item }}
    {%- endfor %}

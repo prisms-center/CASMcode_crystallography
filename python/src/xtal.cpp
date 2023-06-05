@@ -17,6 +17,7 @@
 #include "casm/crystallography/CanonicalForm.hh"
 #include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/LatticeIsEquivalent.hh"
+#include "casm/crystallography/LinearIndexConverter.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/SimpleStructureTools.hh"
 #include "casm/crystallography/StrainConverter.hh"
@@ -394,7 +395,7 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_stream(
   }
 
   Eigen::MatrixXd frac_coords(3, prim->basis().size());
-  for (int index = 0; index < prim->basis().size(); ++index) {
+  for (unsigned long index = 0; index < prim->basis().size(); ++index) {
     frac_coords.block<3, 1>(0, index) = prim->basis()[index].const_frac();
   }
   xtal::Lattice lattice = prim->lattice();
@@ -2852,6 +2853,140 @@ PYBIND11_MODULE(_xtal, m) {
         return ss.str();
       },
       "Pretty-print JSON to string.", py::arg("data"));
+
+  // SiteIndexConverter
+  py::class_<xtal::UnitCellCoordIndexConverter>(m, "SiteIndexConverter",
+                                                R"pbdoc(
+      Convert between integral site indices :math:`(b,i,j,k)` and linear site index :math:`l`.
+      )pbdoc")
+      .def(py::init<Eigen::Matrix3l const &, int>(),
+           py::arg("transformation_matrix_to_super"), py::arg("n_sublattice"),
+           R"pbdoc(
+
+          Parameters
+          ----------
+          transformation_matrix_to_super: array_like, shape=(3,3), dtype=int
+              The transformation matrix, T, relating the superstructure lattice vectors, S, to the unit structure lattice vectors, L, according to S = L @ T, where S and L are shape=(3,3)  matrices with lattice vectors as columns.
+
+          n_sublattice: int
+              The number of sublattices in the :class:`~libcasm.xtal.Prim`.
+
+          )pbdoc")
+      .def("never_bring_within",
+           &xtal::UnitCellCoordIndexConverter::never_bring_within,
+           R"pbdoc(
+            Prevent the index converter from bringing :class:`~libcasm.xtal.IntegralSiteCoordinate` within the supercell when querying for the index.
+          )pbdoc")
+      .def("always_bring_within",
+           &xtal::UnitCellCoordIndexConverter::always_bring_within,
+           R"pbdoc(
+            Automatically bring :class:`~libcasm.xtal.IntegralSiteCoordinate` values within the supercell when querying for the index (on by default).
+          )pbdoc")
+      .def("bring_within", &xtal::UnitCellCoordIndexConverter::bring_within,
+           R"pbdoc(
+          Bring the given :class:`~libcasm.xtal.IntegralSiteCoordinate` into the superlattice using superlattice translations.
+          )pbdoc",
+           py::arg("integral_site_coordinate"))
+      .def(
+          "linear_site_index",
+          [](xtal::UnitCellCoordIndexConverter const &f,
+             xtal::UnitCellCoord const &bijk) -> Index { return f(bijk); },
+          R"pbdoc(
+           Given the :class:`~libcasm.xtal.IntegralSiteCoordinate`, retreive its corresponding linear index. By default, if :func:`~libcasm.xtal.SiteIndexConverter.never_bring_within` has not been called, the :class:`~libcasm.xtal.IntegralSiteCoordinate` is brought within the superlattice using superlattice translations.
+           )pbdoc",
+          py::arg("integral_site_coordinate"))
+      .def(
+          "integral_site_coordinate",
+          [](xtal::UnitCellCoordIndexConverter const &f,
+             Index const &linear_site_index) -> xtal::UnitCellCoord {
+            return f(linear_site_index);
+          },
+          R"pbdoc(
+           Given the linear index, retreive the corresponding :class:`~libcasm.xtal.IntegralSiteCoordinate`.
+           )pbdoc",
+          py::arg("linear_site_index"))
+      .def("total_sites", &xtal::UnitCellCoordIndexConverter::total_sites,
+           R"pbdoc(
+           Returns the total number of sites within the superlattice.
+           )pbdoc");
+
+  // UnitCellIndexConverter
+  py::class_<xtal::UnitCellIndexConverter>(m, "UnitCellIndexConverter", R"pbdoc(
+      Convert between unit cell indices :math:`(i,j,k)` and linear unit cell index.
+
+      For each supercell, CASM generates an ordering of lattice sites :math:`(i,j,k)`.
+      )pbdoc")
+      .def(py::init<Eigen::Matrix3l const &>(),
+           py::arg("transformation_matrix_to_super"),
+           R"pbdoc(
+
+          Parameters
+          ----------
+          transformation_matrix_to_super: array_like, shape=(3,3), dtype=int
+              The transformation matrix, T, relating the superstructure lattice vectors, S, to the unit structure lattice vectors, L, according to S = L @ T, where S and L are shape=(3,3)  matrices with lattice vectors as columns.
+
+          )pbdoc")
+      .def(
+          "never_bring_within",
+          // &xtal::UnitCellIndexConverter::never_bring_within,
+          [](xtal::UnitCellIndexConverter &f) { f.never_bring_within(); },
+          R"pbdoc(
+            Prevent the index converter from bringing unit cell indices :math:`(i,j,k)` within the supercell when querying for the index.
+          )pbdoc")
+      .def(
+          "always_bring_within",
+          // &xtal::UnitCellIndexConverter::always_bring_within,
+          [](xtal::UnitCellIndexConverter &f) { f.always_bring_within(); },
+          R"pbdoc(
+            Automatically bring unit cell indices :math:`(i,j,k)` within the supercell when querying for the index (on by default).
+          )pbdoc")
+      .def(
+          "bring_within",
+          //&xtal::UnitCellIndexConverter::bring_within,
+          [](xtal::UnitCellIndexConverter &f, Eigen::Vector3l const &unitcell) {
+            return f.bring_within(unitcell);
+          },
+          R"pbdoc(
+           Bring the given :class:`~libcasm.xtal.IntegralSiteCoordinate` into the superlattice using superlattice translations.
+           )pbdoc",
+          py::arg("unitcell"))
+      .def(
+          "linear_unitcell_index",
+          [](xtal::UnitCellIndexConverter const &f,
+             Eigen::Vector3l const &unitcell) -> Index { return f(unitcell); },
+          R"pbdoc(
+           Given unitcell indices, :math:`(i,j,k)`, retreive the corresponding linear unitcell index. By default, if :func:`~libcasm.xtal.IntegralSiteCoordinateConverter.never_bring_within` has not been called, the lattice point is brought within the superlattice using superlattice translations.
+           )pbdoc",
+          py::arg("unitcell"))
+      .def(
+          "unitcell",
+          [](xtal::UnitCellIndexConverter const &f,
+             Index const &linear_unitcell_index) -> Eigen::Vector3l {
+            return f(linear_unitcell_index);
+          },
+          R"pbdoc(
+           Given the linear unitcell index, retreive the corresponding unitcell indices :math:`(i,j,k)`.
+           )pbdoc",
+          py::arg("linear_unitcell_index"))
+      .def(
+          "total_unitcells",
+          //&xtal::UnitCellIndexConverter::total_sites,
+          [](xtal::UnitCellIndexConverter const &f) { return f.total_sites(); },
+          R"pbdoc(
+           Returns the total number of unitcells within the superlattice.
+           )pbdoc")
+      .def(
+          "make_lattice_points",
+          [](xtal::UnitCellIndexConverter const &f) {
+            std::vector<Eigen::Vector3l> lattice_points;
+            for (Index i = 0; i < f.total_sites(); ++i) {
+              lattice_points.push_back(f(i));
+            }
+            return lattice_points;
+          },
+          R"pbdoc(
+           Returns a list of unitcell indices, :math:`(i,j,k)`, in the superlattice.
+           )pbdoc");
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
