@@ -2285,7 +2285,7 @@ PYBIND11_MODULE(_xtal, m) {
            [](xtal::SimpleStructure const &self) {
              return xtal::SimpleStructure(self);
            })
-      .def("__deepcopy__", [](xtal::SimpleStructure const &self) {
+      .def("__deepcopy__", [](xtal::SimpleStructure const &self, py::dict) {
         return xtal::SimpleStructure(self);
       });
 

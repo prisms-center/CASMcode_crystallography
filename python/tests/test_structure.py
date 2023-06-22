@@ -157,8 +157,11 @@ def test_structure_to_poscar_str_3(example_structure_2):
 def test_copy_structure(example_structure_1):
     import copy
 
-    structure = copy.copy(example_structure_1)
+    structure1 = copy.copy(example_structure_1)
+    structure2 = copy.deepcopy(example_structure_1)
 
     assert isinstance(example_structure_1, xtal.Structure)
-    assert isinstance(structure, xtal.Structure)
-    assert structure is not example_structure_1
+    assert isinstance(structure1, xtal.Structure)
+    assert structure1 is not example_structure_1
+    assert isinstance(structure2, xtal.Structure)
+    assert structure2 is not example_structure_1
