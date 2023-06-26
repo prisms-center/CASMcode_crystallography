@@ -32,8 +32,8 @@ autoclass_content = "both"
 autosummary_generate = True
 autosummary_imported_members = True
 numpydoc_show_class_members = False
-#autodoc_typehints = 'both'
-autodoc_typehints_format = 'short'
+# autodoc_typehints = 'both'
+autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
 autodoc_inherit_docstrings = False
 add_module_names = True
@@ -44,16 +44,16 @@ intersphinx_mapping = {}
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
-    'sphinxarg.ext',
-    'sphinxcontrib.bibtex',
-    'sphinx.ext.intersphinx',
-    'numpydoc',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.coverage",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.napoleon",
+    "sphinxarg.ext",
+    "sphinxcontrib.bibtex",
+    "sphinx.ext.intersphinx",
+    "numpydoc",
 ]
 
 bibtex_bibfiles = ["refs.bib"]
