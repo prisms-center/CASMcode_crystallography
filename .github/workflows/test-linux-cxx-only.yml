@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir build_cxx_test
           cd build_cxx_test
-          cmake ..
+          cmake ../tests
 
       - name: make tests
         shell: bash
