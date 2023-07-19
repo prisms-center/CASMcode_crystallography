@@ -1,10 +1,12 @@
 [build-system]
 requires = [
+    "pip",
     "setuptools>=42",
     "scikit-build",
     "cmake>=3.20",
     "ninja",
-    "pybind11>=2.6"
+    "pybind11>=2.6",
+    "libcasm-global",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -25,6 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
+  "libcasm-global",
   "numpy",
 ]
 
@@ -45,7 +48,7 @@ skip =  "pp*"
 archs = ["auto64"]
 
 # Checkout submodules
-before-all = "git submodule update --init --recursive"
+# before-all = "git submodule update --init --recursive"
 
 # Testing
 test-requires = "pytest"

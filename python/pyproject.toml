@@ -1,7 +1,9 @@
 [build-system]
 requires = [
+    "pip",
     "setuptools",
     "wheel",
-    "pybind11>=2.8.0"
+    "pybind11>=2.8.0",
+    "libcasm-global",
 ]
 build-backend = "setuptools.build_meta"

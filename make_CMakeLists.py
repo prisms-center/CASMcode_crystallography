@@ -156,18 +156,19 @@ with open("CMakeLists.txt", "w") as f:
 
 ### make tests/CMakeLists.txt from tests/CMakeLists.txt.in ###
 
-with open("tests/CMakeLists.txt.in", "r") as f:
+os.chdir("tests")
+with open("CMakeLists.txt.in", "r") as f:
     cmakelists = f.read()
 
-files = libcasm_testing_source_files("tests/unit")
+files = libcasm_testing_source_files("unit")
 cmake_file_strings = as_cmake_file_strings(files)
 cmakelists = cmakelists.replace("@libcasm_testing_source_files@", cmake_file_strings)
 
 
-additional = ["tests/unit/gtest_main_run_all.cpp"]
-files = unit_test_source_files("tests/unit/crystallography", additional)
+additional = ["unit/gtest_main_run_all.cpp"]
+files = unit_test_source_files("unit/crystallography", additional)
 cmake_file_strings = as_cmake_file_strings(files)
 cmakelists = cmakelists.replace("@casm_unit_crystallography_source_files@", cmake_file_strings)
 
-with open("tests/CMakeLists.txt", "w") as f:
+with open("CMakeLists.txt", "w") as f:
     f.write(cmakelists)

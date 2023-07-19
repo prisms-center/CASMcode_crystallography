@@ -24,13 +24,27 @@ find_package(ZLIB)
 
 # Find CASM
 if(NOT DEFINED CASM_PREFIX)
+  message(STATUS "CASM_PREFIX not defined")
   # try to find Python
   find_package (Python COMPONENTS Interpreter Development)
   if(DEFINED Python_EXECUTABLE)
     # if Python found, obtain CASM_PREFIX from the libcasm.casmglobal
-    execute_process(COMMAND ${Python_EXECUTABLE} -m libcasm.casmglobal --prefix
-                    OUTPUT_VARIABLE CASM_PREFIX_RAW)
-    string(STRIP ${CASM_PREFIX_RAW} CASM_PREFIX)
+    message(STATUS "found Python_EXECUTABLE: ${Python_EXECUTABLE}")
+    message(STATUS "checking for libcasm-global")
+    execute_process(
+      COMMAND pip show libcasm-global
+      RESULT_VARIABLE EXIT_CODE
+      OUTPUT_QUIET
+    )
+    if (${EXIT_CODE} EQUAL 0)
+      message(STATUS "found libcasm-global")
+      execute_process(COMMAND ${Python_EXECUTABLE} -m libcasm.casmglobal --prefix
+                      OUTPUT_VARIABLE CASM_PREFIX_RAW)
+      string(STRIP ${CASM_PREFIX_RAW} CASM_PREFIX)
+      message(STATUS "CASM_PREFIX: ${CASM_PREFIX}")
+    else()
+      message(STATUS "did not find libcasm-global")
+    endif()
   endif()
 endif()
 if(DEFINED CASM_PREFIX)
@@ -41,6 +55,15 @@ if(NOT CASMcode_global_FOUND)
   message(FATAL_ERROR "CMake failed to find CASMcode_global")
 endif()
 # if successful, we have CASM::casm_global
+
+# if no user CMAKE_INSTALL_PREFIX, use CASM_PREFIX if it exists
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  if(DEFINED CASM_PREFIX)
+    message(STATUS "CMAKE_INSTALL_PREFIX initialized to default, so updating CMAKE_INSTALL_PREFIX to CASM_PREFIX")
+    set(CMAKE_INSTALL_PREFIX ${CASM_PREFIX} CACHE PATH "set CMAKE_INSTALL_PREFIX to CASM_PREFIX" FORCE)
+    message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+  endif()
+ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 ##############################################
 ## Build libcasm_crystallography
@@ -148,7 +171,7 @@ if(DEFINED SKBUILD)
   ### libcasm.xtal._xtal ###
   pybind11_add_module(_xtal MODULE
                       "${PROJECT_SOURCE_DIR}/python/src/xtal.cpp")
-  target_link_libraries(_xtal PRIVATE casm_global)
+  target_link_libraries(_xtal PRIVATE CASM::casm_global)
   target_link_libraries(_xtal PRIVATE casm_crystallography)
   install(TARGETS _xtal DESTINATION xtal)
   if(APPLE)
@@ -164,5 +187,5 @@ endif()
 
 ##############################################
 ## Add tests
-enable_testing()
-add_subdirectory(tests)
+# enable_testing()
+# add_subdirectory(tests)
