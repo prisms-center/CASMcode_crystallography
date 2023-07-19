@@ -1,0 +1,47 @@
+name: Testing on ubuntu-latest
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Set up requirements & configuration variables
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake
+          pip install --upgrade pip wheel
+          pip install -r test_requirements.txt
+
+      - name: make
+        shell: bash
+        run: |
+          pip install .
+
+      - name: make test
+        shell: bash
+        run: |
+          python -m pytest -rsap python/tests
+
+      - name: Set up doc requirements
+        run: |
+          pip install -r doc_requirements.txt
+
+      - name: build docs
+        shell: bash
+        run: |
+          cd python/doc
+          sphinx-build -b html . _build/html
+
+      - name: upload docs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: libcasm-xtal-docs
+          path: python/doc/_build/html
