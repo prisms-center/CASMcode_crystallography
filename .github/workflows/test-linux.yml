@@ -22,7 +22,7 @@ jobs:
       - name: make
         shell: bash
         run: |
-          pip install .
+          pip install -v .
 
       - name: check
         shell: bash
@@ -30,8 +30,10 @@ jobs:
           pip freeze
           CASM_PREFIX=`python -m libcasm.casmglobal --prefix`
           echo "CASM_PREFIX: ${CASM_PREFIX}"
+          ls -hl ${CASM_PREFIX}/..
           ls -hl ${CASM_PREFIX}
           ls -hl ${CASM_PREFIX}/lib
+          ls -hl ${CASM_PREFIX}/lib64
           ls -hl ${CASM_PREFIX}/include
           ls -hl ${CASM_PREFIX}/xtal
 
