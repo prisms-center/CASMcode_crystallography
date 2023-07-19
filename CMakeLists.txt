@@ -274,9 +274,3 @@ if(DEFINED SKBUILD)
   endif()
 
 endif()
-
-
-##############################################
-## Add tests
-# enable_testing()
-# add_subdirectory(tests)
