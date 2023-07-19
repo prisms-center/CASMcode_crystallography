@@ -267,14 +267,10 @@ if(DEFINED SKBUILD)
   install(TARGETS _xtal DESTINATION xtal)
   if(APPLE)
     set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../lib")
-    set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../lib64")
+      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../lib" "@loader_path/../lib64")
   else()
     set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-    set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../lib64")
+      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../lib" "$ORIGIN/../lib64")
   endif()
 
 endif()
