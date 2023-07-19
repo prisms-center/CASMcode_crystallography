@@ -113,7 +113,7 @@ endforeach()
 install(
   TARGETS casm_crystallography
   EXPORT CASMcode_crystallographyTargets
-  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  DESTINATION lib)
 
 ##############################################
 ## Python extensions
@@ -176,10 +176,14 @@ if(DEFINED SKBUILD)
   install(TARGETS _xtal DESTINATION xtal)
   if(APPLE)
     set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../lib")
+    set_target_properties(
+      _xtal PROPERTIES INSTALL_RPATH "@loader_path/../lib64")
   else()
     set_target_properties(
-      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+    set_target_properties(
+      _xtal PROPERTIES INSTALL_RPATH "$ORIGIN/../lib64")
   endif()
 
 endif()
