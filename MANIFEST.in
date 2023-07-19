@@ -1,0 +1,11 @@
+include README.md LICENSE CMakeLists.txt
+include CMakeLists.txt.in make_CMakeLists.py pre-commit stylize.sh
+graft cmake
+include doc/customdoxygen.css
+include doc/doxygen_config
+graft include
+graft src
+graft tests
+recursive-include python/libcasm *.in
+recursive-include python/src *.cpp
+include dev_requirements.txt doc_requirements.txt test_requirements.txt

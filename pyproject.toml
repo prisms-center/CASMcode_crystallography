@@ -1,0 +1,65 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "scikit-build",
+    "cmake>=3.20",
+    "ninja",
+    "pybind11>=2.6"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libcasm-xtal"
+version = "2.0a1"
+authors = [
+  { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
+]
+description = "CASM crystallography"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "LGPL2.1+"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "numpy",
+]
+
+[project.urls]
+Homepage = "https://prisms-center.github.io/CASMcode_docs/"
+Repository = "https://github.com/prisms-center/CASMcode_crystallography"
+
+[build_sphinx]
+source-dir = "doc"
+build-dir  = "doc/build"
+all_files  = 1
+
+[tool.cibuildwheel]
+# Build for cpython only
+skip =  "pp*"
+
+# Build only on 64-bit architectures.
+archs = ["auto64"]
+
+# Checkout submodules
+before-all = "git submodule update --init --recursive"
+
+# Testing
+test-requires = "pytest"
+test-command = "pytest -rsap {project}/python/tests"
+test-skip = "*-macosx_arm64"
+
+
+[tool.cibuildwheel.macos]
+# C++17
+environment = { MACOSX_DEPLOYMENT_TARGET="10.15" }
+
+# Build for x86_64 and arm64
+archs = ["x86_64", "arm64"]
+
+[tool.cibuildwheel.linux]
+# dependencies do not build for musl
+skip = ["pp* *musllinux*"]
