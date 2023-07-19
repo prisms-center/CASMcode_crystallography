@@ -26,8 +26,6 @@ FetchContent_Declare(
   GIT_TAG        v1.13.0
 )
 FetchContent_MakeAvailable(googletest)
-add_library(GTest::GTest INTERFACE IMPORTED)
-target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
 
 ### ZLIB ###
@@ -93,7 +91,7 @@ target_include_directories(casm_testing
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/unit>
 )
 target_link_libraries(casm_testing
-  GTest::GTest
+  GTest::gtest
   CASM::casm_global
   CASM::casm_crystallography
 )
@@ -133,7 +131,7 @@ add_executable(casm_unit_crystallography
 )
 target_compile_features(casm_unit_crystallography PRIVATE cxx_auto_type)
 target_link_libraries(casm_unit_crystallography
-  GTest::GTest
+  GTest::gtest
   CASM::casm_global
   CASM::casm_crystallography
   casm_testing
