@@ -98,7 +98,7 @@ target_include_directories(casm_testing
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/unit>
 )
 target_link_libraries(casm_testing
-  gtest
+  gtest_all
   CASM::casm_global
   CASM::casm_crystallography
 )
@@ -138,7 +138,7 @@ add_executable(casm_unit_crystallography
 )
 target_compile_features(casm_unit_crystallography PRIVATE cxx_auto_type)
 target_link_libraries(casm_unit_crystallography
-  gtest
+  gtest_all
   CASM::casm_global
   CASM::casm_crystallography
   casm_testing
