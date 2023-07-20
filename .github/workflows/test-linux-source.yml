@@ -24,6 +24,7 @@ jobs:
 
       - name: Set up requirements & configuration variables
         run: |
+          cd CASMcode_crystallography
           sudo apt-get update
           sudo apt-get install build-essential cmake
           pip install --upgrade pip wheel
