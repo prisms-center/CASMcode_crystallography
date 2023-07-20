@@ -42,11 +42,11 @@ jobs:
           pip freeze
           CASM_PREFIX=`python -m libcasm.casmglobal --prefix`
           echo "CASM_PREFIX: ${CASM_PREFIX}"
-          if [ -d ${CASM_PREFIX}/.. ]; ls -hl ${CASM_PREFIX}/..; fi
-          if [ -d ${CASM_PREFIX} ]; ls -hl ${CASM_PREFIX}; fi
-          if [ -d ${CASM_PREFIX}/lib ]; ls -hl ${CASM_PREFIX}/lib; fi
-          if [ -d ${CASM_PREFIX}/lib64 ]; ls -hl ${CASM_PREFIX}/lib64; fi
-          if [ -d ${CASM_PREFIX}/include ]; ls -hl ${CASM_PREFIX}/include; fi
+          if [ -d ${CASM_PREFIX}/.. ]; then ls -hl ${CASM_PREFIX}/..; fi
+          if [ -d ${CASM_PREFIX} ]; then ls -hl ${CASM_PREFIX}; fi
+          if [ -d ${CASM_PREFIX}/lib ]; then ls -hl ${CASM_PREFIX}/lib; fi
+          if [ -d ${CASM_PREFIX}/lib64 ]; then ls -hl ${CASM_PREFIX}/lib64; fi
+          if [ -d ${CASM_PREFIX}/include ]; then ls -hl ${CASM_PREFIX}/include; fi
 
       - name: make test global
         shell: bash
