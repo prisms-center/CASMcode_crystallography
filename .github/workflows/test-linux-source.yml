@@ -24,16 +24,15 @@ jobs:
 
       - name: Set up requirements & configuration variables
         run: |
-          cd CASMcode_crystallography
           sudo apt-get update
           sudo apt-get install build-essential cmake
           pip install --upgrade pip wheel
-          pip install -r test_requirements.txt
 
       - name: make global
         shell: bash
         run: |
           cd CASMcode_global
+          git submodule update --init --recursive
           pip install -v .
 
       - name: check global
@@ -53,6 +52,7 @@ jobs:
         shell: bash
         run: |
           cd CASMcode_global
+          pip install -r test_requirements.txt
           python -m pytest -rsap python/tests
 
       - name: make
@@ -79,6 +79,7 @@ jobs:
         shell: bash
         run: |
           cd CASMcode_crystallography
+          pip install -r test_requirements.txt
           python -m pytest -rsap python/tests
 
       - name: Set up doc requirements
