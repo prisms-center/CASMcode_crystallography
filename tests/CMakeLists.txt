@@ -34,6 +34,11 @@ set_property(TARGET gtest_all PROPERTY INCLUDE_DIRECTORIES
   "${googletest_SOURCE_DIR}/googletest/include"
   "${googletest_SOURCE_DIR}/googletest")
 set_property(TARGET gtest_all PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_compile_options(gtest_all
+  PUBLIC
+    "-DGTEST_HAS_PTHREAD=0"
+    "-DGTEST_LINKED_AS_SHARED_LIBRARY=1"
+)
 
 ### ZLIB ###
 # Should find ZLIB::ZLIB
@@ -137,7 +142,6 @@ add_executable(casm_unit_crystallography
   ${PROJECT_SOURCE_DIR}/unit/crystallography/UnitCellCoord_test.cpp
   ${PROJECT_SOURCE_DIR}/unit/crystallography/FactorGroupConsistency_test.cpp
 )
-target_compile_features(casm_unit_crystallography PRIVATE cxx_auto_type)
 target_link_libraries(casm_unit_crystallography
   gtest_all
   CASM::casm_global

@@ -117,7 +117,7 @@ Then, to make and install CASM C++ components in the `<python package prefix>/li
 
     mkdir build_cxx_only
     cd build_cxx_only
-    cmake ..
+    cmake -DCASM_PREFIX=${CASM_PREFIX} -DCMAKE_BUILD_TYPE=Release ../tests
     make -j4 VERBOSE=1
     make install
 
@@ -125,7 +125,7 @@ C++ unit tests can be built after C++ components are installed as in the previou
 
     mkdir build_cxx_test
     cd build_cxx_test
-    cmake ../tests
+    cmake -DCASM_PREFIX=${CASM_PREFIX} -DCMAKE_BUILD_TYPE=Release ../tests
     make -j4 VERBOSE=1
     make test
 
