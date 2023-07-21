@@ -14,7 +14,7 @@ Pull requests should:
 ## Installing from source
 
 > **Note**
-> Care must be taken, especially on linux, that code linking to the CASM C++ libraries is compiled with the same choice of the -D_GLIBCXX_USE_CXX11_ABI compiler flag, otherwise there will be "undefined reference" linking errors (see [Dual ABI](https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html).  The CASM Linux C++ libraries distributed on PyPI with tag "manylinux2014" use -D_GLIBCXX_USE_CXX11_ABI=0. Newer compilers, and macosx and on all supported versions, default to -D_GLIBCXX_USE_CXX11_ABI=1.  It will be noted in the following where configuration steps may be necessary.
+> Care must be taken, especially on linux, that code linking to the CASM C++ libraries is compiled with the same choice of the -D_GLIBCXX_USE_CXX11_ABI compiler flag, otherwise there will be "undefined reference" linking errors (see [Dual ABI](https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html)).  The CASM Linux C++ libraries distributed on PyPI with tag "manylinux2014" use -D_GLIBCXX_USE_CXX11_ABI=0. Newer compilers, and all supported macosx versions, default to -D_GLIBCXX_USE_CXX11_ABI=1.  It will be noted in the following where configuration steps may be necessary.
 
 
 Installation of `libcasm-xtal` from source requires standard compilers with support for C++17, Python >= 3.8. For example:
@@ -92,18 +92,18 @@ The project is organized as follows:
 - `python/tests/<name>/`: Python tests
 - `python/doc/`: Python documentation
 
-When the project is built and installed, components are added to the Python installation location (i.e. `<something>/lib/pythonX.Y/sites-packages`) in the `libcasm` folder at the following locations:
+When the project is built and installed, components are added to the Python installation location (i.e. `<python package prefix> = <something>/lib/pythonX.Y/sites-packages/`) in the `libcasm/` folder at the following locations:
 
 `<python package prefix>/libcasm/`:
 
 - `include/`: C++ headers
 - `lib/`: Built C++ libraries (i.e. `libcasm_crystallography.so` or `libcasm_crystallography.dylib`)
 - `share/CASMcode_<name>/cmake/`: CMake distribution data
-- `<packagename>`: CASM Python packages, with Python source files and built pybind11 wrapper libraries
+- `<packagename>/`: CASM Python namespace packages, with Python source files and built pybind11 wrapper libraries
 
 #### Adding or removing files
 
-CMake is used to build the project. When files are added or removed from the project, the `CMakeLists.txt` and `tests/CMakeList.txt` files must be updated. This can be done in an automated fashion using:
+CMake is used to build the project. When files are added or removed from the project, the `CMakeLists.txt` and `tests/CMakeList.txt` files must be updated. This can be done in an automated fashion using a script to copy the `CMakeLists.txt.in` and `tests/CMakeList.txt.in` templates and populate them with the current project files:
 
     python make_CMakeLists.py
 
@@ -128,7 +128,7 @@ Then, to make and install CASM C++ components in the `<python package prefix>/li
     mkdir build_cxx_only
     cd build_cxx_only
 
-    # Some cmake options:
+    # Some configuration options:
     #
     # To use an existing C++ only casm installation add:
     #   -DCASM_PREFIX=<path-to-casm>
@@ -146,7 +146,7 @@ C++ unit tests can be built after C++ components are installed as in the previou
 
     mkdir build_cxx_test
     cd build_cxx_test
-    # Some cmake options:
+    # Some configuration options:
     #
     # To use an existing C++ only casm installation add:
     #   -DCASM_PREFIX=<path-to-casm>
@@ -173,14 +173,14 @@ Use the `setup.py` file in `CASMcode_crystallography/python/` for editable insta
     # It is required to set the casm prefix:
     export CASM_PREFIX=$(python -m libcasm.casmglobal --prefix)
 
-    # Some cmake options:
+    # Some configuration options:
     #
     # To link to manylinux2014 packages set:
     #   export CASM_EXTRA_COMPILE_ARGS='-D_GLIBCXX_USE_CXX11_ABI=0'
     #
     pip install -e .
 
-At this point, changes made to pure Python source files are immediately testable. Testing changes made to the pybind11 wrappers require re-building with `pip install -e .`. Testing changes made to the CASM C++ components requires re-building and re-installing the C++ components and then re-building with `pip install -e .`.
+At this point, changes made to pure Python source files are immediately testable. Testing changes made to the pybind11 wrappers requires re-building with `pip install -e .`. Testing changes made to the CASM C++ components requires re-building and re-installing the C++ components and then re-building with `pip install -e .`.
 
 To uninstall the Python package do:
 
@@ -193,9 +193,9 @@ To test the combined build process performed by `pip install .`, it may be usefu
 
     pip install -v --no-build-isolation .
 
-This allows `ccache` to identify and reuse identical compilation steps and speeds up the build process. To do this, it is necessary to have installed all build requirements already using from `build_requirements.txt`. Build isolation should not be skipped for CI tests.
+This allows `ccache` to identify and reuse identical compilation steps and speeds up the build process. To do this, it is necessary to have installed all build requirements already from `build_requirements.txt`. Build isolation should not be skipped for CI tests.
 
-When built together using `pip install .`, all C++ and Python components can be uninstalled using:
+When built together using pip, all C++ and Python components can be uninstalled using:
 
     pip uninstall libcasm-xtal
 
@@ -216,29 +216,33 @@ For Python code formatting, use black. Do:
 #### Python docstring style
 
 - When in doubt, refer to [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html), [pandas](https://pandas.pydata.org/docs/development/contributing_documentation.html), or [scikit-learn](https://scikit-learn.org/dev/developers/contributing.html#documentation).
-- When referred to in text, use the convention ```  `variable` ```, so variables appear italicized because (i.e. The *variable* is important).
+- When referring to constructor arguments or function variables in docstring text, use the convention ``` `variable` ```, so variables appear italicized because (i.e. The *variable* is important).
 - When describing that a variable has a particular value or how it is used in a code snippet, then use either inline code (```variable=True```) or a code block:
 
   ```
-  .. python-block:: Python
+  .. code-block:: Python
 
       variable = 6
   ```
-- Make use of ```.. rubric:: Special Methods``` in a class docstring to describe special members of a class, such as comparison operators (`<`, `<=`, `>`, `>=`, `*`, `+=`, `-=`, etc.) if they are defined
+- Make use of ```.. rubric:: Special Methods``` to create a section in a class docstring to document any special members of a class, such as comparison operators (`<`, `<=`, `>`, `>=`, etc.) or overloaded operators (`*`, `+`, `+=`, `-`, `-=`, etc.).
 
 
 #### C++ formatting
 
-For C++ code formatting, use clang-format with `-style=google`. Use the `stylize.sh` script to format files staged for commit. To enforce that it is run before committing, place the `pre-commit` file, or equivalent code, in `.git/hooks`. After `git add` do:
+For C++ code formatting, use clang-format with `-style=google`. Use the `stylize.sh` script to format files staged for commit. To enforce that it is run before committing, place the `pre-commit` file, or equivalent code, in `.git/hooks`. The process looks like:
 
-    # git add <new and changed files>
+    git add <unformatted new and changed files>
     ./stylize.sh
-    # git add <formatted new and changed files>
-    # check changes and commit
+    git add <formatted new and changed files>
 
-When C++ files have been added or removed from `include/`, `src/`, or `tests/`, then `CMakeLists.txt` may be updated from the `CMakeLists.txt.in` template using:
+    # good idea to check changes
+    git status
+    git diff --cached
+    git commit -m "Added new feature X"
 
-      python make_CMakeLists.py
+If C++ files have been added or removed from `include/`, `src/`, or `tests/`, then `CMakeLists.txt` should be updated from the `CMakeLists.txt.in` template using:
+
+    python make_CMakeLists.py
 
 
 #### C++ style
@@ -267,8 +271,6 @@ C++:
 
 
 ### Using CASM C++ libraries
-
-*Note: This section is under development*
 
 A `__main__.py` file added to the `libcasm.casmglobal` package allows finding the CASM installation location for use by other packages.
 
