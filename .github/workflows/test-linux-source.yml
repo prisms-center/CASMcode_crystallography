@@ -7,11 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: checkout libcasm-xtal
-        uses: actions/checkout@v3
-        with:
-          path: CASMcode_crystallography
-
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
@@ -21,6 +16,11 @@ jobs:
         with:
           repository: prisms-center/CASMcode_global
           path: CASMcode_global
+
+      - name: checkout libcasm-xtal
+        uses: actions/checkout@v3
+        with:
+          path: CASMcode_crystallography
 
       - name: Set up requirements & configuration variables
         run: |
@@ -34,19 +34,6 @@ jobs:
           cd CASMcode_global
           git submodule update --init --recursive
           pip install -v .
-
-      - name: check global
-        shell: bash
-        run: |
-          cd CASMcode_global
-          pip freeze
-          CASM_PREFIX=`python -m libcasm.casmglobal --prefix`
-          echo "CASM_PREFIX: ${CASM_PREFIX}"
-          if [ -d ${CASM_PREFIX}/.. ]; then ls -hl ${CASM_PREFIX}/..; fi
-          if [ -d ${CASM_PREFIX} ]; then ls -hl ${CASM_PREFIX}; fi
-          if [ -d ${CASM_PREFIX}/lib ]; then ls -hl ${CASM_PREFIX}/lib; fi
-          if [ -d ${CASM_PREFIX}/lib64 ]; then ls -hl ${CASM_PREFIX}/lib64; fi
-          if [ -d ${CASM_PREFIX}/include ]; then ls -hl ${CASM_PREFIX}/include; fi
 
       - name: make test global
         shell: bash

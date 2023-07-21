@@ -17,13 +17,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install build-essential cmake
           pip install -r build_requirements.txt
+          echo "SKBUILD_CONFIGURE_OPTIONS=${{ env.SKBUILD_CONFIGURE_OPTIONS }" >> "$GITHUB_ENV"
+          echo "SKBUILD_BUILD_OPTIONS=${{ env.SKBUILD_BUILD_OPTIONS }" >> "$GITHUB_ENV"
 
       - name: configure
         shell: bash
         run: |
           mkdir build_cxx_only
           cd build_cxx_only
-          cmake ..
+          cmake -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0' -DCMAKE_BUILD_TYPE=Release ..
 
       - name: make
         shell: bash
@@ -42,7 +44,7 @@ jobs:
         run: |
           mkdir build_cxx_test
           cd build_cxx_test
-          cmake ../tests
+          cmake -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0' -DCMAKE_BUILD_TYPE=Release ../tests
 
       - name: make tests
         shell: bash

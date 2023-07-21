@@ -11,7 +11,11 @@ Pull requests should:
 - Pass all CI tests
 - Include a suggested CHANGELOG.md entry, see [keepachangelog.com](https://keepachangelog.com).
 
-## Install from source
+## Installing from source
+
+> **Note**
+> Care must be taken, especially on linux, that code linking to the CASM C++ libraries is compiled with the same choice of the -D_GLIBCXX_USE_CXX11_ABI compiler flag, otherwise there will be "undefined reference" linking errors (see [Dual ABI](https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html).  The CASM Linux C++ libraries distributed on PyPI with tag "manylinux2014" use -D_GLIBCXX_USE_CXX11_ABI=0. Newer compilers, and macosx and on all supported versions, default to -D_GLIBCXX_USE_CXX11_ABI=1.  It will be noted in the following where configuration steps may be necessary.
+
 
 Installation of `libcasm-xtal` from source requires standard compilers with support for C++17, Python >= 3.8. For example:
 
@@ -37,6 +41,12 @@ Installation of `libcasm-xtal` from source requires standard compilers with supp
 
 Then `libcasm-xtal` and its dependencies can be installed with:
 
+    # Configuration options:
+    #
+    # To install with manylinux2014 package dependencies set:
+    #   export SKBUILD_CONFIGURE_OPTIONS="-DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'"
+    # To print compiler commands set:
+    #   export SKBUILD_BUILD_OPTIONS="--verbose"
     pip install .
 
 
@@ -111,13 +121,24 @@ Install build dependencies:
 
     pip install -r build_requirements.txt
 
-Once the `libcasm-global` Python package is installed by the previous step, CMake should be able find and link to other CASM module dependencies in the `<python package prefix>/libcasm/` directory automatically. It will also set that as the install location unless the user defines `CMAKE_INSTALL_PREFIX` explicitly to override it.
+Once the `libcasm-global` Python package is installed by the previous step, CMake should be able find and link to other CASM module dependencies in the `<python package prefix>/libcasm/` directory automatically. It will also set that as the install location unless the user defines `CMAKE_INSTALL_PREFIX` explicitly to override it. CMake will also detect and use `ccache` if it is installed, which is very useful to avoid recompiling objects and greatly speed up development.
 
 Then, to make and install CASM C++ components in the `<python package prefix>/libcasm/` directory:
 
     mkdir build_cxx_only
     cd build_cxx_only
-    cmake -DCASM_PREFIX=${CASM_PREFIX} -DCMAKE_BUILD_TYPE=Release ../tests
+
+    # Some cmake options:
+    #
+    # To use an existing C++ only casm installation add:
+    #   -DCASM_PREFIX=<path-to-casm>
+    # To link to manylinux2014 packages add:
+    #   -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
+    # CASM may be slow if not using the Release build type (-O3 -DNDEBUG).
+    # To specify build type use Release, Debug, RelWithDebInfo, or MinSizeRel
+    #   -DCMAKE_BUILD_TYPE=Release
+    #
+    cmake -DCMAKE_BUILD_TYPE=Release ..
     make -j4 VERBOSE=1
     make install
 
@@ -125,7 +146,17 @@ C++ unit tests can be built after C++ components are installed as in the previou
 
     mkdir build_cxx_test
     cd build_cxx_test
-    cmake -DCASM_PREFIX=${CASM_PREFIX} -DCMAKE_BUILD_TYPE=Release ../tests
+    # Some cmake options:
+    #
+    # To use an existing C++ only casm installation add:
+    #   -DCASM_PREFIX=<path-to-casm>
+    # To link to manylinux2014 packages add:
+    #   -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
+    # CASM tests may be slow if not using the Release build type (-O3 -DNDEBUG).
+    # To specify build type use Release, Debug, RelWithDebInfo, or MinSizeRel
+    #   -DCMAKE_BUILD_TYPE=Release
+    #
+    cmake -DCMAKE_BUILD_TYPE=Release ../tests
     make -j4 VERBOSE=1
     make test
 
@@ -139,6 +170,14 @@ To uninstall a C++ only installation, use the `install_manifest.txt` file genera
 Use the `setup.py` file in `CASMcode_crystallography/python/` for editable install of the pure Python components:
 
     cd python
+    # It is required to set the casm prefix:
+    export CASM_PREFIX=$(python -m libcasm.casmglobal --prefix)
+
+    # Some cmake options:
+    #
+    # To link to manylinux2014 packages set:
+    #   export CASM_EXTRA_COMPILE_ARGS='-D_GLIBCXX_USE_CXX11_ABI=0'
+    #
     pip install -e .
 
 At this point, changes made to pure Python source files are immediately testable. Testing changes made to the pybind11 wrappers require re-building with `pip install -e .`. Testing changes made to the CASM C++ components requires re-building and re-installing the C++ components and then re-building with `pip install -e .`.
