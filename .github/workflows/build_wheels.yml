@@ -2,32 +2,88 @@ name: Build wheels
 
 on:
   # Trigger on pull requests.
-  pull_request:
+  # pull_request:
 
   # Trigger on version tags. This prevents building commits
   # twice when the pull request source branch is in the same repository.
   push:
     tags:
-     - "v*"
-     - "test*"
+      - "v*"
+      - "test*"
 
   # Trigger on request.
   workflow_dispatch:
 
 
 jobs:
-  build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, macos-12]
+  build_wheels_linux_x86_64:
+    name: Build x86_64 wheels on ubuntu-22.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.14.1
+        env:
+          CIBW_ARCHS_LINUX: x86_64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./wheelhouse/*.whl
+
+  build_wheels_linux_aarch64:
+    name: Build aarch64 wheels on ubuntu-22.04
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.14.1
+        env:
+          CIBW_ARCHS_LINUX: aarch64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./wheelhouse/*.whl
+
+  build_wheels_macos_x86_64:
+    name: Build x86_64 wheels on macos-12
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.14.1
+        env:
+          CIBW_ARCHS_MACOS: x86_64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./wheelhouse/*.whl
+
+  build_wheels_macos_arm64:
+    name: Build arm64 wheels on macos-12
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.14.1
+        env:
+          CIBW_ARCHS_MACOS: arm64
+          CIBW_TEST_SKIP: "*-macosx_arm64"
 
       - uses: actions/upload-artifact@v3
         with:
@@ -38,9 +94,6 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    env:
-      SKBUILD_CONFIGURE_OPTIONS: -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
-      SKBUILD_BUILD_OPTIONS: --verbose
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -52,8 +105,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install build-essential cmake
           pip install --upgrade pip wheel build
-          echo "SKBUILD_CONFIGURE_OPTIONS=${{ env.SKBUILD_CONFIGURE_OPTIONS }" >> "$GITHUB_ENV"
-          echo "SKBUILD_BUILD_OPTIONS=${{ env.SKBUILD_BUILD_OPTIONS }" >> "$GITHUB_ENV"
 
       - name: make
         shell: bash
@@ -69,7 +120,7 @@ jobs:
 
   upload_pypi:
     name: Publish [PyPI]
-    needs: [build_wheels, build_sdist]
+    needs: [build_wheels_linux_x86_64, build_wheels_linux_aarch64, build_wheels_macos_x86_64, build_wheels_macos_arm64, build_sdist]
     runs-on: ubuntu-latest
     # Specifying a GitHub environment is optional, but strongly encouraged
     # environment: release
