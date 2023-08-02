@@ -87,7 +87,7 @@ target_include_directories(casm_crystallography
 )
 target_compile_options(casm_crystallography
   PUBLIC
-    "-DTXT_VERSION=\"${CMAKE_PROJECT_VERSION}\""
+    "-DCASM_XTAL_TXT_VERSION=\"${CMAKE_PROJECT_VERSION}\""
     -DEIGEN_DEFAULT_DENSE_INDEX_TYPE=long
     -DGZSTREAM_NAMESPACE=gz
 )
