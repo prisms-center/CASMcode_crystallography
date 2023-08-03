@@ -1,6 +1,5 @@
-import copy
 import numpy as np
-import pytest
+
 import libcasm.xtal as xtal
 
 
@@ -68,17 +67,6 @@ def test_integral_site_coordinate_translate_isub(ZrO_prim):
     integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
     integral_site_coordinate -= translation
     assert integral_site_coordinate.to_list() == [0, 1, 2, 2]
-
-
-def test_integral_site_coordinate_translate_add(ZrO_prim):
-    b = 0
-    unitcell = np.array([1, 2, 3])
-    translation = np.array([0, 0, 1])
-
-    integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
-    translated = integral_site_coordinate + translation
-    assert integral_site_coordinate.to_list() == [0, 1, 2, 3]
-    assert translated.to_list() == [0, 1, 2, 4]
 
 
 def test_integral_site_coordinate_compare(ZrO_prim):

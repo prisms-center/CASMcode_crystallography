@@ -1,7 +1,6 @@
-import json
-import pytest
-import libcasm.xtal as xtal
 import numpy as np
+
+import libcasm.xtal as xtal
 
 
 def test_make_structure(example_structure_1):

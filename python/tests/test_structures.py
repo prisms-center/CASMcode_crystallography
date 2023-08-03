@@ -1,9 +1,8 @@
-from libcasm.xtal import Structure
 import libcasm.xtal.structures as structures
+from libcasm.xtal import Structure
 
 
 def test_construct_all_structures():
-
     assert isinstance(structures.BCC(r=1.0), Structure)
     assert isinstance(structures.BCC(a=1.0), Structure)
 

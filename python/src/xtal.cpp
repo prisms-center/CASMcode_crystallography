@@ -1492,8 +1492,8 @@ PYBIND11_MODULE(_xtal, m) {
   // `xtal::BasicStructure const &` arguments and return
   // `std::shared_ptr<xtal::BasicStructure const>`. Pybind11 will cast away the
   // const-ness of the returned quantity. The one exception is the method
-  // `make_prim` used for the casm.xtal.Prim __init__ method, which it appears
-  // must return `std::shared_ptr<xtal::BasicStructure>`.
+  // `make_prim` used for the libcasm.xtal.Prim __init__ method, which it
+  // appears must return `std::shared_ptr<xtal::BasicStructure>`.
 
   py::class_<xtal::BasicStructure, std::shared_ptr<xtal::BasicStructure>>(
       m, "Prim", R"pbdoc(

@@ -1,6 +1,7 @@
 import math
-import pytest
+
 import numpy as np
+
 import libcasm.xtal as xtal
 
 
@@ -116,11 +117,11 @@ def test_lattice_comparison():
     assert L1 <= L2
     assert L2 > L1
     assert L2 >= L1
-    assert (L1 == L2) == False
+    assert (L1 == L2) is False
     assert L1 != L2
     assert L1 == L1
-    assert (L1 != L1) == False
-    assert xtal.is_equivalent_to(L1, L2) == True
+    assert (L1 != L1) is False
+    assert xtal.is_equivalent_to(L1, L2) is True
 
 
 def test_is_superlattice_of():
@@ -136,12 +137,12 @@ def test_is_superlattice_of():
     )
 
     is_superlattice_of, T = xtal.is_superlattice_of(lattice1, unit_lattice)
-    assert is_superlattice_of == True
+    assert is_superlattice_of is True
     assert np.allclose(T, lattice1.column_vector_matrix())
 
     lattice2 = xtal.Lattice(lattice1.column_vector_matrix() * 2)
     is_superlattice_of, T = xtal.is_superlattice_of(lattice2, lattice1)
-    assert is_superlattice_of == True
+    assert is_superlattice_of is True
     assert np.allclose(T, np.eye(3) * 2)
 
     lattice3 = xtal.Lattice(
@@ -154,11 +155,10 @@ def test_is_superlattice_of():
         ).transpose()
     )
     is_superlattice_of, T = xtal.is_superlattice_of(lattice3, lattice1)
-    assert is_superlattice_of == False
+    assert is_superlattice_of is False
 
 
 def test_is_equivalent_superlattice_of():
-
     L = np.eye(3)
 
     S1 = np.array(
@@ -185,5 +185,5 @@ def test_is_equivalent_superlattice_of():
     is_equivalent_superlattice_of, T, p = xtal.is_equivalent_superlattice_of(
         lattice2, lattice1, point_group
     )
-    assert is_equivalent_superlattice_of == True
+    assert is_equivalent_superlattice_of is True
     assert np.allclose(S2, point_group[p].matrix() @ S1 @ T)

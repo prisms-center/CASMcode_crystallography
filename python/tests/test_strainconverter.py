@@ -1,6 +1,7 @@
 import math
-import pytest
+
 import numpy as np
+
 import libcasm.xtal as xtal
 
 # from scipy.spatial.transform import Rotation
@@ -58,9 +59,7 @@ def test_strainconverter_conversions():
     Qi = np.array([[0.8660254, -0.5, 0.0], [0.5, 0.8660254, 0.0], [0.0, 0.0, 1.0]])
     Ui = np.array([[1.0, 0.0, 0.0], [0.0, 1.1, 0.2], [0.0, 0.2, 0.9]])
     w = math.sqrt(2.0)
-    U_unrolled = np.array(
-        [Ui[0, 0], Ui[1, 1], Ui[2, 2], w * Ui[1, 2], w * Ui[0, 2], w * Ui[0, 1]]
-    )
+    np.array([Ui[0, 0], Ui[1, 1], Ui[2, 2], w * Ui[1, 2], w * Ui[0, 2], w * Ui[0, 1]])
     Fi = Qi @ Ui
 
     Q, U = xtal.StrainConverter.F_to_QU(Fi)
@@ -103,8 +102,8 @@ def test_strainconverter_reduced_dim():
 
     Qi = np.array([[0.8660254, -0.5, 0.0], [0.5, 0.8660254, 0.0], [0.0, 0.0, 1.0]])
     Ui = np.array([[1.0, 0.0, 0.0], [0.0, 1.1, 0.1], [0.0, 0.1, 0.9]])
-    Ui_in_space = np.array([[1.0, 0.0, 0.0], [0.0, 1.1, 0.0], [0.0, 0.0, 0.9]])
-    w = math.sqrt(2.0)
+    np.array([[1.0, 0.0, 0.0], [0.0, 1.1, 0.0], [0.0, 0.0, 0.9]])
+    math.sqrt(2.0)
     Fi = Qi @ Ui
 
     for metric in ["Ustrain", "Bstrain", "EAstrain", "GLstrain", "Hstrain"]:

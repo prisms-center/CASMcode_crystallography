@@ -1,15 +1,13 @@
-import glob
 import os
-import sys
 
 __version__ = "2.0a1"
 
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from setuptools import setup, find_namespace_packages
+from setuptools import setup
 
 # If on macosx, target 10.15 (ignored otherwise)
-os.environ["MACOSX_DEPLOYMENT_TARGET"]="10.15"
+os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"
 
 # extra_compile_args
 extra_compile_args = [
@@ -35,7 +33,7 @@ extra_link_args = [
     f"-Wl,-rpath,{rpath}",
     f"-Wl,-rpath,{rpath64}",
     "-lcasm_global",
-    "-lcasm_crystallography"
+    "-lcasm_crystallography",
 ]
 
 

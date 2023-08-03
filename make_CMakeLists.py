@@ -168,7 +168,9 @@ cmakelists = cmakelists.replace("@libcasm_testing_source_files@", cmake_file_str
 additional = ["unit/gtest_main_run_all.cpp"]
 files = unit_test_source_files("unit/crystallography", additional)
 cmake_file_strings = as_cmake_file_strings(files)
-cmakelists = cmakelists.replace("@casm_unit_crystallography_source_files@", cmake_file_strings)
+cmakelists = cmakelists.replace(
+    "@casm_unit_crystallography_source_files@", cmake_file_strings
+)
 
 with open("CMakeLists.txt", "w") as f:
     f.write(cmakelists)

@@ -1,12 +1,12 @@
 import numpy as np
+import pytest
+
 import libcasm.xtal as xtal
 import libcasm.xtal.lattices as xtal_lattices
-import pytest
 
 
 @pytest.fixture
 def tetragonal_lattice():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -20,7 +20,6 @@ def tetragonal_lattice():
 
 @pytest.fixture
 def simple_cubic_binary_prim():
-
     # Basis sites positions, as columns of a matrix,
     # in fractional coordinates with respect to the lattice vectors
     coordinate_frac = np.array(
@@ -51,7 +50,6 @@ def simple_cubic_binary_prim():
 
 @pytest.fixture
 def simple_cubic_binary_va_disp_Hstrain_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -96,7 +94,6 @@ def simple_cubic_binary_va_disp_Hstrain_prim():
 
 @pytest.fixture
 def simple_cubic_ising_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -144,7 +141,6 @@ def simple_cubic_ising_prim():
 
 @pytest.fixture
 def simple_cubic_1d_disp_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -194,7 +190,6 @@ def simple_cubic_1d_disp_prim():
 
 @pytest.fixture
 def nonprimitive_cubic_occ_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -236,7 +231,6 @@ def nonprimitive_cubic_occ_prim():
 
 @pytest.fixture
 def perovskite_occ_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -341,7 +335,6 @@ def test_nonprimitive_manydof_prim():
 
 @pytest.fixture
 def ZrO_prim():
-
     # Lattice vectors
     lattice_column_vector_matrix = np.array(
         [
@@ -417,7 +410,7 @@ def example_structure_1():
     print(atom_properties)
 
     # global properties
-    F = np.array(
+    np.array(
         [
             [1.01, 0.0, 0.0],
             [0.0, 1.0, 0.0],
@@ -462,8 +455,4 @@ def example_structure_2():
             lattice, atom_coordinate_cart
         ),
         atom_type=["A", "Va", "B", "A"],
-    )
-
-    poscar_str = structure.to_poscar_str(
-        title="test structure", sort=False, cart_coordinate_mode=False
     )
