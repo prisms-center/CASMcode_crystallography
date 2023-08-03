@@ -882,7 +882,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       .. rubric:: Special Methods
 
-      Sort :class:`~libcasm.xtal.Lattice` by how canonical the lattice vectors are via ``<``, ``<=``, ``>``, ``>=`` (see also `Lattice Canonical Form`_.), and check if lattice are approximately equal via ``==``, ``!=``:
+      Sort :class:`~libcasm.xtal.Lattice` by how canonical the lattice vectors are via ``<``, ``<=``, ``>``, ``>=`` (see also :ref:`Lattice Canonical Form <lattice-canonical-form>`), and check if lattice are approximately equal via ``==``, ``!=``:
 
       .. code-block:: Python
 
@@ -1917,6 +1917,7 @@ PYBIND11_MODULE(_xtal, m) {
       - ``X=SymOp``, ``lhs=SymOp``, ``rhs=SymOp``: Construct the :class:`~libcasm.xtal.SymOp`, `X`, equivalent to applying first `rhs`, then `lhs`.
       - ``X=np.ndarray``, ``lhs=SymOp``, ``rhs=np.ndarray``: Transform multiple Cartesian coordinates, represented as columns of a `np.ndarray`.
       - ``X=Dict[str,np.ndarray]``, ``lhs=SymOp``, ``rhs=Dict[str,np.ndarray]``: Transform CASM-supported properties (local or global). Keys must be the name of a CASM-supported property type. Values are arrays with the number of rows matching the standard dimension of the property type. For local properties, columns correspond to the value associated with each site. For global properties, there is one column. See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported properties and their definitions.
+      - ``X=Lattice``, ``lhs=SymOp``, ``rhs=Lattice``: Transform a :class:`~libcasm.xtal.Lattice`.
       - ``X=Structure``, ``lhs=SymOp``, ``rhs=Structure``: Transform a :class:`~libcasm.xtal.Structure`.
 
       .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1960,8 +1961,7 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("coordinate_cart"),
           "Transform multiple Cartesian coordinates, represented as columns of "
-          "a "
-          "matrix.")
+          "a matrix.")
       .def(
           "__mul__",
           [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
@@ -1977,6 +1977,12 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("rhs"),
           "Transform CASM-supported properties (local or global).")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, xtal::Lattice const &lattice) {
+            return sym::copy_apply(op, lattice);
+          },
+          py::arg("lattice"), "Transform a Lattice.")
       .def(
           "__mul__",
           [](xtal::SymOp const &op, xtal::SimpleStructure const &simple) {
