@@ -10,6 +10,7 @@ on:
     tags:
       - "v*"
       - "test*"
+      - "whl*"
 
   # Trigger on request.
   workflow_dispatch:
