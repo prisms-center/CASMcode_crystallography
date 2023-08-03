@@ -2,7 +2,7 @@
 
 #### libcasm-xtal
 
-The `libcasm-xtal` package is the CASM crystallography module. This includes:
+The libcasm-xtal package is the CASM crystallography module. This includes:
 
 - Data structures for representing lattices, crystal structures, and
   degrees of freedom (DoF).
@@ -16,12 +16,12 @@ The `libcasm-xtal` package is the CASM crystallography module. This includes:
 
 #### Usage
 
-See the [libcasm-xtal docs](todo).
+See the [libcasm-xtal docs](https://prisms-center.github.io/CASMcode_pydocs/libcasm/xtal/2.0/html/index.html).
 
 
 #### About CASM
 
-The `libcasm-xtal` package is part of the [CASM](https://github.com/prisms-center/CASMcode) open source software package, which is designed to perform first-principles statistical mechanical studies of multi-component crystalline solids.
+The libcasm-xtal package is part of the [CASM](https://prisms-center.github.io/CASMcode_docs/) open source software package, which is designed to perform first-principles statistical mechanical studies of multi-component crystalline solids.
 
 CASM is developed by the Van der Ven group, originally at the University of Michigan and currently at the University of California Santa Barbara.
 
@@ -35,4 +35,4 @@ GNU Lesser General Public License (LGPL). Please see the file LICENSE for detail
 
 #### For Contributors
 
-See the [CASM contribution guidelines](https://github.com/prisms-center/CASMcode_global/blob/main/CONTRIBUTE.md)
+See the [libcasm contribution guide](https://prisms-center.github.io/CASMcode_docs/pages/contributing_to_libcasm_packages/)

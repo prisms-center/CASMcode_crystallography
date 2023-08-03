@@ -72,13 +72,13 @@ Symmetry operations
 
 A symmetry operation transforms a spatial coordinate according to :math:`\vec{r}_{cart}\rightarrow A \vec{r}_{cart}+\vec{\tau}`, where :math:`A` is the shape=(3,3) `operation matrix` and :math:`\vec{\tau}` is the `translation vector`.
 
-An instance of the :class:`~libcasm.xtal.SymOp` class, op, is used to represent a symmetry operation that transforms Cartesian coordinates according to:
+An instance of the :class:`~libcasm.xtal.SymOp` class, `op`, is used to represent a symmetry operation that transforms Cartesian coordinates according to:
 
 .. code-block:: Python
 
     r_after = op.matrix() @ r_before + op.translation()
 
-where r_before and r_after are shape=(3,n) arrays with the Cartesian coordinates as columns of the matrices before and after transformation, respectively.
+where `r_before` and `r_after` are shape=(3,n) arrays with the Cartesian coordinates as columns of the matrices before and after transformation, respectively.
 
 Additionally, for magnetic materials there may be time reversal symmetry. A symmetry operation transforms magnetic spins according to:
 
@@ -87,13 +87,13 @@ Additionally, for magnetic materials there may be time reversal symmetry. A symm
     if op.time_reversal() is True:
         s_after = -s_before
 
-where s_before and s_after are the spins before and after transformation, respectively.
+where `s_before` and `s_after` are the spins before and after transformation, respectively.
 
 
 Lattice point group generation
 ------------------------------
 
-The point group is the set of symmetry operations that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~libcasm.xtal.make_point_group()` method. For the example of a simple cubic lattice, the lattice point group has 48 operations:
+The lattice point group is the set of symmetry operations with :math:`\vec{\tau}=\vec{0}` that transform the lattice vectors but leave all the lattice points (the points that are integer multiples of the lattice vectors) invariant. The lattice point group can be generated using the :func:`~libcasm.xtal.make_point_group()` method. For the example of a simple cubic lattice, the lattice point group has 48 operations:
 
 .. code-block:: Python
 
@@ -157,10 +157,38 @@ A brief description can also be printed following the conventions of Internation
     48: 1
 
 
+Lattice comparison
+------------------
+
+The ``==`` and ``!=`` operators can be used to check if two lattices have identical column vector matrices up to the lattice tolerance. Note that these operators do not check permutations of the lattice vectors.
+
+    L1 = xtal.Lattice(
+        np.array(
+            [
+                [0.0, 0.0, 2.0], # a
+                [1.0, 0.0, 0.0], # b
+                [0.0, 1.0, 0.0], # c
+            ]
+        ).transpose()
+    )
+    L2 = xtal.Lattice(
+        np.array(
+            [
+                [1.0, 0.0, 0.0], # a
+                [0.0, 1.0, 0.0], # b
+                [0.0, 0.0, 2.0], # c
+            ]
+        ).transpose()
+    )
+    assert (L1 == L2) == False
+    assert L1 == L1
+    assert (L1 != L1) == False
+
+
 Lattice equivalence
 -------------------
 
-A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~libcasm.xtal.is_equivalent_to` method checks for the equivalence lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of the others according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
+A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~libcasm.xtal.is_equivalent_to` method checks for the equivalence of lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of another choice of lattice vectors according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
 
 .. code-block:: Python
 
@@ -180,10 +208,12 @@ A lattice can be represented using any choice of lattice vectors that results in
     True
 
 
+.. _lattice-canonical-form:
+
 Lattice canonical form
 ----------------------
 
-For clarity and comparison purposes it is useful to have a canonical choice of equivalent lattice vectors. The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice, by applying lattice point group operations to find the equivalent lattice in the orientiation which compares greatest.
+For clarity and comparison purposes it is useful to have a canonical choice of equivalent lattice vectors. The :func:`~libcasm.xtal.make_canonical` method finds the canonical right-handed Niggli cell of the lattice by applying point group operations to find the equivalent lattice in the orientation which compares greatest.
 
 .. code-block:: Python
 
@@ -201,6 +231,14 @@ For clarity and comparison purposes it is useful to have a canonical choice of e
     >>> print(canonical_lattice > noncanonical_lattice)
     True
 
-The lattice comparison method prefers lattice vectors that form symmetric matrices with large positive values on the diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
+Specifically, the most standard orientation of the lattice vectors (represented as a column vector matrix) is found according to the following criteria:
 
-.. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+- bisymmetric matrices are always more standard than symmetric matrices
+- symmetric matrices are always more standard than non-symmetric matrices
+- matrices with more positive values are preferred
+- matrices with large values on the diagonal are preferred
+- matrices with small off-diagonal values are preferred
+- upper triangular matrices are preferred
+
+The comparison operators (``<``, ``<=``, ``>``, ``>=``) can be used to compare lattices according to these criteria.
+

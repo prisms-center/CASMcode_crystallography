@@ -1,4 +1,4 @@
-## Contributing
+## Contributing to libcasm
 
 Collaboration is welcome and new features can be incorporated by forking the repository on GitHub, creating a new feature, and submitting pull requests. If you are interested in developing features that involve a significant time investment we encourage you to first contact the CASM development team at <casm-developers@lists.engr.ucsb.edu>.
 
@@ -14,32 +14,37 @@ Pull requests should:
 ## Installing from source
 
 > **Note**
-> Care must be taken, especially on linux, that code linking to the CASM C++ libraries is compiled with the same choice of the -D_GLIBCXX_USE_CXX11_ABI compiler flag, otherwise there will be "undefined reference" linking errors (see [Dual ABI](https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html)).  The CASM Linux C++ libraries distributed on PyPI with tag "manylinux2014" use -D_GLIBCXX_USE_CXX11_ABI=0. Newer compilers, and all supported macosx versions, default to -D_GLIBCXX_USE_CXX11_ABI=1.  It will be noted in the following where configuration steps may be necessary.
+> Care must be taken on linux that code linking to the CASM C++ libraries is compiled with the same choice of the -D_GLIBCXX_USE_CXX11_ABI compiler flag, otherwise there will be "undefined reference" linking errors (see [Dual ABI](https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html)).  The CASM Linux C++ libraries distributed on PyPI with tag "manylinux2014" use -D_GLIBCXX_USE_CXX11_ABI=0. Newer compilers default to -D_GLIBCXX_USE_CXX11_ABI=1.  It will be noted in the following where configuration steps may be necessary.
 
 
-Installation of `libcasm-xtal` from source requires standard compilers with support for C++17, Python >= 3.8. For example:
+Installation of libcasm distribution packages from source requires standard compilers with support for C++17, Python >= 3.8. The use of [ccache](https://ccache.dev/) is recommended to avoid duplicating compilations. For example:
 
 - On Ubuntu linux:
 
   ```
-  sudo apt-get install build-essential cmake
+  sudo apt-get install build-essential ccache cmake
   ```
 
 - On Mac OSX:
 
   ```
   xcode-select --install
-  brew install cmake
+  brew install ccache cmake
   ```
 
 - In a conda environment:
 
   ```
-  conda create -n casm --override-channels -c conda-forge python=3 cmake
+  conda create -n casm --override-channels -c conda-forge python=3 ccache cmake
   conda activate casm
   ```
 
-Then `libcasm-xtal` and its dependencies can be installed with:
+> **Note**
+> If installing from a git repository, make sure any submodules are checkout out with:
+>
+>     git submodule update --init --recursive
+
+Then the CASM package and its dependencies can be installed with:
 
     # Configuration options:
     #
@@ -56,7 +61,7 @@ Install documentation requirements:
 
     pip install -r doc_requirements.txt
 
-Install `libcasm-xtal` first, then build and open the documentation:
+Install the CASM package first, then build and open the documentation:
 
     cd python/doc
     sphinx-build -b html . _build/html
@@ -80,15 +85,42 @@ As an example of running a specific test, do:
 
 ### Overview
 
-Building is performed using [scikit-build](https://scikit-build.readthedocs.io/en/latest/index.html) to create distributions that include both the C++ and Python portions of CASM, which are linked using [pybind11](https://pybind11.readthedocs.io).
+For CASM v2, the libcasm distribution packages (i.e. libcasm-global, libcasm-xtal, etc.) are used to distribute a set of related CASM Python subpackages that rely in some part on a C++ implementation. Python [namespace packages](https://packaging.python.org/en/latest/guides/packaging-namespace-packages/) allow distributing subpackages seperately so a project may be split into smaller more focused efforts. For example, the CASM structure mapping package (libcasm.mapping) and the CASM cluster expansion Monte Carlo package (libcasm.clexmonte) can be developed and distributed separately. Each libcasm distribution package installs one or more Python namespace packages into the libcasm namespace.
 
-The project is organized as follows:
+The CASM distribution packages are organized as follows:
+
+- `libcasm-global`: Generically useful tools for CASM
+  - This includes:
+    - CASM global constants and definitions
+    - Input / output tools, especially for JSON parsing and formatting
+    - An Eigen distribution and methods using Eigen
+    - Helpers for runtime library compiling and linking
+    - Miscellaneous mathematical functions
+    - Other tools for C++ development
+  - Python namespace packages:
+    - `libcasm.casmglobal`: Constants and definitions
+    - `libcasm.counter`: Counters allows iterating over many incrementing variables in one loop
+  - C++ library: `libcasm_global`
+
+- `libcasm-xtal`: The CASM crystallography module
+  - This includes:
+    - Data structures for representing lattices, crystal structures, and degrees of freedom (DoF).
+    - Methods for enumerating superlattices, making super structures, finding primitive and reduced cells, and finding symmetry operations.
+  - CASM dependencies:
+    - libcasm-global
+  - Python namespace package: `libcasm.xtal`
+  - C++ library: `libcasm_crystallography`
+
+
+Building the distribution packages is performed using [scikit-build](https://scikit-build.readthedocs.io/en/latest/index.html) to create distributions that include both the C++ and Python portions of CASM, which are linked using [pybind11](https://pybind11.readthedocs.io).
+
+The repository for each libcasm distribution packages is organized as follows:
 
 - `include/`: C++ headers
 - `src/`: C++ source files
 - `tests/unit`: C++ unit tests
 - `python/libcasm/<name>/`: Python namespace packages
-- `python/src/`: pybind11 wrappers
+- `python/src/`: pybind11 wrapper source files
 - `python/tests/<name>/`: Python tests
 - `python/doc/`: Python documentation
 
@@ -97,9 +129,9 @@ When the project is built and installed, components are added to the Python inst
 `<python package prefix>/libcasm/`:
 
 - `include/`: C++ headers
-- `lib/`: Built C++ libraries (i.e. `libcasm_crystallography.so` or `libcasm_crystallography.dylib`)
+- `lib/`: Built C++ libraries
 - `share/CASMcode_<name>/cmake/`: CMake distribution data
-- `<packagename>/`: CASM Python namespace packages, with Python source files and built pybind11 wrapper libraries
+- `<name>/`: CASM Python namespace packages, with Python source files and built pybind11 wrapper libraries
 
 #### Adding or removing files
 
@@ -107,7 +139,7 @@ CMake is used to build the project. When files are added or removed from the pro
 
     python make_CMakeLists.py
 
-The files to be included in source distributions are specified by the `MANIFEST.in` file. This should rarely need to be changed.
+The files to be included in source distributions are specified by the `MANIFEST.in` file using path pattern matching. This should rarely need to be changed.
 
 ## Installing in editable mode
 
@@ -121,7 +153,7 @@ Install build dependencies:
 
     pip install -r build_requirements.txt
 
-Once the `libcasm-global` Python package is installed by the previous step, CMake should be able find and link to other CASM module dependencies in the `<python package prefix>/libcasm/` directory automatically. It will also set that as the install location unless the user defines `CMAKE_INSTALL_PREFIX` explicitly to override it. CMake will also detect and use `ccache` if it is installed, which is very useful to avoid recompiling objects and greatly speed up development.
+Once the libcasm-global Python package is installed by the previous step, CMake should be able find and link to other CASM module dependencies in the `<python package prefix>/libcasm/` directory automatically. If it is not installed, the location of CASM C++ libraries must be specified using `CASM_PREFIX`. It will also set that as the install location unless the user defines `CMAKE_INSTALL_PREFIX` explicitly to override it. CMake will also detect and use `ccache` if it is installed, which is very useful to avoid recompiling objects and greatly speed up development.
 
 Then, to make and install CASM C++ components in the `<python package prefix>/libcasm/` directory:
 
@@ -130,7 +162,7 @@ Then, to make and install CASM C++ components in the `<python package prefix>/li
 
     # Some configuration options:
     #
-    # To use an existing C++ only casm installation add:
+    # To use an existing C++ only CASM installation add:
     #   -DCASM_PREFIX=<path-to-casm>
     # To link to manylinux2014 packages add:
     #   -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
@@ -148,7 +180,7 @@ C++ unit tests can be built after C++ components are installed as in the previou
     cd build_cxx_test
     # Some configuration options:
     #
-    # To use an existing C++ only casm installation add:
+    # To use an existing C++ only CASM installation add:
     #   -DCASM_PREFIX=<path-to-casm>
     # To link to manylinux2014 packages add:
     #   -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
@@ -167,11 +199,12 @@ To uninstall a C++ only installation, use the `install_manifest.txt` file genera
 
 #### Installing pybind11 and pure Python components
 
-Use the `setup.py` file in `CASMcode_crystallography/python/` for editable install of the pure Python components:
+Use the `python/setup.py` file for editable install of the pure Python components:
 
     cd python
-    # It is required to set the casm prefix:
-    export CASM_PREFIX=$(python -m libcasm.casmglobal --prefix)
+    # Set the CASM prefix. This will give:
+    #   <something>/lib/pythonX.Y/sites-packages/libcasm
+    export CASM_PREFIX=$(python -c 'import site; print(site.getsitepackages()[0])')/libcasm
 
     # Some configuration options:
     #
@@ -182,9 +215,10 @@ Use the `setup.py` file in `CASMcode_crystallography/python/` for editable insta
 
 At this point, changes made to pure Python source files are immediately testable. Testing changes made to the pybind11 wrappers requires re-building with `pip install -e .`. Testing changes made to the CASM C++ components requires re-building and re-installing the C++ components and then re-building with `pip install -e .`.
 
-To uninstall the Python package do:
+To uninstall the Python package use the distribution package name:
 
-    pip uninstall libcasm-xtal
+    # <distname> = libcasm-global, libcasm-xtal, etc.
+    pip uninstall <distname>
 
 
 ## Testing the combined build process
@@ -193,11 +227,12 @@ To test the combined build process performed by `pip install .`, it may be usefu
 
     pip install -v --no-build-isolation .
 
-This allows `ccache` to identify and reuse identical compilation steps and speeds up the build process. To do this, it is necessary to have installed all build requirements already from `build_requirements.txt`. Build isolation should not be skipped for CI tests.
+This allows ccache to identify and reuse identical compilation steps and speeds up the build process. To do this, it is necessary to have installed all build requirements already from `build_requirements.txt`. Build isolation should not be skipped for CI tests.
 
-When built together using pip, all C++ and Python components can be uninstalled using:
+When built together using pip, all C++ and Python components of a distribution package can be uninstalled using the distribution package name:
 
-    pip uninstall libcasm-xtal
+    # <distname> = libcasm-global, libcasm-xtal, etc.
+    pip uninstall <distname>
 
 
 ## Formatting and style
@@ -272,7 +307,7 @@ C++:
 
 ### Using CASM C++ libraries
 
-A `__main__.py` file added to the `libcasm.casmglobal` package allows finding the CASM installation location for use by other packages.
+A `__main__.py` file added to the libcasm.casmglobal package allows finding the CASM installation location for use by other packages.
 
 To find the installation location (i.e. `<python package prefix>/libcasm`) use:
 

@@ -9,7 +9,7 @@ The :py:class:`~libcasm.xtal.Prim` class is used to represent a primitive crysta
 - continuous local (site) DoF
 - continuous global DoF
 
-The prim is the starting point for constructing a cluster expansion effective Hamiltonian. Based on the allowed DoF, it specifies what configurations are possible, and the symmetry of the prim determines the symmetry of the cluster basis functions. The :class:`~libcasm.xtal.Prim` class constructor documentation is :ref:`here <prim-init>`, and this section gives an introduction through examples.
+The prim is the starting point for constructing a cluster expansion effective Hamiltonian. The allowed DoF determine which configurations are possible, and the symmetry of the prim determines the symmetry of the cluster basis functions. The :class:`~libcasm.xtal.Prim` class constructor documentation is :ref:`here <prim-init>`, and this section gives an introduction through examples.
 
 
 Occupation DoF
@@ -23,26 +23,34 @@ The following is an example of prim construction, including atomic occupation Do
     import libcasm.xtal as xtal
 
     # Lattice vectors
-    lattice_column_vector_matrix = np.array([
-        [ 1.0, 0.0, 0.0], # a
-        [ 0.0, 1.1, 0.0], # b
-        [ 0.0, 0.0, 1.3]  # c
-        ]).transpose()    # <--- note transpose
+    lattice_column_vector_matrix = np.array(
+        [
+            [ 1.0, 0.0, 0.0], # a
+            [ 0.0, 1.1, 0.0], # b
+            [ 0.0, 0.0, 1.3], # c
+        ]
+    ).transpose()    # <--- note transpose
     lattice = xtal.Lattice(lattice_column_vector_matrix)
 
     # Basis sites positions, as columns of a matrix,
     # in fractional coordinates with respect to the lattice vectors
-    coordinate_frac = np.array([
-        [0., 0., 0.]   # coordinates of basis site, b=0
-        ]).transpose() # <--- note transpose
+    coordinate_frac = np.array(
+        [
+            [0., 0., 0.],  # coordinates of basis site, b=0
+        ]
+    ).transpose() # <--- note transpose
 
     # Occupation degrees of freedom (DoF)
     occ_dof = [
-        ["A", "B"]     # occupants allowed on basis site, b=0
+        ["A", "B"],    # occupants allowed on basis site, b=0
     ]
 
-    return xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
-                     title="simple_cubic_binary")
+    return xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        occ_dof=occ_dof,
+        title="simple_cubic_binary",
+    )
 
 The parameter `lattice` gives the primitive cell Lattice.
 
@@ -86,23 +94,28 @@ The value "Cmagspin" is string indicating the CASM supported collinear magnetic 
         name="A",                       # "chemical name" of occupant
         properties={
             "Cmagspin": np.array([1.])  # fixed properties of the occupant
-        }
+        },
     )
     A_down_occ = xtal.Occupant(
         name="A",                       # "chemical name" of occupant
         properties={
             "Cmagspin": np.array([-1.]) # fixed properties of the occupant
-        }
+        },
     )
     occupants = {
       "A.up": A_up_occ,     # <label> : occupant
-      "A.down": A_down_occ  # <label> : occupant
+      "A.down": A_down_occ, # <label> : occupant
     }
     occ_dof = [
-      ["A.up", "A.down"]    # occupants allowed on basis site, b=0
+      ["A.up", "A.down"],   # occupants allowed on basis site, b=0
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
-                     occupants=occupants, title="ising")
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        occ_dof=occ_dof,
+        occupants=occupants,
+        title="ising",
+    )
 
 The :class:`~libcasm.xtal.Occupant` constructor parameter `name` is a "chemical name" which must be equal for occupants to be found symmetrically equivalent.
 
@@ -118,30 +131,38 @@ The :class:`~libcasm.xtal.AtomComponent` can be used to specify the positions of
         name="O2",
         atoms=[
             libcasm.xtal.AtomComponent(name="O", coordinate=np.array([delta, 0., 0.])),
-            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([-delta, 0., 0.]))
-        ])
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([-delta, 0., 0.])),
+        ],
+    )
     O2_yy_occ = xtal.Occupant(
         name="O2",
         atoms=[
             libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., delta, 0.])),
-            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., -delta, 0.]))
-        ])
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., -delta, 0.])),
+        ],
+    )
     O2_zz_occ = xtal.Occupant(
         name="O2",
         atoms=[
             libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., delta])),
-            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., -delta]))
-        ])
+            libcasm.xtal.AtomComponent(name="O", coordinate=np.array([0., 0., -delta])),
+        ],
+    )
     occupants = {
       "O2_xx": O2_xx_occ,     # <label> : occupant
       "O2_yy": O2_yy_occ,     # <label> : occupant
       "O2_zz": O2_zz_occ,     # <label> : occupant
     }
     occ_dof = [
-      ["O2_xx", "O2_yy", "O2_zz"]    # occupants allowed on basis site, b=0
+      ["O2_xx", "O2_yy", "O2_zz"],   # occupants allowed on basis site, b=0
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, occ_dof=occ_dof,
-                     occupants=occupants, title="ternary_orientation")
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        occ_dof=occ_dof,
+        occupants=occupants,
+        title="ternary_orientation",
+    )
 
 
 Continuous local DoF
@@ -168,9 +189,13 @@ Atomic displacement DoF, with the standard basis :math:`[d_{x}, d_{y}, d_{z}]` c
     disp_dof = xtal.DoFSetBasis("disp")    # Atomic displacement
     local_dof = [
         [disp_dof], # allow displacements on basis site b=0
-        [disp_dof]  # allow displacements on basis site b=1
+        [disp_dof], # allow displacements on basis site b=1
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        local_dof=local_dof,
+    )
 
 
 **Example: Collinear magnetic spin DoF**
@@ -183,9 +208,13 @@ Collinear magnetic spin DoF, with the standard basis :math:`[m]` can be added us
     Cmagspin_dof = xtal.DoFSetBasis("Cmagspin")    # Collinear magnetic spin
     local_dof = [
         [Cmagspin_dof], # allow collinear magnetic spin on basis site b=0
-        [Cmagspin_dof]  # allow collinear magnetic spin on basis site b=1
+        [Cmagspin_dof], # allow collinear magnetic spin on basis site b=1
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        local_dof=local_dof,
+    )
 
 
 **Example: Non-collinear magnetic spin DoF, with spin-orbit coupling**
@@ -198,9 +227,13 @@ Non-collinear magnetic spin DoF, with spin-orbit coupling, with the standard bas
     SOmagspin_dof = xtal.DoFSetBasis("SOmagspin")
     local_dof = [
         [SOmagspin_dof], # allow SOmagspin on basis site b=0
-        [SOmagspin_dof]  # allow SOmagspin on basis site b=1
+        [SOmagspin_dof], # allow SOmagspin on basis site b=1
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        local_dof=local_dof,
+    )
 
 
 **Example: Atomic displacement DoF, user-specified basis**
@@ -213,14 +246,20 @@ It is possible to restrict the dimension of allowed DoF, or rotate the basis, by
     disp_dof = xtal.DoFSetBasis(
         "disp",
         axis_names=["d_{1}"],  # 1d displacments
-        basis=np.array([
-            [1.0, 0.0, 0.0]    # displacements along x
-        ]).transpose())
+        basis=np.array(
+            [
+                [1.0, 0.0, 0.0], # displacements along x
+            ]
+        ).transpose())
     local_dof = [
         [disp_dof], # basis site 1
-        [disp_dof]  # basis site 2
+        [disp_dof], # basis site 2
     ]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, local_dof=local_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        local_dof=local_dof,
+    )
 
 If a user-specified basis is provided, configurations, and the cluster expansion, are restricted to the specified space.
 
@@ -303,14 +342,18 @@ The following uses :func:`~libcasm.xtal.make_symmetry_adapted_strain_basis` to c
 
 .. code-block:: Python
 
-    from math import sqrt
     # Global continuous degrees of freedom (DoF)
     Hstrain_dof = xtal.DoFSetBasis(
         dofname="Hstrain",
         axis_names=["e_{1}", "e_{2}", "e_{3}", "e_{4}", "e_{5}", "e_{6}"],
-        basis=xtal.make_symmetry_adapted_strain_basis())
+        basis=xtal.make_symmetry_adapted_strain_basis(),
+    )
     global_dof = [Hstrain_dof]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        global_dof=global_dof,
+    )
 
 
 **Example: Strain DoF, user-specified basis**
@@ -324,24 +367,30 @@ It is possible to restrict the dimension of allowed strain DoF, or rotate the st
     Hstrain_dof = xtal.DoFSetBasis(
         dofname="Hstrain",
         axis_names=["e_{1}", "e_{2}", "e_{3}"],
-        basis=np.array([
-            [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
-            [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
-            [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0]]).transpose())
+        basis=np.array(
+            [
+                [1./sqrt(3), 1./sqrt(3), 1./sqrt(3), 0.0, 0.0, 0.0],
+                [1./sqrt(2), -1./sqrt(2), 0.0, 0.0, 0.0, 0.0],
+                [-1./sqrt(6), -1./sqrt(6), 2./sqrt(6), 0.0, 0.0, 0.0],
+            ]
+        ).transpose()
+    )
     global_dof = [Hstrain_dof]
-    prim = xtal.Prim(lattice=lattice, coordinate_frac=coordinate_frac, global_dof=global_dof)
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        global_dof=global_dof,
+    )
 
 
 Common prim
 -----------
 
-Some common prim can be constructed using the convenience methods in :py:mod:`libcasm.xtal.prims`:
+Some common prim can be constructed using the convenience methods in :py:mod:`libcasm.xtal.prims`. For example, a binary FCC prim with conventional cubic lattice parameter `a` equal to 6.60 can be constructed using the following:
 
 .. code-block:: Python
 
     >>> import libcasm.xtal.prims as xtal_prims
-
-    # Binary FCC Prim, specified by conventional cubic lattice parameter `a`
     >>> fcc_prim = xtal_prims.FCC(a=6.60, occ_dof=["A", "B"])
     >>> print(fcc_prim.to_json())
     {
@@ -414,6 +463,8 @@ The `crystal point group` is the group constructed from the prim factor group op
 
 The crystal point group can be generated using the :func:`~libcasm.xtal.make_crystal_point_group` method:
 
-    >>> crystal_point_group = xtal.make_crystal_point_group(prim)
+.. code-block:: Python
+
+    crystal_point_group = xtal.make_crystal_point_group(prim)
 
 .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
