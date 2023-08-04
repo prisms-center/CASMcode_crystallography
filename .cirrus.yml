@@ -3,7 +3,8 @@ build_and_store_wheels: &BUILD_AND_STORE_WHEELS
     - python -m pip install cibuildwheel==2.14.1
   run_cibuildwheel_script:
     - python -m pip install libcasm-global~=2.0.1
-    - ls $(python -c 'import site; print(site.getsitepackages()[0])'))
+    - python -m libcasm.casmglobal --prefix
+    - python -c "import libcasm.casmglobal; print(libcasm.casmglobal.libcasm_global_version())"
     - cibuildwheel
   wheels_artifacts:
     path: "wheelhouse/*"
