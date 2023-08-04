@@ -14,7 +14,8 @@ linux_x86_task:
     platform: linux
     cpu: 4
     memory: 4G
-
+  env:
+    CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - apt install -y python3-venv python-is-python3
   <<: *BUILD_AND_STORE_WHEELS
@@ -28,7 +29,8 @@ linux_aarch64_task:
     platform: linux
     cpu: 4
     memory: 4G
-
+  env:
+    CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - apt install -y python3-venv python-is-python3
   <<: *BUILD_AND_STORE_WHEELS
@@ -37,7 +39,6 @@ macos_arm64_task:
   name: Build macOS arm64 wheels.
   macos_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
-
   env:
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
     CIBW_REPAIR_WHEEL_COMMAND: ""
@@ -50,7 +51,6 @@ macos_x86_64_task:
   name: Build macOS x86_64 wheels.
   macos_instance:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
-
   env:
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
     CIBW_ARCHS: x86_64
