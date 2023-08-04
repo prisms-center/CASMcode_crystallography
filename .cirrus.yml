@@ -6,8 +6,8 @@ build_and_store_wheels: &BUILD_AND_STORE_WHEELS
   wheels_artifacts:
     path: "wheelhouse/*"
 
-linux_x86_task:
-  name: Build Linux x86 wheels.
+linux_x86_64_task:
+  name: Build Linux x86_64 wheels.
   compute_engine_instance:
     image_project: cirrus-images
     image: family/docker-builder
@@ -15,6 +15,7 @@ linux_x86_task:
     cpu: 4
     memory: 4G
   env:
+    CIBW_ARCHS_LINUX: x86_64
     CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - apt install -y python3-venv python-is-python3
@@ -30,6 +31,7 @@ linux_aarch64_task:
     cpu: 4
     memory: 4G
   env:
+    CIBW_ARCHS_LINUX: aarch64
     CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - apt install -y python3-venv python-is-python3
@@ -41,6 +43,7 @@ macos_arm64_task:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
   env:
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
+    CIBW_ARCHS_MACOS: arm64
     CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - brew install python@3.10
@@ -53,7 +56,7 @@ macos_x86_64_task:
     image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
   env:
     PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
-    CIBW_ARCHS: x86_64
+    CIBW_ARCHS_MACOS: x86_64
     CIBW_REPAIR_WHEEL_COMMAND: ""
   install_pre_requirements_script:
     - brew install python@3.10
