@@ -17,4 +17,6 @@ macos_arm64_task:
   install_pre_requirements_script:
     - brew install python@3.10
     - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
+    - pip install libcasm-global~=2.0.1
+    - ls $(python -c 'import site; print(site.getsitepackages()[0])'))
   <<: *BUILD_AND_STORE_WHEELS
