@@ -17,4 +17,4 @@ macos_arm64_task:
   install_pre_requirements_script:
     - brew install python@3.10
     - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
-  <<: *BUILD_AND_STORE_WHEELSld arm64 wheels on macos-12
+  <<: *BUILD_AND_STORE_WHEELS
