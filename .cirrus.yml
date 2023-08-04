@@ -10,7 +10,7 @@ linux_x86_64_task:
   name: Build Linux x86_64 wheels.
   compute_engine_instance:
     image_project: cirrus-images
-    image: quay.io/pypa/manylinux2014_x86_64
+    image: family/docker-builder
     platform: linux
     cpu: 4
     memory: 4G
@@ -25,7 +25,7 @@ linux_aarch64_task:
   name: Build Linux aarch64 wheels.
   compute_engine_instance:
     image_project: cirrus-images
-    image: quay.io/pypa/manylinux2014_aarch64
+    image: family/docker-builder-arm64
     architecture: arm64
     platform: linux
     cpu: 4
@@ -49,4 +49,3 @@ macos_arm64_task:
     - brew install python@3.10
     - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
   <<: *BUILD_AND_STORE_WHEELS
-
