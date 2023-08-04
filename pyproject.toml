@@ -57,7 +57,7 @@ skip =  "pp*"
 # before-all = "git submodule update --init --recursive"
 
 # Testing
-test-requires = "pytest"
+test-requires = "pytest pytest-datadir"
 test-command = "pytest -rsap {project}/python/tests"
 
 [tool.cibuildwheel.macos]
