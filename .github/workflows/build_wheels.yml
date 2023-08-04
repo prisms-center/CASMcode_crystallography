@@ -28,6 +28,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.14.1
         env:
           CIBW_ARCHS_LINUX: x86_64
+          CIBW_REPAIR_WHEEL_COMMAND: ""
 
       - uses: actions/upload-artifact@v3
         with:
@@ -50,6 +51,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.14.1
         env:
           CIBW_ARCHS_LINUX: aarch64
+          CIBW_REPAIR_WHEEL_COMMAND: ""
 
       - uses: actions/upload-artifact@v3
         with:
@@ -67,6 +69,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.14.1
         env:
           CIBW_ARCHS_MACOS: x86_64
+          CIBW_REPAIR_WHEEL_COMMAND: ""
 
       - uses: actions/upload-artifact@v3
         with:
@@ -85,6 +88,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: arm64
           CIBW_TEST_SKIP: "*-macosx_arm64"
+          CIBW_REPAIR_WHEEL_COMMAND: ""
 
       - uses: actions/upload-artifact@v3
         with:
