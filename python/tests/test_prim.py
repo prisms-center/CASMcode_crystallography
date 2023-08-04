@@ -1,4 +1,3 @@
-from __future__ import annotations # for Python3.8, see PEP 585
 import json
 import os
 

@@ -10,7 +10,7 @@ linux_x86_64_task:
   name: Build Linux x86_64 wheels.
   compute_engine_instance:
     image_project: cirrus-images
-    image: family/docker-builder
+    image: quay.io/pypa/manylinux2014_x86_64
     platform: linux
     cpu: 4
     memory: 4G
@@ -25,7 +25,7 @@ linux_aarch64_task:
   name: Build Linux aarch64 wheels.
   compute_engine_instance:
     image_project: cirrus-images
-    image: family/docker-builder-arm64
+    image: quay.io/pypa/manylinux2014_aarch64
     architecture: arm64
     platform: linux
     cpu: 4
@@ -50,15 +50,3 @@ macos_arm64_task:
     - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
   <<: *BUILD_AND_STORE_WHEELS
 
-macos_x86_64_task:
-  name: Build macOS x86_64 wheels.
-  macos_instance:
-    image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
-  env:
-    PATH: /opt/homebrew/opt/python@3.10/bin:$PATH
-    CIBW_ARCHS_MACOS: x86_64
-    CIBW_REPAIR_WHEEL_COMMAND: ""
-  install_pre_requirements_script:
-    - brew install python@3.10
-    - ln -s python3 /opt/homebrew/opt/python@3.10/bin/python
-  <<: *BUILD_AND_STORE_WHEELS
