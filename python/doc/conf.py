@@ -38,12 +38,25 @@ python_use_unqualified_type_names = True
 autodoc_inherit_docstrings = False
 add_module_names = True
 
-intersphinx_mapping = {
-    "global": (
-        "../../../../../CASMcode_global/python/doc/_build/html",
-        ("../../../CASMcode_global/python/doc/_build/html/objects.inv", None),
-    ),
-}
+import os
+
+intersphinx_mapping = {}
+
+# if LIBCASM_PYDOCS env variable is set, create local docs
+pydocs_path = os.environ.get("LIBCASM_PYDOCS", None)
+packages = [("global", "2.0")]
+for package, vers in packages:
+    if pydocs_path is None:
+        url = f"https://prisms-center.github.io/CASMcode_pydocs/libcasm/{package}/{vers}/html"
+        inventory = None
+    else:
+        url = os.path.join(pydocs_path, f"{package}/{vers}/html")
+        inventory = os.path.join(pydocs_path, f"{package}/{vers}/html/objects.inv")
+    intersphinx_mapping[package] = (url, inventory)
+
+print(intersphinx_mapping)
+
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.

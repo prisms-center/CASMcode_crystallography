@@ -21,8 +21,10 @@ This release separates out casm/crystallography from CASM v1, in particular remo
 - Added xtal::apply and xtal::copy_apply methods for transforming xtal::SimpleStructure including properties
 - Added xtal::make_inverse for xtal::SymOp
 - Added Python package libcasm.xtal to use CASM crystallography methods for building lattices, structures, and parent crystal structures and allowed degrees of freedom (prim); enumerating superlattices; creating superstructures; finding primitive and reduced cells; and determining symmetry operations.
+- Added scikit-build, CMake, and pybind11 build process
 - Added GitHub Actions for unit testing
-- Added GitHub Action build_wheels.yml for Python wheel building using cibuildwheel
+- Added GitHub Action build_wheels.yml for Python x86_64 wheel building using cibuildwheel
+- Added Cirrus-CI .cirrus.yml for Python aarch64 and arm64 wheel building using cibuildwheel
 - Added Python documentation
 
 
