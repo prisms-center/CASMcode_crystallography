@@ -162,6 +162,8 @@ Lattice comparison
 
 The ``==`` and ``!=`` operators can be used to check if two lattices have identical column vector matrices up to the lattice tolerance. Note that these operators do not check permutations of the lattice vectors.
 
+.. code-block:: Python
+
     L1 = xtal.Lattice(
         np.array(
             [
