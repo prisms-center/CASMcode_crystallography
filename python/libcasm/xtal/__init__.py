@@ -1,4 +1,4 @@
-"""libcasm-xtal: CASM crystallography Python interface"""
+"""CASM Crystallography"""
 from ._xtal import (
     AtomComponent,
     DoFSetBasis,

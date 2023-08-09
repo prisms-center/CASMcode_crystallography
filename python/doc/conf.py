@@ -84,7 +84,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "libcasm-xtal"
-copyright = "2021, CASM Developers"
+copyright = "2023, CASM Developers"
 author = "CASM Developers"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -208,7 +208,7 @@ texinfo_documents = [
         "libcasm-xtal Documentation",
         author,
         "libcasm-xtal",
-        "One line description of project.",
+        "CASM Crystallography",
         "Miscellaneous",
     ),
 ]
