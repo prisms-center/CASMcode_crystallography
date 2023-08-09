@@ -20,6 +20,7 @@ This release separates out casm/crystallography from CASM v1, in particular remo
 - Added xtal::make_simple_structure from a POSCAR stream
 - Added xtal::apply and xtal::copy_apply methods for transforming xtal::SimpleStructure including properties
 - Added xtal::make_inverse for xtal::SymOp
+- Added xtal::is_equivalent for comparing xtal::SimpleStructure
 - Added Python package libcasm.xtal to use CASM crystallography methods for building lattices, structures, and parent crystal structures and allowed degrees of freedom (prim); enumerating superlattices; creating superstructures; finding primitive and reduced cells; and determining symmetry operations.
 - Added scikit-build, CMake, and pybind11 build process
 - Added GitHub Actions for unit testing

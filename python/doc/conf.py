@@ -12,14 +12,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('../../'))
-# sys.path.insert(0, os.path.abspath('../../src'))
+import os
 
 # -- General configuration ------------------------------------------------
 
@@ -37,8 +30,6 @@ autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
 autodoc_inherit_docstrings = False
 add_module_names = True
-
-import os
 
 intersphinx_mapping = {}
 
