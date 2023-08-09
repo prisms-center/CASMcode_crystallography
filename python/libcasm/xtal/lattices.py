@@ -1,6 +1,8 @@
 import math
-import numpy as np
 from typing import Optional
+
+import numpy as np
+
 import libcasm.xtal
 
 
@@ -13,21 +15,16 @@ def from_lattice_parameters(
     ----------
     a: float
         Specify the lattice parameter :math:`a`.
-
     b: float
         Specify the lattice parameter :math:`b`.
-
     c: float
         Specify the lattice parameter :math:`c`.
-
     alpha: float
         Specify the lattice parameter :math:`\alpha`,
         in degrees.
-
     beta: float
         Specify the lattice parameter :math:`\beta`,
         in degrees.
-
     gamma: float
         Specify the lattice parameter :math:`\gamma`,
         in degrees.
@@ -37,7 +34,7 @@ def from_lattice_parameters(
     lattice : xtal.Lattice
         A lattice with the specified lattice parameters
     """
-    from math import cos, sin, radians, pow
+    from math import cos, pow, radians, sin
 
     _alpha = radians(alpha)
     _beta = radians(beta)
@@ -87,7 +84,6 @@ def tetragonal(a: float, c: float) -> libcasm.xtal.Lattice:
     ----------
     a: float
         Specify the tetragonal lattice parameter :math:`a`.
-
     c: float
         Specify the tetragonal lattice parameter :math:`c`.
 
@@ -114,7 +110,6 @@ def hexagonal(a: float, c: float) -> libcasm.xtal.Lattice:
     ----------
     a: float
         Specify the hexagonal lattice parameter :math:`a`.
-
     c: float
         Specify the hexagonal lattice parameter :math:`c`.
 
@@ -141,10 +136,8 @@ def orthorhombic(a: float, b: float, c: float) -> libcasm.xtal.Lattice:
     ----------
     a: float
         Specify the orthorhombic lattice parameter :math:`a`.
-
     b: float
         Specify the orthorhombic lattice parameter :math:`b`.
-
     c: float
         Specify the orthorhombic lattice parameter :math:`c`.
 
@@ -171,7 +164,6 @@ def rhombohedral(a: float, alpha: float) -> libcasm.xtal.Lattice:
     ----------
     a: float
         Specify the rhombohedral lattice parameter :math:`a`.
-
     alpha: float
         Specify the rhombohedral lattice parameter :math:`\alpha`,
         in degrees.
@@ -191,13 +183,10 @@ def monoclinic(a: float, b: float, c: float, beta: float) -> libcasm.xtal.Lattic
     ----------
     a: float
         Specify the monoclinic lattice parameter :math:`a`.
-
     b: float
         Specify the monoclinic lattice parameter :math:`b`.
-
     c: float
         Specify the monoclinic lattice parameter :math:`c`.
-
     beta: float
         Specify the monoclinic lattice parameter :math:`\beta`,
         in degrees.
@@ -219,21 +208,16 @@ def triclinic(
     ----------
     a: float
         Specify the triclinic lattice parameter :math:`a`.
-
     b: float
         Specify the triclinic lattice parameter :math:`b`.
-
     c: float
         Specify the triclinic lattice parameter :math:`c`.
-
     alpha: float
         Specify the triclinic lattice parameter :math:`\alpha`,
         in degrees.
-
     beta: float
         Specify the triclinic lattice parameter :math:`\beta`,
         in degrees.
-
     gamma: float
         Specify the triclinic lattice parameter :math:`\gamma`,
         in degrees.
@@ -287,7 +271,6 @@ def FCC(r: Optional[float] = None, a: Optional[float] = None) -> libcasm.xtal.La
     r: Optional[float] = None
         Specify atomic radius and construct FCC primitive lattice
         with conventional lattice parameter :math:`a = 4.0 * r / \sqrt{2.0}`
-
     a: Optional[float] = None
         Specify the conventional FCC lattice parameter :math:`a`.
 
@@ -323,10 +306,8 @@ def HCP(
     r: Optional[float] = None
         Specify atomic radius and construct HCP primitive lattice
         with conventional lattice parameter :math:`a = 2.0 * r`.
-
     a: Optional[float] = None
         Specify the conventional HCP lattice parameter :math:`a`.
-
     c: Optional[float] = None
         Specify the conventional HCP lattice parameter :math:`c`.
         If not specified, the ideal value is used :math:`c = `a \sqrt{8./3.}`.

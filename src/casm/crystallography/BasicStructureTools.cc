@@ -103,11 +103,8 @@ void bring_within(std::vector<xtal::SymOp> *symmetry_group,
 }
 
 /// Generates the factor group by applying every possible translation to the
-/// provided point group, and checking if the structure maps onto itself. The
-/// structure is considered to map onto itself by just looking at the position
-/// of the sites, so it does not take into account orientation of molecules, or
-/// global degrees of freedom. This routine is slow for non primitive
-/// structures!
+/// provided point group, and checking if the structure maps onto itself. This
+/// routine is slow for non primitive structures!
 xtal::SymOpVector make_factor_group_from_point_group(
     const xtal::BasicStructure &struc, const xtal::SymOpVector &point_group,
     bool is_primitive, double tol) {

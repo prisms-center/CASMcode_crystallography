@@ -105,6 +105,12 @@ SimpleStructure apply(xtal::SymOp const &op, SimpleStructure &sstruc);
 /// \brief Copy and transform a SimpleStructure
 SimpleStructure copy_apply(xtal::SymOp const &op, SimpleStructure sstruc);
 
+/// \brief Check if two structures are equivalent
+bool is_equivalent(SimpleStructure const &first, SimpleStructure const &second,
+                   double xtal_tol = TOL,
+                   std::map<std::string, double> properties_tol =
+                       std::map<std::string, double>());
+
 /** @} */
 }  // namespace xtal
 

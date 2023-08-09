@@ -1,0 +1,71 @@
+[build-system]
+requires = [
+    "pip",
+    "setuptools>=42",
+    "scikit-build",
+    "cmake>=3.20",
+    "ninja",
+    "pybind11>=2.6",
+    "libcasm-global>=2.0.1",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libcasm-xtal"
+version = "2.0a1"
+authors = [
+  { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
+]
+description = "CASM crystallography"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "LGPL2.1+"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "libcasm-global>=2.0.1",
+  "numpy",
+]
+
+[project.urls]
+Homepage = "https://prisms-center.github.io/CASMcode_docs/"
+Repository = "https://github.com/prisms-center/CASMcode_crystallography"
+
+[build_sphinx]
+source-dir = "doc"
+build-dir  = "doc/build"
+all_files  = 1
+
+[tool.ruff]
+select = ["E", "F", "I"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.isort]
+known-first-party = ["libcasm", "casm"]
+
+[tool.cibuildwheel]
+# Build for python3.9, 3.10, 3.11
+build = "cp39-* cp310-* cp311-*"
+# Build for cpython only
+skip =  "pp*"
+
+# Checkout submodules
+# before-all = "git submodule update --init --recursive"
+
+# Testing
+test-requires = "pytest pytest-datadir"
+test-command = "pytest -rsap {project}/python/tests"
+
+[tool.cibuildwheel.macos]
+# C++17
+environment = { MACOSX_DEPLOYMENT_TARGET="10.15" }
+
+[tool.cibuildwheel.linux]
+# dependencies do not build for musl
+skip = ["pp* *musllinux*"]

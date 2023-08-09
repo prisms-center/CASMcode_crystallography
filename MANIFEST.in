@@ -1,0 +1,19 @@
+graft cmake
+include doc/customdoxygen.css
+include doc/doxygen_config
+graft include
+graft src
+graft tests
+graft python/doc
+prune python/doc/_build
+prune python/doc/reference/libcasm/_autosummary
+graft python/examples
+recursive-include python/libcasm *.in
+recursive-include python/src *.cpp
+recursive-include python/tests *.py
+graft python/tests/data
+include python/pyproject.toml
+include python/setup.py
+include CHANGELOG.md CONTRIBUTE.md README.md LICENSE
+include CMakeLists.txt CMakeLists.txt.in make_CMakeLists.py pre-commit stylize.sh
+include build_requirements.txt dev_requirements.txt doc_requirements.txt test_requirements.txt

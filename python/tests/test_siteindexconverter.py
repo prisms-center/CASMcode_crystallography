@@ -1,10 +1,10 @@
-import libcasm.xtal as xtal
 import numpy as np
 import pytest
 
+import libcasm.xtal as xtal
+
 
 def test_SiteIndexConverter_1():
-
     # test constructor
     f = xtal.SiteIndexConverter(
         transformation_matrix_to_super=np.array(

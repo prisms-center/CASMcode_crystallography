@@ -1,12 +1,9 @@
 [build-system]
 requires = [
+    "pip",
     "setuptools",
     "wheel",
-    "pybind11>=2.8.0"
+    "pybind11>=2.8.0",
+    "libcasm-global>=2.0.1",
 ]
-
 build-backend = "setuptools.build_meta"
-
-[tool.cibuildwheel]
-test-command = "python {project}/tests/test.py"
-test-skip = "*universal2:arm64"

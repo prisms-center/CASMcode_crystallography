@@ -4,6 +4,7 @@
 
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/IntegralCoordinateWithin.hh"
+#include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/SimpleStructure.hh"
 #include "casm/crystallography/Site.hh"
 #include "casm/crystallography/UnitCellCoord.hh"
@@ -453,6 +454,145 @@ SimpleStructure apply(xtal::SymOp const &op, SimpleStructure &sstruc) {
 SimpleStructure copy_apply(xtal::SymOp const &op, SimpleStructure sstruc) {
   apply(op, sstruc);
   return sstruc;
+}
+
+/// \brief Check if two structures are equivalent
+///
+/// \param first The first structure
+/// \param second The second structure
+/// \param xtal_tol Tolerance for comparison of lattices and coordinates
+/// \param properties_tol Tolerance for comparison of properties, by global or
+/// local
+///     property name. If not present, "default" will be used. If "default" is
+///     not present, TOL will be used.
+/// \return Returns true if the lattice points are equivalent, coordinates are
+/// equivalent
+///     after accounting for periodic boundary conditions, names are identical,
+///     and all local and global properties of the two structures are equal to
+///     the specified tolerance. Returns false otherwise.
+///
+/// \notes This does not check for rotations or less-then-lattice-vector
+/// translations.
+///     For structures that are equivalent up to a rotation, or after
+///     translation of basis sites, this returns false. That type of equivalence
+///     should be checked using the mapping methods.
+bool is_equivalent(const SimpleStructure &first, const SimpleStructure &second,
+                   double xtal_tol,
+                   std::map<std::string, double> properties_tol) {
+  Lattice first_lattice(first.lat_column_mat, xtal_tol);
+  Lattice second_lattice(second.lat_column_mat, xtal_tol);
+  if (!is_equivalent(first_lattice, second_lattice)) {
+    return false;
+  }
+
+  auto get_property_tol = [&](std::string name) {
+    auto it = properties_tol.find(name);
+    if (it == properties_tol.end()) {
+      it = properties_tol.find("default");
+      if (it == properties_tol.end()) {
+        return TOL;
+      }
+    }
+    return it->second;
+  };
+
+  auto properties_are_equal =
+      [&](std::map<std::string, Eigen::MatrixXd> const &first_properties,
+          std::map<std::string, Eigen::MatrixXd> const &second_properties) {
+        if (first_properties.size() != second_properties.size()) {
+          return false;
+        }
+        for (auto const &pair : first_properties) {
+          auto it = second_properties.find(pair.first);
+          if (it == second_properties.end()) {
+            return false;
+          }
+          double tol = get_property_tol(pair.first);
+          if (!almost_equal(pair.second, it->second, tol)) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+  // check global properties
+  if (!properties_are_equal(first.properties, second.properties)) {
+    return false;
+  }
+
+  auto site_properties_are_equal =
+      [&](Index i_first, Index i_second,
+          std::map<std::string, Eigen::MatrixXd> const &first_properties,
+          std::map<std::string, Eigen::MatrixXd> const &second_properties) {
+        if (first_properties.size() != second_properties.size()) {
+          return false;
+        }
+        for (auto const &pair : first_properties) {
+          auto it = second_properties.find(pair.first);
+          double tol = get_property_tol(pair.first);
+          if (it == second_properties.end()) {
+            return false;
+          }
+          if (!almost_equal(pair.second.col(i_first), it->second.col(i_second),
+                            tol)) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+  auto find_info_index = [&](Index i_first,
+                             SimpleStructure::Info const &first_info,
+                             SimpleStructure::Info const &second_info) {
+    Coordinate coord_ref{first_info.coords.col(i_first), first_lattice, CART};
+    for (Index i_second = 0; i_second < second_info.size(); ++i_second) {
+      Coordinate coord_other{second_info.coords.col(i_second), second_lattice,
+                             CART};
+      if (first_info.names[i_first] == second_info.names[i_second] &&
+          coord_ref.min_dist(coord_other) < xtal_tol &&
+          site_properties_are_equal(i_first, i_second, first_info.properties,
+                                    second_info.properties)) {
+        return i_second;
+      }
+    }
+    return second_info.size();
+  };
+
+  auto find_atom_index = [&](Index i_first, SimpleStructure const &first,
+                             SimpleStructure const &second) {
+    SimpleStructure::Info const &first_info = first.atom_info;
+    SimpleStructure::Info const &second_info = second.atom_info;
+    return find_info_index(i_first, first_info, second_info);
+  };
+
+  auto find_mol_index = [&](Index i_first, SimpleStructure const &first,
+                            SimpleStructure const &second) {
+    SimpleStructure::Info const &first_info = first.mol_info;
+    SimpleStructure::Info const &second_info = second.mol_info;
+    return find_info_index(i_first, first_info, second_info);
+  };
+
+  // check atoms
+  if (first.n_atom() != second.n_atom()) {
+    return false;
+  }
+  for (Index i = 0; i < first.n_atom(); ++i) {
+    if (find_atom_index(i, first, second) >= second.n_atom()) {
+      return false;
+    }
+  }
+
+  // check mol
+  if (first.n_mol() != second.n_mol()) {
+    return false;
+  }
+  for (Index i = 0; i < first.n_mol(); ++i) {
+    if (find_mol_index(i, first, second) >= second.n_mol()) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace xtal

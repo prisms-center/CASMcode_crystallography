@@ -196,7 +196,9 @@ Crystal point group
 
 The crystal point group of a structure can be generated using the :func:`~libcasm.xtal.make_structure_crystal_point_group` method:
 
-    >>> crystal_point_group = xtal.make_structure_crystal_point_group(structure)
+.. code-block:: Python
+
+    crystal_point_group = xtal.make_structure_crystal_point_group(structure)
 
 
 Structure manipulation

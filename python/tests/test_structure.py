@@ -1,7 +1,6 @@
-import json
-import pytest
-import libcasm.xtal as xtal
 import numpy as np
+
+import libcasm.xtal as xtal
 
 
 def test_make_structure(example_structure_1):
@@ -165,3 +164,115 @@ def test_copy_structure(example_structure_1):
     assert structure1 is not example_structure_1
     assert isinstance(structure2, xtal.Structure)
     assert structure2 is not example_structure_1
+
+
+def test_structure_is_equivalent_to():
+    # Lattice vectors
+    lattice = xtal.Lattice(
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [0.0, 1.0, 0.0],  # a
+                [0.0, 0.0, 2.0],  # c
+            ]
+        ).transpose()
+    )
+    atom_coordinate_cart = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.5, 0.5, 0.5],
+            [0.0, 0.0, 1.0],
+            [0.5, 0.5, 1.5],
+        ]
+    ).transpose()
+
+    # atom types - re-ordered
+    atom_type = ["A", "A", "B", "B"]
+
+    # atom properties
+    atom_disp = np.array(
+        [
+            [0.1, 0.0, 0.0],
+            [0.0, 0.1, 0.0],
+            [0.0, 0.0, 0.1],
+            [0.1, 0.2, 0.3],
+        ]
+    ).transpose()
+    atom_properties = {"disp": atom_disp}
+    print(atom_properties)
+
+    # global properties
+    # F = np.array(
+    #     [
+    #         [1.01, 0.0, 0.0],
+    #         [0.0, 1.0, 0.0],
+    #         [0.0, 0.0, 1.0],
+    #     ]
+    # )
+    # converter = xtal.StrainConverter('Hstrain')
+    # Hstrain_vector = converter.from_F(F)
+    Hstrain_vector = np.array([0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0])
+    global_properties = {"Hstrain": Hstrain_vector}
+    print(global_properties)
+
+    structure1 = xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=xtal.cartesian_to_fractional(
+            lattice, atom_coordinate_cart
+        ),
+        atom_type=atom_type,
+        atom_properties=atom_properties,
+        global_properties=global_properties,
+    )
+
+    # structure2: re-order atoms
+
+    # atom coordinates - re-ordered
+    atom_coordinate_cart = np.array(
+        [
+            [0.5, 0.5, 0.5],  # 1
+            [0.0, 0.0, 1.0],  # 2
+            [0.5, 0.5, 1.5],  # 3
+            [0.0, 0.0, 0.0],  # 0
+        ]
+    ).transpose()
+
+    # atom types - re-ordered
+    atom_type = ["A", "B", "B", "A"]  # 1, 2, 3, 0
+
+    # atom properties - re-ordered
+    atom_disp = np.array(
+        [
+            [0.0, 0.1, 0.0],  # 1
+            [0.0, 0.0, 0.1],  # 2
+            [0.1, 0.2, 0.3],  # 3
+            [0.1, 0.0, 0.0],  # 0
+        ]
+    ).transpose()
+    atom_properties = {"disp": atom_disp}
+    print(atom_properties)
+
+    # global properties - same
+    np.array(
+        [
+            [1.01, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+    # converter = xtal.StrainConverter('Hstrain')
+    # Hstrain_vector = converter.from_F(F)
+    Hstrain_vector = np.array([0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0])
+    global_properties = {"Hstrain": Hstrain_vector}
+
+    structure2 = xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=xtal.cartesian_to_fractional(
+            lattice, atom_coordinate_cart
+        ),
+        atom_type=atom_type,
+        atom_properties=atom_properties,
+        global_properties=global_properties,
+    )
+
+    assert structure1.is_equivalent_to(structure2)
