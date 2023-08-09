@@ -27,6 +27,13 @@ def test_integral_site_coordinate_to_list(ZrO_prim):
     assert integral_site_coordinate.to_list() == [0, 1, 2, 3]
 
 
+def test_integral_site_coordinate_str(ZrO_prim):
+    b = 0
+    unitcell = np.array([1, 2, 3])
+    integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
+    assert str(integral_site_coordinate) == "0, 1 2 3"
+
+
 def test_integral_site_coordinate_translate_add(ZrO_prim):
     b = 0
     unitcell = np.array([1, 2, 3])
