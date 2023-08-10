@@ -23,6 +23,7 @@ license = {text = "LGPL2.1+"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
+    "Programming Language :: C++",
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Topic :: Scientific/Engineering",
 ]
