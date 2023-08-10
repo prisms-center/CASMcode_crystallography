@@ -5,7 +5,8 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## [2.0a1] - 2023-08-09
 
 This release separates out casm/crystallography from CASM v1, in particular removing remaining dependencies on casm/symmetry for constructing symmetry representations and getting basic symmetry operation info. It creates a Python package, libcasm.xtal, that enables using casm/crystallography and may be installed via pip install, using scikit-build, CMake, and pybind11. This release also includes usage and API documentation for using libcasm.xtal, built using Sphinx.
 
