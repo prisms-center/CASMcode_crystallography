@@ -33,16 +33,18 @@ add_module_names = True
 
 intersphinx_mapping = {}
 
-# if LIBCASM_PYDOCS env variable is set, create local docs
+# if LIBCASM_LOCAL_PYDOCS env variable is set, create local docs
 pydocs_path = os.environ.get("LIBCASM_LOCAL_PYDOCS", None)
 packages = [("global", "2.0")]
 for package, vers in packages:
     if pydocs_path is None:
-        url = f"https://prisms-center.github.io/CASMcode_pydocs/libcasm/{package}/{vers}/html"
+        url = (
+            f"https://prisms-center.github.io/CASMcode_pydocs/libcasm/{package}/{vers}/"
+        )
         inventory = None
     else:
         url = os.path.join(pydocs_path, f"{package}/{vers}/html")
-        inventory = os.path.join(pydocs_path, f"{package}/{vers}/html/objects.inv")
+        inventory = os.path.join(pydocs_path, f"{package}/{vers}/objects.inv")
     intersphinx_mapping[package] = (url, inventory)
 
 print(intersphinx_mapping)
