@@ -77,5 +77,5 @@ skip = ["pp* *musllinux*"]
 
 repair-wheel-command = """\
 LD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
-audithweel repair -w {dest_dir} {wheel}\
+auditwheel repair -w {dest_dir} {wheel}\
 """
