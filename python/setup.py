@@ -1,21 +1,41 @@
-import glob
 import os
-import sys
 
-__version__ = "2.0.dev1"
-
-from pybind11 import get_cmake_dir
+__version__ = "2.0a1"
 
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from setuptools import setup, find_namespace_packages
+from setuptools import setup
 
+# If on macosx, target 10.15 (ignored otherwise)
+os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"
+
+# extra_compile_args
+extra_compile_args = [
+    "-D_LIBCPP_DISABLE_AVAILABILITY",
+    "--std=c++17",
+]
+if "CASM_EXTRA_COMPILE_ARGS" in os.environ:
+    extra_compile_args += os.environ["CASM_EXTRA_COMPILE_ARGS"].split()
+
+# extra_link_args
+
+# Set absolute rpaths
+# Expected installation layout example:
+# C++ libraries:
+# - <python package prefix>/libcasm/lib/libcasm_<name>.dylib
+# - <python package prefix>/libcasm/lib64/libcasm_<name>.dylib
 casm_prefix = os.getenv("CASM_PREFIX")
 if casm_prefix is None:
     raise Exception("CASM_PREFIX not set")
+rpath = os.path.join(casm_prefix, "lib")
+rpath64 = os.path.join(casm_prefix, "lib64")
+extra_link_args = [
+    f"-Wl,-rpath,{rpath}",
+    f"-Wl,-rpath,{rpath64}",
+    "-lcasm_global",
+    "-lcasm_crystallography",
+]
 
-with open(os.path.join("README.md"), encoding="utf-8") as f:
-    long_description = f.read()
 
 # The main interface is through Pybind11Extension.
 # * You can add cxx_std=11/14/17, and then build_ext can be removed.
@@ -33,16 +53,14 @@ ext_modules_params = {
     "cxx_std": 17,
     "library_dirs": [
         os.path.join(casm_prefix, "lib"),
+        os.path.join(casm_prefix, "lib64"),
     ],
     "include_dirs": [
         os.path.join(casm_prefix, "include/casm/external"),
         os.path.join(casm_prefix, "include"),
     ],
-    "extra_compile_args": [
-        "-D_LIBCPP_DISABLE_AVAILABILITY",
-        "--std=c++17",
-    ],
-    "extra_link_args": ["-lcasm_global", "-lcasm_crystallography"],
+    "extra_compile_args": extra_compile_args,
+    "extra_link_args": extra_link_args,
 }
 
 ext_modules = [
@@ -52,26 +70,8 @@ ext_modules = [
 setup(
     name="libcasm-xtal",
     version=__version__,
-    url="https://github.com/prisms-center/CASMcode_crystallography",
-    description="CASM crystallography Python interface",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    author="CASM developers",
-    author_email="casm-developers@lists.engr.ucsb.edu",
-    license="LGPL2.1+",
-    packages=find_namespace_packages(include=["libcasm.*"]),
-    install_requires=["pybind11", "numpy"],
-    classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Topic :: Scientific/Engineering",
-    ],
-    data_files=[("", ["LICENSE"])],
+    packages=["libcasm", "libcasm.xtal"],
+    install_requires=["pybind11", "libcasm-global>=2.0.2"],
     ext_modules=ext_modules,
-    extras_require={"test": "pytest"},
     cmdclass={"build_ext": build_ext},
-    zip_safe=False,
-    python_requires=">=3.8",
 )

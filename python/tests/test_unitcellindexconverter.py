@@ -1,10 +1,10 @@
-import libcasm.xtal as xtal
 import numpy as np
 import pytest
 
+import libcasm.xtal as xtal
+
 
 def test_UnitCellIndexConverter_1():
-
     # test constructor
     f = xtal.UnitCellIndexConverter(
         np.array(

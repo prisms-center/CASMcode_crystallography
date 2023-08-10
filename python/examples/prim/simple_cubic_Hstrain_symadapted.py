@@ -1,6 +1,6 @@
 import numpy as np
-import casm.xtal as xtal
-from math import sqrt
+
+import libcasm.xtal as xtal
 
 # Lattice vectors
 lattice_column_vector_matrix = np.array(

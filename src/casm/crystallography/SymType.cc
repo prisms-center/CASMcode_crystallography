@@ -15,7 +15,7 @@ SymOp operator*(const SymOp &LHS, const SymOp &RHS) {
 /// \brief Make the inverse SymOp
 SymOp make_inverse(SymOp const &op) {
   return SymOp(op.matrix.transpose(), -(op.matrix.transpose() * op.translation),
-               op.time_reversal);
+               op.is_time_reversal_active);
 }
 
 //**********************************************************************************//

@@ -1,6 +1,7 @@
-import math
-import numpy as np
 from typing import Optional
+
+import numpy as np
+
 import libcasm.xtal as xtal
 import libcasm.xtal.lattices as xtal_lattices
 
@@ -24,9 +25,13 @@ def BCC(
     atom_type: str = "A"
         Atom type name
     atom_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with the atom, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with the atom, if present. Keys must be the
+        name of a CASM-supported property type. Values are arrays with dimensions
+        matching the standard dimension of the property type.
     global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with entire crystal, if present. Keys must be
+        the name of a CASM-supported property type. Values are (m, 1) arrays with
+        dimensions matching the standard dimension of the property type.
 
     Returns
     -------
@@ -61,9 +66,13 @@ def FCC(
     atom_type: str = "A"
         Atom type name
     atom_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with the atom, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with the atom, if present. Keys must be the
+        name of a CASM-supported property type. Values are arrays with dimensions
+        matching the standard dimension of the property type.
     global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with entire crystal, if present. Keys must be
+        the name of a CASM-supported property type. Values are (m, 1) arrays with
+        dimensions matching the standard dimension of the property type.
 
     Returns
     -------
@@ -102,9 +111,13 @@ def HCP(
     atom_type: str = "A"
         Atom type name
     atom_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 2]]], default={}
-        Continuous properties associated with the atoms, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with the atoms, if present. Keys must be the
+        name of a CASM-supported property type. Values are arrays with dimensions
+        matching the standard dimension of the property type.
     global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, 1]]], default={}
-        Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
+        Continuous properties associated with entire crystal, if present. Keys must be
+        the name of a CASM-supported property type. Values are (m, 1) arrays with
+        dimensions matching the standard dimension of the property type.
 
     Returns
     -------

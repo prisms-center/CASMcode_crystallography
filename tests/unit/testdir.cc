@@ -7,8 +7,8 @@ namespace test {
 
 /// Store data files in "tests/unit/<module_name>/data/<file_name>"
 fs::path data_dir(std::string module_name) {
-  return fs::path{autotools::abs_srcdir()} / "tests" / "unit" / module_name /
-         "data";
+  // abs_srcdir == "<project path>/tests"
+  return fs::path{autotools::abs_srcdir()} / "unit" / module_name / "data";
 }
 
 /// Store data files in "tests/unit/<module_name>/<file_name>"

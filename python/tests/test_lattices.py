@@ -1,7 +1,9 @@
-from libcasm.xtal import Lattice
-import libcasm.xtal.lattices as lattices
 import math
+
 import numpy as np
+
+import libcasm.xtal.lattices as lattices
+from libcasm.xtal import Lattice
 
 
 def test_BCC_lattice():
@@ -17,7 +19,7 @@ def test_BCC_lattice():
 
 
 def test_from_lattice_parameters():
-    from math import isclose, degrees
+    from math import degrees
 
     a = 1.0
     b = 1.3

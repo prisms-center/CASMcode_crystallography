@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+
 import libcasm.xtal as xtal
 
 
@@ -7,7 +7,7 @@ def test_SymOp_constructor():
     op = xtal.SymOp(np.eye(3), np.zeros((3, 1)), False)
     assert np.allclose(op.matrix(), np.eye(3))
     assert np.allclose(op.translation(), np.zeros((3, 1)))
-    assert op.time_reversal() == False
+    assert op.time_reversal() is False
 
 
 def test_SymOp_to_dict():
@@ -148,6 +148,30 @@ def test_SymOp_mul_properties():
     print(transformed_properties)
     assert "Hstrain" in transformed_properties
     assert transformed_properties["Hstrain"].shape == (6, 1)
+
+
+def test_SymOp_mul_lattice(tetragonal_lattice):
+    R = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+    tau = np.array([1.0, 1.0, 1.0])
+    op = xtal.SymOp(R, tau, False)
+
+    transformed_lattice = op * tetragonal_lattice
+
+    expected_L = np.array(
+        [
+            [1.0, 0.0, 0.0],  # a
+            [0.0, 0.0, 1.0],  # a
+            [0.0, 2.0, 0.0],  # c
+        ]
+    ).transpose()
+
+    assert np.allclose(transformed_lattice.column_vector_matrix(), expected_L)
 
 
 def test_SymOp_mul_structure(example_structure_1):

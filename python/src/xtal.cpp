@@ -120,6 +120,11 @@ std::vector<xtal::Lattice> enumerate_superlattices(
   return superlattices;
 }
 
+bool lattice_is_equivalent_to(xtal::Lattice const &lattice1,
+                              xtal::Lattice const &lattice2) {
+  return xtal::is_equivalent(lattice1, lattice2);
+}
+
 std::pair<bool, Eigen::Matrix3d> is_superlattice_of(
     xtal::Lattice const &superlattice, xtal::Lattice const &unit_lattice) {
   double tol = std::max(superlattice.tol(), unit_lattice.tol());
@@ -423,17 +428,15 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_str(
   return prim_from_poscar_stream(poscar_stream, occ_dof, xtal_tol);
 }
 
-xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
-                                                  double xtal_tol) {
+xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path) {
   std::filesystem::path path(poscar_path);
   std::ifstream poscar_stream(path);
-  return xtal::make_simple_structure(poscar_stream, xtal_tol);
+  return xtal::make_simple_structure(poscar_stream, TOL);
 }
 
-xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
-                                                      double xtal_tol) {
+xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str) {
   std::istringstream poscar_stream(poscar_str);
-  return xtal::make_simple_structure(poscar_stream, xtal_tol);
+  return xtal::make_simple_structure(poscar_stream, TOL);
 }
 
 /// \brief Format xtal::BasicStructure as JSON string
@@ -565,7 +568,7 @@ std::shared_ptr<xtal::BasicStructure const> make_canonical_prim(
 std::vector<std::vector<Index>> asymmetric_unit_indices(
     std::shared_ptr<xtal::BasicStructure const> const &prim) {
   // Note: pybind11 doesn't nicely convert sets of set,
-  // so return vector of vector, which is converted to List[List[int]]
+  // so return vector of vector, which is converted to list[list[int]]
   std::vector<std::vector<Index>> result;
   std::set<std::set<Index>> asym_unit = make_asymmetric_unit(*prim);
   for (auto const &orbit : asym_unit) {
@@ -675,8 +678,9 @@ xtal::SimpleStructure make_simplestructure(
   return simple;
 }
 
-xtal::Lattice get_simplestructure_lattice(xtal::SimpleStructure const &simple) {
-  return xtal::Lattice(simple.lat_column_mat);
+xtal::Lattice get_simplestructure_lattice(xtal::SimpleStructure const &simple,
+                                          double xtal_tol = TOL) {
+  return xtal::Lattice(simple.lat_column_mat, xtal_tol);
 }
 
 Eigen::MatrixXd get_simplestructure_atom_coordinate_cart(
@@ -760,7 +764,7 @@ std::vector<xtal::SymOp> make_simplestructure_factor_group(
     occ_dof.push_back({name});
   }
   std::shared_ptr<xtal::BasicStructure const> prim =
-      make_prim(get_simplestructure_lattice(simple),
+      make_prim(get_simplestructure_lattice(simple, TOL),
                 get_simplestructure_atom_coordinate_frac(simple), occ_dof);
   return xtal::make_factor_group(*prim);
 }
@@ -783,6 +787,14 @@ xtal::SimpleStructure make_superstructure(
     xtal::SimpleStructure const &simple) {
   return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
                                    simple);
+}
+
+bool simplestructure_is_equivalent_to(
+    xtal::SimpleStructure const &first, xtal::SimpleStructure const &second,
+    double xtal_tol = TOL,
+    std::map<std::string, double> properties_tol =
+        std::map<std::string, double>()) {
+  return xtal::is_equivalent(first, second, xtal_tol, properties_tol);
 }
 
 std::vector<Eigen::VectorXd> make_equivalent_property_values(
@@ -844,8 +856,6 @@ PYBIND11_MODULE(_xtal, m) {
 
     )pbdoc";
 
-  m.attr("TOL") = TOL;
-
   py::class_<xtal::SimpleStructure> pyStructure(m, "Structure", R"pbdoc(
     A crystal structure
 
@@ -865,13 +875,16 @@ PYBIND11_MODULE(_xtal, m) {
     Notes
     -----
 
-    The positions of atoms or molecules in the crystal state is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
-
-    Structure may be copied with `copy.copy` or `copy.deepcopy`.
+    The positions of atoms or molecules in the crystal structure is defined by the lattice and atom coordinates or molecule coordinates. If included, strain and displacement properties, which are defined in reference to an ideal state, should be interpreted as the strain and displacement that takes the crystal from the ideal state to the state specified by the structure lattice and atom or molecule coordinates. The convention used by CASM is that displacements are applied first, and then the displaced coordinates and lattice vectors are strained.
 
     See the CASM `Degrees of Freedom (DoF) and Properties`_
     documentation for the full list of supported properties and their
     definitions.
+
+    .. rubric:: Special Methods
+
+    - Structure may be copied with `copy.copy` or `copy.deepcopy`.
+
 
     .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
 
@@ -882,7 +895,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       .. rubric:: Special Methods
 
-      Sort :class:`~libcasm.xtal.Lattice` by how canonical the lattice vectors are via ``<``, ``<=``, ``>``, ``>=`` (see also `Lattice Canonical Form`_.), and check if lattice are approximately equal via ``==``, ``!=``:
+      Sort :class:`~libcasm.xtal.Lattice` by how canonical the lattice vectors are via ``<``, ``<=``, ``>``, ``>=`` (see also :ref:`Lattice Canonical Form <lattice-canonical-form>`), and check if lattice are approximately equal via ``==``, ``!=``:
 
       .. code-block:: Python
 
@@ -927,7 +940,7 @@ PYBIND11_MODULE(_xtal, m) {
       ----------
       column_vector_matrix : array_like, shape=(3,3)
           The lattice vectors, as columns of a 3x3 matrix.
-      tol : float, default=xtal.TOL
+      tol : float = :data:`~libcasm.casmglobal.TOL`
           Tolerance to be used for crystallographic comparisons.
       )pbdoc")
       .def("column_vector_matrix", &xtal::Lattice::lat_column_mat,
@@ -947,7 +960,95 @@ PYBIND11_MODULE(_xtal, m) {
       .def(py::self == py::self,
            "True if lattice vectors are approximately equal")
       .def(py::self != py::self,
-           "True if lattice vectors are not approximately equal");
+           "True if lattice vectors are not approximately equal")
+      .def("is_equivalent_to", &lattice_is_equivalent_to, py::arg("other"),
+           R"pbdoc(
+            Check if self is equivalent to lattice2
+
+            Two lattices, L1 and L2, are equivalent (i.e. have the same
+            lattice points) if there exists U such that:
+
+            .. code-block:: Python
+
+                L1 = L2 @ U,
+
+            where L1 and L2 are the lattice vectors as matrix columns, and
+            U is a unimodular matrix (integer matrix, with abs(det(U))==1).
+
+            Parameters
+            ----------
+            lattice2 : ~libcasm.xtal.Lattice
+                The second lattice.
+
+            Returns
+            -------
+            is_equivalent: bool
+                True if self is equivalent to lattice2.
+            )pbdoc")
+      .def("is_superlattice_of", &is_superlattice_of, py::arg("lattice2"),
+           R"pbdoc(
+      Check if lattice1 (self) is a superlattice of lattice2
+
+      If lattice1 (self) is a superlattice of lattice2, then
+
+      .. code-block:: Python
+
+          L1 = L2 @ T
+
+      where p is the index of a point_group operation, T is an approximately
+      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
+      columns of a matrix, of lattice1 and lattice2, respectively.
+
+      Parameters
+      ----------
+      lattice2 : ~libcasm.xtal.Lattice
+          The second lattice.
+
+      Returns
+      -------
+      (is_superlattice_of, T): (bool, numpy.ndarray[numpy.float64[3, 3]])
+          Returns tuple with a boolean that is True if lattice1 (self) is a
+          superlattice of lattice2, and the tranformation matrix T
+          such that L1 = L2 @ T. Note: If is_superlattice_of==True,
+          numpy.rint(T).astype(int) can be used to round array elements to
+          the nearest integer.
+      )pbdoc")
+      .def("is_equivalent_superlattice_of", &is_equivalent_superlattice_of,
+           py::arg("lattice2"),
+           py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
+      Check if lattice1 (self) is equivalent to a superlattice of lattice2
+
+      If lattice1 (self) is equivalent to a superlattice of lattice2, then
+
+      .. code-block:: Python
+
+          L1 = point_group[p].matrix() @ L2 @ T
+
+      where p is the index of a point_group operation, T is an approximately
+      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
+      columns of a matrix, of lattice1 and lattice2, respectively.
+
+      Parameters
+      ----------
+      lattice2 : ~libcasm.xtal.Lattice
+          The second lattice.
+      point_group : list[:class:`~libcasm.xtal.SymOp`]
+          The point group symmetry that generates equivalent lattices. Depending
+          on the use case, this is often the prim crystal point group,
+          :func:`~casm.xtal.make_crystal_point_group()`, or the lattice
+          point group, :func:`~casm.xtal.make_point_group()`.
+
+      Returns
+      -------
+      (is_equivalent_superlattice_of, T, p): (bool,
+      numpy.ndarray[numpy.float64[3, 3]], int)
+          Returns tuple with a boolean that is True if lattice1 (self) is
+          equivalent to a superlattice of lattice2, the
+          tranformation matrix T, and point group index, p, such that L1 =
+          point_group[p].matrix() @ L2 @ T. Note: If
+          is_equivalent_superlattice_of==True, numpy.rint(T).astype(int) can
+          be used to round array elements to the nearest integer.
+      )pbdoc");
 
   m.def("make_canonical_lattice", &make_canonical_lattice, py::arg("lattice"),
         R"pbdoc(
@@ -1099,108 +1200,11 @@ PYBIND11_MODULE(_xtal, m) {
 
       Returns
       -------
-      point_group : List[:class:`~libcasm.xtal.SymOp`]
+      point_group : list[:class:`~libcasm.xtal.SymOp`]
           The set of rigid transformations that keep the origin fixed
           (i.e. have zero translation vector) and map the lattice (i.e.
           all points that are integer multiples of the lattice vectors)
           onto itself.
-      )pbdoc");
-
-  m.def("is_equivalent_to", &xtal::is_equivalent, py::arg("lattice1"),
-        py::arg("lattice2"), R"pbdoc(
-      Check if lattice1 is equivalent to lattice2
-
-      Two lattices, L1 and L2, are equivalent (i.e. have the same
-      lattice points) if there exists U such that:
-
-      .. code-block:: Python
-
-          L1 = L2 @ U,
-
-      where L1 and L2 are the lattice vectors as matrix columns, and
-      U is a unimodular matrix (integer matrix, with abs(det(U))==1).
-
-      Parameters
-      ----------
-      lattice1 : ~libcasm.xtal.Lattice
-          The first lattice.
-      lattice2 : ~libcasm.xtal.Lattice
-          The second lattice.
-
-      Returns
-      -------
-      is_equivalent: bool
-          True if lattice1 is equivalent to lattice2.
-      )pbdoc");
-
-  m.def("is_superlattice_of", &is_superlattice_of, py::arg("lattice1"),
-        py::arg("lattice2"), R"pbdoc(
-      Check if lattice1 is a superlattice of lattice2
-
-      If lattice1 is a superlattice of lattice2, then
-
-      .. code-block:: Python
-
-          L1 = L2 @ T
-
-      where p is the index of a point_group operation, T is an approximately
-      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
-      columns of a matrix, of lattice1 and lattice2, respectively.
-
-      Parameters
-      ----------
-      lattice1 : ~libcasm.xtal.Lattice
-          The first lattice.
-      lattice2 : ~libcasm.xtal.Lattice
-          The second lattice.
-
-      Returns
-      -------
-      (is_superlattice_of, T): (bool, numpy.ndarray[numpy.float64[3, 3]])
-          Returns tuple with a boolean that is True if lattice1 is a
-          superlattice of lattice2, and the tranformation matrix T
-          such that L1 = L2 @ T. Note: If is_superlattice_of==True,
-          numpy.rint(T).astype(int) can be used to round array elements to
-          the nearest integer.
-      )pbdoc");
-
-  m.def("is_equivalent_superlattice_of", &is_equivalent_superlattice_of,
-        py::arg("lattice1"), py::arg("lattice2"),
-        py::arg("point_group") = std::vector<xtal::SymOp>{}, R"pbdoc(
-      Check if lattice1 is equivalent to a superlattice of lattice2
-
-      If lattice1 is equivalent to a superlattice of lattice2, then
-
-      .. code-block:: Python
-
-          L1 = point_group[p].matrix() @ L2 @ T
-
-      where p is the index of a point_group operation, T is an approximately
-      integer tranformation matrix T, and L1 and L2 are the lattice vectors, as
-      columns of a matrix, of lattice1 and lattice2, respectively.
-
-      Parameters
-      ----------
-      lattice1 : ~libcasm.xtal.Lattice
-          The first lattice.
-      lattice2 : ~libcasm.xtal.Lattice
-          The second lattice.
-      point_group : List[:class:`~libcasm.xtal.SymOp`]
-          The point group symmetry that generates equivalent lattices. Depending
-          on the use case, this is often the prim crystal point group,
-          :func:`~casm.xtal.make_crystal_point_group()`, or the lattice
-          point group, :func:`~casm.xtal.make_point_group()`.
-
-      Returns
-      -------
-      (is_equivalent_superlattice_of, T, p): (bool,
-      numpy.ndarray[numpy.float64[3, 3]], int)
-          Returns tuple with a boolean that is True if lattice1 is
-          equivalent to a superlattice of lattice2, the
-          tranformation matrix T, and point group index, p, such that L1 =
-          point_group[p].matrix() @ L2 @ T. Note: If
-          is_equivalent_superlattice_of==True, numpy.rint(T).astype(int) can
-          be used to round array elements to the nearest integer.
       )pbdoc");
 
   m.def("make_transformation_matrix_to_super",
@@ -1257,7 +1261,7 @@ PYBIND11_MODULE(_xtal, m) {
       ----------
       unit_lattice : ~libcasm.xtal.Lattice
           The unit lattice.
-      point_group : List[:class:`~libcasm.xtal.SymOp`]
+      point_group : list[:class:`~libcasm.xtal.SymOp`]
           The point group symmetry that determines if superlattices are equivalent. Depending on the use case, this is often the prim crystal point group, :func:`~casm.xtal.make_crystal_point_group()`, or the lattice point group, :func:`~casm.xtal.make_point_group()`.
       max_volume : int
           The maximum volume superlattice to enumerate, as a multiple of the volume of unit_lattice.
@@ -1270,7 +1274,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       Returns
       -------
-      superlattices : List[:class:`~libcasm.xtal.Lattice`]
+      superlattices : list[:class:`~libcasm.xtal.Lattice`]
           A list of superlattices of the unit lattice which are distinct under application of
           point_group. The resulting lattices will be in canonical form with respect to the
           point_group.
@@ -1283,7 +1287,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       Parameters
       ----------
-      lattices : List[:class:`~libcasm.xtal.Lattice`]
+      lattices : list[:class:`~libcasm.xtal.Lattice`]
           List of lattices.
       mode : str, default="commensurate"
           One of:
@@ -1292,7 +1296,7 @@ PYBIND11_MODULE(_xtal, m) {
           - "minimal_commensurate": Returns the lattice that is the smallest possible superlattice of an equivalent lattice to all input lattice
           - "fully_commensurate": Returns the lattice that is a superlattice of all equivalents of
             all input lattices
-      point_group : List[casm.xtal.symop], default=[]
+      point_group : list[casm.xtal.symop], default=[]
           Point group that generates the equivalent lattices for the the "minimal_commensurate" and
           "fully_commensurate" modes.
 
@@ -1318,7 +1322,7 @@ PYBIND11_MODULE(_xtal, m) {
           Position of the atom, in Cartesian coordinates, relative
           to the basis site at which the occupant containing this
           atom is placed.
-      properties : Dict[str, array_like]
+      properties : dict[str, array_like]
           Fixed properties of the atom, such as magnetic sping or
           selective dynamics flags. Keys must be the name of a
           CASM-supported property type. Values are arrays with
@@ -1362,7 +1366,7 @@ PYBIND11_MODULE(_xtal, m) {
           A \"chemical name\", which must be identical for occupants to
           be found symmetrically equivalent. The names are case
           sensitive, and "Va" is reserved for vacancies.
-      atoms : List[:class:`~libcasm.xtal.AtomComponent`], optional
+      atoms : list[:class:`~libcasm.xtal.AtomComponent`], optional
           The atomic components of a molecular occupant. Atoms and
           vacancies are represented with a single AtomComponent with the
           same name for the Occupant and the AtomComponent. If atoms is
@@ -1371,7 +1375,7 @@ PYBIND11_MODULE(_xtal, m) {
       is_divisible : bool, default=False
           If True, indicates an Occupant that may split into components
           during kinetic Monte Carlo calculations.
-      properties : Dict[str, array_like], default={}
+      properties : dict[str, array_like], default={}
           Fixed properties of the occupant, such as magnetic
           spin or selective dynamics flags. Keys must be the name of a
           CASM-supported property type. Values are arrays with
@@ -1391,13 +1395,11 @@ PYBIND11_MODULE(_xtal, m) {
       .def("atoms", &xtal::Molecule::atoms,
            "Returns the atomic components of the occupant")
       .def("properties", &get_molecule_properties,
-           "Returns the fixed properties of the occupant");
-
-  m.def("is_vacancy", &xtal::Molecule::is_vacancy,
-        "True if occupant is a vacancy.");
-
-  m.def("is_atomic", &xtal::Molecule::is_atomic,
-        "True if occupant is a single isotropic atom or vacancy");
+           "Returns the fixed properties of the occupant")
+      .def("is_vacancy", &xtal::Molecule::is_vacancy,
+           "True if occupant is a vacancy.")
+      .def("is_atomic", &xtal::Molecule::is_atomic,
+           "True if occupant is a single isotropic atom or vacancy");
 
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy
@@ -1471,7 +1473,7 @@ PYBIND11_MODULE(_xtal, m) {
           The number of columns must be less than or equal to the number
           of rows. The default value indicates the standard basis should
           be used.
-      axis_names : List[str], default=[]
+      axis_names : list[str], default=[]
           Names for the DoF basis vectors (i.e. names for the basis matrix
           columns). Size must match number of columns in the basis matrix.
           The axis names should be appropriate for use in latex basis
@@ -1492,8 +1494,8 @@ PYBIND11_MODULE(_xtal, m) {
   // `xtal::BasicStructure const &` arguments and return
   // `std::shared_ptr<xtal::BasicStructure const>`. Pybind11 will cast away the
   // const-ness of the returned quantity. The one exception is the method
-  // `make_prim` used for the casm.xtal.Prim __init__ method, which it appears
-  // must return `std::shared_ptr<xtal::BasicStructure>`.
+  // `make_prim` used for the libcasm.xtal.Prim __init__ method, which it
+  // appears must return `std::shared_ptr<xtal::BasicStructure>`.
 
   py::class_<xtal::BasicStructure, std::shared_ptr<xtal::BasicStructure>>(
       m, "Prim", R"pbdoc(
@@ -1539,20 +1541,20 @@ PYBIND11_MODULE(_xtal, m) {
       coordinate_frac : array_like, shape (3, n)
           Basis site positions, as columns of a matrix, in fractional
           coordinates with respect to the lattice vectors.
-      occ_dof : List[List[str]]
+      occ_dof : list[list[str]]
           Labels ('orientation names') of occupants allowed on each basis
           site. The value occ_dof[b] is the list of occupants allowed on
           the `b`-th basis site. The values may either be (i) the name of
           an isotropic atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
           in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
           are case sensitive, and "Va" is reserved for vacancies.
-      local_dof : List[List[:class:`~libcasm.xtal.DoFSetBasis`]], default=[[]]
+      local_dof : list[list[:class:`~libcasm.xtal.DoFSetBasis`]], default=[[]]
           Continuous DoF allowed on each basis site. No effect if empty.
           If not empty, the value local_dof[b] is a list of :class:`DoFSetBasis`
           objects describing the DoF allowed on the `b`-th basis site.
-      global_dof : List[:class:`~libcasm.xtal.DoFSetBasis`], default=[]
+      global_dof : list[:class:`~libcasm.xtal.DoFSetBasis`], default=[]
           Global continuous DoF allowed for the entire crystal.
-      occupants : Dict[str,:class:`~libcasm.xtal.Occupant`], default=[]
+      occupants : dict[str,:class:`~libcasm.xtal.Occupant`], default=[]
           :class:`Occupant` allowed in the crystal. The keys are labels
           ('orientation names') used in the occ_dof parameter. This may
           include isotropic atoms, vacancies, atoms with fixed anisotropic
@@ -1646,7 +1648,7 @@ PYBIND11_MODULE(_xtal, m) {
                 set to only allow the POSCAR atom types. This may be
                 provided, to explicitly set the occupation DoF.
 
-            xtal_tol: float = ~libcasm.xtal.TOL
+            xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
                 Tolerance used for lattice.
 
             Returns
@@ -1672,7 +1674,7 @@ PYBIND11_MODULE(_xtal, m) {
                 set to only allow the POSCAR atom types. This may be
                 provided, to explicitly set the occupation DoF.
 
-            xtal_tol: float = ~libcasm.xtal.TOL
+            xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
                 Tolerance used for lattice.
 
             Returns
@@ -1684,6 +1686,42 @@ PYBIND11_MODULE(_xtal, m) {
                   py::arg("poscar_str"),
                   py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
                   py::arg("xtal_tol") = TOL)
+      .def_static(
+          "from_atom_coordinates",
+          [](xtal::SimpleStructure const &simple,
+             std::vector<std::vector<std::string>> occ_dof, double xtal_tol) {
+            if (occ_dof.size() == 0) {
+              for (std::string name : simple.atom_info.names) {
+                occ_dof.push_back({name});
+              }
+            }
+            return make_prim(get_simplestructure_lattice(simple, xtal_tol),
+                             get_simplestructure_atom_coordinate_frac(simple),
+                             occ_dof);
+          },
+          py::arg("structure"),
+          py::arg("occ_dof") = std::vector<std::vector<std::string>>{},
+          py::arg("xtal_tol") = TOL, R"pbdoc(
+          Construct a Prim from a Structure, using atom coordinates
+
+          Parameters
+          ----------
+          structure : ~libcasm.xtal.Structure
+               The input structure.
+
+          occ_dof : list[list[str]] = []
+              By default, the occupation degrees of freedom (DoF) are
+              set to only allow the structure atom types. This may be
+              provided, to explicitly set the occupation DoF.
+
+          xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
+              Tolerance used for the Prim lattice.
+
+          Returns
+          -------
+          prim : ~libcasm.xtal.Prim
+                A Prim
+          )pbdoc")
       .def("to_json", &prim_to_json, py::arg("frac") = true,
            py::arg("include_va") = false,
            R"pbdoc(
@@ -1839,7 +1877,7 @@ PYBIND11_MODULE(_xtal, m) {
 
           Returns
           -------
-          asymmetric_unit_indices : List[List[int]]
+          asymmetric_unit_indices : list[list[int]]
               One list of basis site indices for each set of symmetrically equivalent basis sites.
               In other words, the elements of asymmetric_unit_indices[i] are the indices of the
               i-th set of basis sites which are symmetrically equivalent to each other.
@@ -1857,7 +1895,7 @@ PYBIND11_MODULE(_xtal, m) {
 
           Returns
           -------
-          factor_group : List[:class:`~libcasm.xtal.SymOp`]
+          factor_group : list[:class:`~libcasm.xtal.SymOp`]
               The the set of symmery operations, with translation lying within the primitive unit
               cell, that leave the lattice vectors, basis site coordinates, and all DoF invariant.
 
@@ -1878,7 +1916,7 @@ PYBIND11_MODULE(_xtal, m) {
 
           Returns
           -------
-          crystal_point_group : List[:class:`~libcasm.xtal.SymOp`]
+          crystal_point_group : list[:class:`~libcasm.xtal.SymOp`]
               The crystal point group is the group constructed from the prim factor group operations
               with translation vector set to zero.
 
@@ -1916,7 +1954,8 @@ PYBIND11_MODULE(_xtal, m) {
 
       - ``X=SymOp``, ``lhs=SymOp``, ``rhs=SymOp``: Construct the :class:`~libcasm.xtal.SymOp`, `X`, equivalent to applying first `rhs`, then `lhs`.
       - ``X=np.ndarray``, ``lhs=SymOp``, ``rhs=np.ndarray``: Transform multiple Cartesian coordinates, represented as columns of a `np.ndarray`.
-      - ``X=Dict[str,np.ndarray]``, ``lhs=SymOp``, ``rhs=Dict[str,np.ndarray]``: Transform CASM-supported properties (local or global). Keys must be the name of a CASM-supported property type. Values are arrays with the number of rows matching the standard dimension of the property type. For local properties, columns correspond to the value associated with each site. For global properties, there is one column. See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported properties and their definitions.
+      - ``X=dict[str,np.ndarray]``, ``lhs=SymOp``, ``rhs=dict[str,np.ndarray]``: Transform CASM-supported properties (local or global). Keys must be the name of a CASM-supported property type. Values are arrays with the number of rows matching the standard dimension of the property type. For local properties, columns correspond to the value associated with each site. For global properties, there is one column. See the CASM `Degrees of Freedom (DoF) and Properties`_ documentation for the full list of supported properties and their definitions.
+      - ``X=Lattice``, ``lhs=SymOp``, ``rhs=Lattice``: Transform a :class:`~libcasm.xtal.Lattice`.
       - ``X=Structure``, ``lhs=SymOp``, ``rhs=Structure``: Transform a :class:`~libcasm.xtal.Structure`.
 
       .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1960,8 +1999,7 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("coordinate_cart"),
           "Transform multiple Cartesian coordinates, represented as columns of "
-          "a "
-          "matrix.")
+          "a matrix.")
       .def(
           "__mul__",
           [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
@@ -1977,6 +2015,12 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("rhs"),
           "Transform CASM-supported properties (local or global).")
+      .def(
+          "__mul__",
+          [](xtal::SymOp const &op, xtal::Lattice const &lattice) {
+            return sym::copy_apply(op, lattice);
+          },
+          py::arg("lattice"), "Transform a Lattice.")
       .def(
           "__mul__",
           [](xtal::SymOp const &op, xtal::SimpleStructure const &simple) {
@@ -2160,25 +2204,39 @@ PYBIND11_MODULE(_xtal, m) {
     Parameters
     ----------
     lattice : ~libcasm.xtal.Lattice
-        The Lattice.
+        The Lattice. Note: The lattice tolerance is not saved in Structure.
     atom_coordinate_frac : array_like, shape (3, n)
         Atom positions, as columns of a matrix, in fractional
         coordinates with respect to the lattice vectors.
-    atom_type : List[str], size=n
+    atom_type : list[str], size=n
         Atom type names.
-    atom_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+    atom_properties : dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
         Continuous properties associated with individual atoms, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
     mol_coordinate_frac : array_like, shape (3, n)
         Molecule positions, as columns of a matrix, in fractional
         coordinates with respect to the lattice vectors.
-    mol_type : List[str], size=n
+    mol_type : list[str], size=n
         Molecule type names.
-    mol_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+    mol_properties : dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
         Continuous properties associated with individual molecules, if present. Keys must be the name of a CASM-supported property type. Values are arrays with dimensions matching the standard dimension of the property type.
-    global_properties : Dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
+    global_properties : dict[str,  numpy.ndarray[numpy.float64[m, n]]], default={}
         Continuous properties associated with entire crystal, if present. Keys must be the name of a CASM-supported property type. Values are (m, 1) arrays with dimensions matching the standard dimension of the property type.
     )pbdoc")
-      .def("lattice", &get_simplestructure_lattice, "Returns the lattice")
+      .def("lattice", &get_simplestructure_lattice, R"pbdoc(
+            Returns the lattice
+
+            Parameters
+            ----------
+            xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
+                Tolerance used for lattice.
+
+            Returns
+            -------
+            lattice : ~libcasm.xtal.Lattice
+                The lattice
+
+            )pbdoc",
+           py::arg("xtal_tol") = TOL)
       .def("atom_coordinate_cart", &get_simplestructure_atom_coordinate_cart,
            "Returns the atom positions, as columns of a matrix, in Cartesian "
            "coordinates.")
@@ -2246,16 +2304,13 @@ PYBIND11_MODULE(_xtal, m) {
             poscar_path : str
                 Path to the POSCAR file
 
-            xtal_tol: float = ~libcasm.xtal.TOL
-                Tolerance used for lattice.
-
             Returns
             -------
             struture : ~libcasm.xtal.Structure
                 A Structure
 
             )pbdoc",
-                  py::arg("poscar_path"), py::arg("tol") = TOL)
+                  py::arg("poscar_path"))
       .def_static("from_poscar_str", &simplestructure_from_poscar_str,
                   R"pbdoc(
             Construct a Structure from a VASP POSCAR string
@@ -2265,16 +2320,13 @@ PYBIND11_MODULE(_xtal, m) {
             poscar_str : str
                 The POSCAR as a string
 
-            xtal_tol: float = ~libcasm.xtal.TOL
-                Tolerance used for lattice.
-
             Returns
             -------
             struture : ~libcasm.xtal.Structure
                 A Structure
 
             )pbdoc",
-                  py::arg("poscar_str"), py::arg("tol") = TOL)
+                  py::arg("poscar_str"))
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
@@ -2333,9 +2385,52 @@ PYBIND11_MODULE(_xtal, m) {
            [](xtal::SimpleStructure const &self) {
              return xtal::SimpleStructure(self);
            })
-      .def("__deepcopy__", [](xtal::SimpleStructure const &self, py::dict) {
-        return xtal::SimpleStructure(self);
-      });
+      .def("__deepcopy__", [](xtal::SimpleStructure const &self,
+                              py::dict) { return xtal::SimpleStructure(self); })
+      .def("is_equivalent_to", &simplestructure_is_equivalent_to,
+           py::arg("structure2"), py::arg("xtal_tol") = TOL,
+           py::arg("properties_tol") = std::map<std::string, double>(), R"pbdoc(
+              Check if self is equivalent to structure2
+
+              Notes
+              -----
+
+              Two structures are equivalent if they have:
+
+              - equivalent lattices (i.e. have the same lattice points,
+                up to the specified tolerance)
+              - equivalent atoms and molecules, including:
+
+                - equivalent coordinates, accounting for periodic boundary
+                  conditions, up to the specified tolerance
+                - identical names
+                - equal site properties, up to the specified tolerance
+
+              - equal global properties, up to the specified tolerance
+
+              This method does not check for rotations or translations that are
+              not integer multiples of the lattice vectors. For structures that
+              are equivalent after a rotation, or after translation of basis
+              sites, this returns false. That type of equivalence should be checked
+              using the methods in libcasm-mapping.
+
+              Parameters
+              ----------
+              structure2 : ~libcasm.xtal.Structure
+                  The second structure.
+              xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
+                  Tolerance used for lattice and coordinate comparisons.
+              properties_tol: dict[str,float] = {}
+                  Tolerance used for properties comparisons, by global or local
+                  property name. If a property name is not present, "default"
+                  will be used. If "default" is not present, the default CASM
+                  tolerance (:data:`~libcasm.casmglobal.TOL`) will be used.
+
+              Returns
+              -------
+              is_equivalent: bool
+                  True if self is equivalent to structure2.
+              )pbdoc");
 
   m.def("make_structure_factor_group", &make_simplestructure_factor_group,
         py::arg("structure"), R"pbdoc(
@@ -2348,14 +2443,16 @@ PYBIND11_MODULE(_xtal, m) {
 
            Returns
            -------
-           factor_group : List[:class:`~libcasm.xtal.SymOp`]
+           factor_group : list[:class:`~libcasm.xtal.SymOp`]
                The the set of symmery operations, with translation lying within the primitive unit
                cell, that leave the lattice vectors, atom coordinates, and atom types invariant.
 
            Notes
            -----
            Currently this method only considers atom coordinates and types. Molecular coordinates
-           and types are not considered.
+           and types are not considered. Properties are not considered. The default CASM tolerance
+           is used for comparisons. To consider molecules or properties, or to use a different
+           tolerance, use a Prim.
 
            )pbdoc");
 
@@ -2375,14 +2472,16 @@ PYBIND11_MODULE(_xtal, m) {
 
            Returns
            -------
-           crystal_point_group : List[:class:`~libcasm.xtal.SymOp`]
+           crystal_point_group : list[:class:`~libcasm.xtal.SymOp`]
                The crystal point group is the group constructed from the structure factor group
                operations with translation vector set to zero.
 
            Notes
            -----
            Currently this method only considers atom coordinates and types. Molecular coordinates
-           and types are not considered.
+           and types are not considered. Properties are not considered. The default CASM tolerance
+           is used for comparisons. To consider molecules or properties, or to use a different
+           tolerance, use a Prim.
            )pbdoc");
 
   m.def("make_crystal_point_group", &make_simplestructure_crystal_point_group,
@@ -2434,7 +2533,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       Parameters
       ----------
-      point_group : List[:class:`~libcasm.xtal.Symop`]
+      point_group : list[:class:`~libcasm.xtal.Symop`]
           Point group that generates the equivalent property values.
       x : array_like, shape=(m,1)
           The property value, as a vector. For strain, this is the
@@ -2462,7 +2561,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       Returns
       -------
-      equivalent_x: List[numpy.ndarray[numpy.float64[m, 1]]]
+      equivalent_x: list[numpy.ndarray[numpy.float64[m, 1]]]
           A list of distinct property values, in the given basis,
           equivalent under the point group.
       )pbdoc");
@@ -2692,7 +2791,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       Returns
       -------
-      symmetry_adapted_strain_basis: List[numpy.ndarray[numpy.float64[6, 6]]]
+      symmetry_adapted_strain_basis: list[numpy.ndarray[numpy.float64[6, 6]]]
           The symmetry-adapted strain basis, :math:`B^{\vec{e}}`.
       )pbdoc");
 
@@ -2703,7 +2802,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       .. rubric:: Special Methods
 
-      Translate an :class:`~libcasm.xtal.IntegralSiteCoordinate` via operators ``+``, ``-``, ``+=``, ``-=``:
+      Translate an :class:`~libcasm.xtal.IntegralSiteCoordinate` using operators ``+``, ``-``, ``+=``, ``-=``:
 
       .. code-block:: Python
 
@@ -2729,7 +2828,7 @@ PYBIND11_MODULE(_xtal, m) {
           translated_integral_site_coordinate = integral_site_coordinate - translation
 
 
-      Sort :class:`~libcasm.xtal.IntegralSiteCoordinate` by lexicographical order of unit cell indices `[i, j, k]` then sublattice index `b` via ``<``, ``<=``, ``>``, ``>=``, and compare via ``==``, ``!=``:
+      Sort :class:`~libcasm.xtal.IntegralSiteCoordinate` by lexicographical order of unit cell indices `[i, j, k]` then sublattice index `b` using ``<``, ``<=``, ``>``, ``>=``, and compare using ``==``, ``!=``:
 
       .. code-block:: Python
 
@@ -2752,6 +2851,18 @@ PYBIND11_MODULE(_xtal, m) {
           assert A == A
           assert B == B
           assert A != B
+
+      Represent :class:`~libcasm.xtal.IntegralSiteCoordinate` as the string ``"b, i j k"``, where `b` is the sublattice index and `i j k` are the unit cell indices, using ``str()``:
+
+      .. code-block:: Python
+
+          import numpy as np
+          from libcasm.xtal import IntegralSiteCoordinate
+
+          # construct IntegralSiteCoordinate
+          site = IntegralSiteCoordinate(0, np.array([1, 2, 3]))
+
+          assert str(site) == "0, 1 2 3"
 
       )pbdoc");
 

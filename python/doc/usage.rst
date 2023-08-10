@@ -1,8 +1,6 @@
 Usage
 =====
 
-Using libcasm-xtal:
-
 .. toctree::
     :maxdepth: 4
 

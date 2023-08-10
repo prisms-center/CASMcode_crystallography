@@ -3,11 +3,11 @@
 using namespace CASM;
 using namespace CASM::xtal;
 
-#ifndef TXT_VERSION
-#define TXT_VERSION "unknown"
+#ifndef CASM_XTAL_TXT_VERSION
+#define CASM_XTAL_TXT_VERSION "unknown"
 #endif
 
 const std::string &CASM::xtal::version() {
-  static const std::string &ver = TXT_VERSION;
+  static const std::string &ver = CASM_XTAL_TXT_VERSION;
   return ver;
 };

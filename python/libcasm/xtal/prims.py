@@ -1,6 +1,7 @@
-import math
-import numpy as np
 from typing import Optional
+
+import numpy as np
+
 import libcasm.xtal as xtal
 import libcasm.xtal.lattices as xtal_lattices
 

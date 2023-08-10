@@ -1,0 +1,30 @@
+name: Testing on macos-latest
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Set up requirements & configuration variables
+        run: |
+          brew update
+          brew install cmake
+          pip install --upgrade pip wheel
+          pip install -r test_requirements.txt
+
+      - name: make
+        shell: bash
+        run: |
+          pip install .
+
+      - name: make test
+        shell: bash
+        run: |
+          python -m pytest -rsap python/tests
