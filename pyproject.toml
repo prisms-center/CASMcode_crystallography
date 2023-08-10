@@ -6,7 +6,7 @@ requires = [
     "cmake>=3.20",
     "ninja",
     "pybind11>=2.6",
-    "libcasm-global>=2.0.1",
+    "libcasm-global>=2.0.2",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "libcasm-global>=2.0.1",
+  "libcasm-global>=2.0.2",
   "numpy",
 ]
 
@@ -55,8 +55,8 @@ build = "cp39-* cp310-* cp311-*"
 # Build for cpython only
 skip =  "pp*"
 
-# Checkout submodules
-# before-all = "git submodule update --init --recursive"
+# Need libcasm-global at wheel repair stage
+before-build = "pip install libcasm-global>=2.0.2"
 
 # Testing
 test-requires = "pytest pytest-datadir"
@@ -66,6 +66,16 @@ test-command = "pytest -rsap {project}/python/tests"
 # C++17
 environment = { MACOSX_DEPLOYMENT_TARGET="10.15" }
 
+repair-wheel-command = """\
+DYLD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
+delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}\
+"""
+
 [tool.cibuildwheel.linux]
 # dependencies do not build for musl
 skip = ["pp* *musllinux*"]
+
+repair-wheel-command = """\
+LD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
+auditwheel repair -w {dest_dir} {wheel}\
+"""
