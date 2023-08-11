@@ -67,16 +67,10 @@ test-command = "pytest -rsap {project}/python/tests"
 # C++17
 environment = { MACOSX_DEPLOYMENT_TARGET="10.15" }
 
-repair-wheel-command = """\
-DYLD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
-delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}\
-"""
+repair-wheel-command = ""
 
 [tool.cibuildwheel.linux]
 # dependencies do not build for musl
 skip = ["pp* *musllinux*"]
 
-repair-wheel-command = """\
-LD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
-auditwheel repair -w {dest_dir} {wheel}\
-"""
+repair-wheel-command = ""
