@@ -940,7 +940,7 @@ PYBIND11_MODULE(_xtal, m) {
       ----------
       column_vector_matrix : array_like, shape=(3,3)
           The lattice vectors, as columns of a 3x3 matrix.
-      tol : float, default=:data:`~libcasm.casmglobal.TOL`
+      tol : float = :data:`~libcasm.casmglobal.TOL`
           Tolerance to be used for crystallographic comparisons.
       )pbdoc")
       .def("column_vector_matrix", &xtal::Lattice::lat_column_mat,

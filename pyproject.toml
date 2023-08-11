@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libcasm-xtal"
-version = "2.0a1"
+version = "2.0a2"
 authors = [
   { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
 ]
@@ -23,6 +23,7 @@ license = {text = "LGPL2.1+"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
+    "Programming Language :: C++",
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Topic :: Scientific/Engineering",
 ]
@@ -66,16 +67,10 @@ test-command = "pytest -rsap {project}/python/tests"
 # C++17
 environment = { MACOSX_DEPLOYMENT_TARGET="10.15" }
 
-repair-wheel-command = """\
-DYLD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
-delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}\
-"""
+repair-wheel-command = ""
 
 [tool.cibuildwheel.linux]
 # dependencies do not build for musl
 skip = ["pp* *musllinux*"]
 
-repair-wheel-command = """\
-LD_LIBRARY_PATH=$(python -m libcasm.casmglobal --prefix)/lib \
-auditwheel repair -w {dest_dir} {wheel}\
-"""
+repair-wheel-command = ""
