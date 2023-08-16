@@ -3,11 +3,14 @@ name: Testing build on ubuntu-latest
 on: [push, pull_request]
 
 env:
-  SKBUILD_CONFIGURE_OPTIONS: -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0'
   SKBUILD_BUILD_OPTIONS: --verbose
 
 jobs:
+  build-depends:
+    uses: ./.github/workflows/test-linux-dependencies.yml
+
   build:
+    needs: build-depends
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -21,16 +24,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install build-essential cmake
           pip install --upgrade pip wheel build
-          pip install -r test_requirements.txt
-          echo "SKBUILD_CONFIGURE_OPTIONS=${{ env.SKBUILD_CONFIGURE_OPTIONS }}" >> "$GITHUB_ENV"
           echo "SKBUILD_BUILD_OPTIONS=${{ env.SKBUILD_BUILD_OPTIONS }}" >> "$GITHUB_ENV"
+
+      ### libcasm-global ###
+      - name: restore libcasm-global cache
+        id: cache-libcasm-global-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: CASMcode_global/dist
+          key: ${{ runner.os }}-libcasm-global-v2-0-3
+
+      - name: Install CASM dependencies
+        run: |
+          pip install CASMcode_global/dist/*.whl
+          pip install -r build_requirements.txt
+          pip install -r test_requirements.txt
 
       - name: make
         shell: bash
         run: |
           python -m build
 
-      - name: install
+      - name: make install
         shell: bash
         run: |
           pip install dist/*.whl
@@ -39,10 +54,3 @@ jobs:
         shell: bash
         run: |
           python -m pytest -rsap python/tests
-
-      - name: upload libcasm-xtal-ubuntu-latest-x86_64-dist
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: libcasm-xtal-ubuntu-latest-x86_64-dist
-          path: dist

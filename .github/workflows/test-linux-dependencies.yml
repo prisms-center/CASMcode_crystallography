@@ -1,0 +1,53 @@
+name: Build CASM dependencies on Ubuntu
+
+on:
+  workflow_call:
+
+jobs:
+  build-depends:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Set up requirements & configuration variables
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake
+          pip install --upgrade pip wheel build
+
+      ### libcasm-global ###
+      - name: restore libcasm-global cache
+        id: cache-libcasm-global-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: CASMcode_global/dist
+          key: ${{ runner.os }}-libcasm-global-v2-0-3
+
+      - name: checkout libcasm-global
+        if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
+        uses: actions/checkout@v3
+        with:
+          repository: prisms-center/CASMcode_global
+          path: CASMcode_global
+          ref: v2.0.3
+
+      - name: make global
+        if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd CASMcode_global
+          git submodule update --init --recursive
+          python -m build
+          pip install dist/*.whl
+          pip install -r test_requirements.txt
+          python -m pytest -rsap python/tests
+
+      - name: save libcasm-global cache
+        id: cache-libcasm-global-save
+        uses: actions/cache/save@v3
+        with:
+          path: CASMcode_global/dist
+          key: ${{ steps.cache-libcasm-global-restore.outputs.cache-primary-key }}
