@@ -1,6 +1,6 @@
 import os
 
-__version__ = "2.0a3"
+__version__ = "2.0a4"
 
 # Available at setup time due to pyproject.toml
 from pybind11.setup_helpers import Pybind11Extension, build_ext
