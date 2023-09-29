@@ -96,7 +96,13 @@ target_link_libraries(casm_crystallography
   ${CMAKE_DL_LIBS}
   CASM::casm_global
 )
-
+if(APPLE)
+  set_target_properties(
+    casm_crystallography PROPERTIES INSTALL_RPATH "@loader_path")
+else()
+  set_target_properties(
+    casm_crystallography PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
 
 ##############################################
 ## Install libcasm_crystallography
