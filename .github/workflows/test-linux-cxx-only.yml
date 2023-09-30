@@ -2,7 +2,13 @@ name: Testing c++ only on ubuntu-latest
 
 on: [push, pull_request]
 
+env:
+  SKBUILD_BUILD_OPTIONS: --verbose
+
 jobs:
+  build-depends:
+    uses: ./.github/workflows/test-linux-dependencies.yml
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -16,6 +22,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install build-essential cmake
+          pip install --upgrade pip wheel build
+          echo "SKBUILD_BUILD_OPTIONS=${{ env.SKBUILD_BUILD_OPTIONS }}" >> "$GITHUB_ENV"
+
+      ### libcasm-global ###
+      - name: restore libcasm-global cache
+        id: cache-libcasm-global-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: CASMcode_global/dist
+          key: ${{ runner.os }}-libcasm-global-v2-0-3
+
+      - name: Install CASM dependencies
+        run: |
+          pip install CASMcode_global/dist/*.whl
           pip install -r build_requirements.txt
 
       - name: configure
@@ -23,7 +43,7 @@ jobs:
         run: |
           mkdir build_cxx_only
           cd build_cxx_only
-          cmake -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0' -DCMAKE_BUILD_TYPE=Release ..
+          cmake -DCMAKE_BUILD_TYPE=Release ..
 
       - name: make
         shell: bash
@@ -42,7 +62,7 @@ jobs:
         run: |
           mkdir build_cxx_test
           cd build_cxx_test
-          cmake -DCMAKE_CXX_FLAGS='-D_GLIBCXX_USE_CXX11_ABI=0' -DCMAKE_BUILD_TYPE=Release ../tests
+          cmake -DCMAKE_BUILD_TYPE=Release ../tests
 
       - name: make tests
         shell: bash
