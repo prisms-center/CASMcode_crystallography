@@ -428,15 +428,36 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_str(
   return prim_from_poscar_stream(poscar_stream, occ_dof, xtal_tol);
 }
 
-xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path) {
-  std::filesystem::path path(poscar_path);
-  std::ifstream poscar_stream(path);
-  return xtal::make_simple_structure(poscar_stream, TOL);
+xtal::SimpleStructure _simplestructure_from_poscar(std::istream &poscar_stream,
+                                                   std::string mode) {
+  xtal::SimpleStructure simple =
+      xtal::make_simple_structure(poscar_stream, TOL);
+  if (mode == "atoms") {
+    simple.mol_info.resize(0);
+    simple.mol_info.properties.clear();
+  } else if (mode == "molecules") {
+    simple.atom_info.resize(0);
+    simple.atom_info.properties.clear();
+  } else if (mode != "both") {
+    std::stringstream ss;
+    ss << "Invalid mode: '" << mode
+       << "' Must be one of 'atoms', 'molecules', or 'both'";
+    throw std::runtime_error(ss.str());
+  }
+  return simple;
 }
 
-xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str) {
+xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
+                                                  std::string mode) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  return _simplestructure_from_poscar(poscar_stream, mode);
+}
+
+xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
+                                                      std::string mode) {
   std::istringstream poscar_stream(poscar_str);
-  return xtal::make_simple_structure(poscar_stream, TOL);
+  return _simplestructure_from_poscar(poscar_stream, mode);
 }
 
 /// \brief Format xtal::BasicStructure as JSON string
@@ -1638,6 +1659,11 @@ PYBIND11_MODULE(_xtal, m) {
                   R"pbdoc(
             Construct a Prim from a VASP POSCAR file
 
+            Notes
+            -----
+            If present, selective dynamics are set as :class:`~libcasm.xtal.Occupant`
+            properties.
+
             Parameters
             ----------
             poscar_path : str
@@ -1663,6 +1689,11 @@ PYBIND11_MODULE(_xtal, m) {
       .def_static("from_poscar_str", &prim_from_poscar_str,
                   R"pbdoc(
             Construct a Prim from a VASP POSCAR string
+
+            Notes
+            -----
+            If present, selective dynamics are set as :class:`~libcasm.xtal.Occupant`
+            properties.
 
             Parameters
             ----------
@@ -2267,7 +2298,6 @@ PYBIND11_MODULE(_xtal, m) {
           "from_dict",
           [](const nlohmann::json &data) {
             jsonParser json{data};
-            std::cout << "JSON: " << json << std::endl;
             xtal::SimpleStructure simple;
             from_json(simple, json);
             return simple;
@@ -2303,14 +2333,20 @@ PYBIND11_MODULE(_xtal, m) {
             ----------
             poscar_path : str
                 Path to the POSCAR file
+            mode : str = "atoms"
+                Read POSCAR and construct a Structure with atom or molecule types,
+                coordinates, and if present, "selectivedynamics" properties. Accepts
+                one of "atoms", "molecules", or "both".
 
             Returns
             -------
-            struture : ~libcasm.xtal.Structure
-                A Structure
+            structure : ~libcasm.xtal.Structure
+                A Structure, with lattice, types, coordinates, and if present,
+                "selectivedynamics" properties.
 
             )pbdoc",
-                  py::arg("poscar_path"))
+                  py::arg("poscar_path"),
+                  py::arg("mode") = std::string("atoms"))
       .def_static("from_poscar_str", &simplestructure_from_poscar_str,
                   R"pbdoc(
             Construct a Structure from a VASP POSCAR string
@@ -2319,14 +2355,19 @@ PYBIND11_MODULE(_xtal, m) {
             ----------
             poscar_str : str
                 The POSCAR as a string
+            mode : str = "atoms"
+                Read POSCAR and construct a Structure with atom or molecule types,
+                coordinates, and if present, "selectivedynamics" properties. Accepts
+                one of "atoms", "molecules", or "both".
 
             Returns
             -------
-            struture : ~libcasm.xtal.Structure
-                A Structure
+            structure : ~libcasm.xtal.Structure
+                A Structure, with lattice, atom_type, and atom coordinates, and
+                if present, "selectivedynamics" atom properties.
 
             )pbdoc",
-                  py::arg("poscar_str"))
+                  py::arg("poscar_str"), py::arg("mode") = std::string("atoms"))
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "

@@ -243,16 +243,16 @@ void Site::read(std::istream &stream, bool SD_is_on) {
 
   char ch;
 
-  Eigen::Vector3i SD_flag;
+  Eigen::Vector3d SD_flag;
 
   Coordinate::read(stream, COORD_MODE::CHECK());
   if (SD_is_on) {
     for (int i = 0; i < 3; i++) {
       stream >> ch;
       if (ch == 'T') {
-        SD_flag[i] = 1;
+        SD_flag[i] = 1.0;
       } else if (ch == 'F') {
-        SD_flag[i] = 0;
+        SD_flag[i] = 0.0;
       }
     }
   }
@@ -270,7 +270,13 @@ void Site::read(std::istream &stream, bool SD_is_on) {
       // Need to change this part for real molecules
       std::string mol_name;
       stream >> mol_name;
-      tocc.push_back(Molecule::make_atom(mol_name));
+      Molecule mol = Molecule::make_atom(mol_name);
+      if (SD_is_on) {
+        AnisoValTraits sd_traits = AnisoValTraits::selective_dynamics();
+        xtal::SpeciesProperty sd_property(sd_traits, SD_flag);
+        mol.set_properties({{sd_property.name(), sd_property}});
+      }
+      tocc.push_back(mol);
     }
     ch = stream.peek();
   }
@@ -335,23 +341,28 @@ void Site::read(std::istream &stream, std::string &elem, bool SD_is_on) {
 
   set_label(-1);
 
-  Eigen::Vector3i SD_flag;
+  Eigen::Vector3d SD_flag;
 
   Coordinate::read(stream, COORD_MODE::CHECK());
   if (SD_is_on) {
     for (int i = 0; i < 3; i++) {
       stream >> ch;
       if (ch == 'T') {
-        SD_flag[i] = 1;
+        SD_flag[i] = 1.0;
       } else if (ch == 'F') {
-        SD_flag[i] = 0;
+        SD_flag[i] = 0.0;
       }
     }
   }
 
   std::vector<Molecule> tocc;
-
-  tocc.push_back(Molecule::make_atom(elem));
+  Molecule mol = Molecule::make_atom(elem);
+  if (SD_is_on) {
+    AnisoValTraits sd_traits = AnisoValTraits::selective_dynamics();
+    xtal::SpeciesProperty sd_property(sd_traits, SD_flag);
+    mol.set_properties({{sd_property.name(), sd_property}});
+  }
+  tocc.push_back(mol);
 
   if (tocc.size()) {
     m_occupant_dof = tocc;
