@@ -81,8 +81,8 @@ SiteDoFSet const &Site::dof(std::string const &_dof_type) const {
     return (it->second);
   else
     throw std::runtime_error(
-        std::string("In Structure::dof(), this structure does not contain any "
-                    "global DoF's of type ") +
+        std::string("In Site::dof(), this site does not contain "
+                    "local DoF of type ") +
         _dof_type);
 }
 
