@@ -57,3 +57,18 @@ def test_UnitCellIndexConverter_1():
     f.never_bring_within()
     f.always_bring_within()
     assert f.linear_unitcell_index(np.array([2, 2, 2])) == 0
+
+
+def test_UnitCellIndexConverter_2():
+    # test constructor
+    with pytest.raises(TypeError):
+        # test constructor
+        xtal.UnitCellIndexConverter(
+            np.array(
+                [
+                    [2.0, 0, 0],
+                    [0, 2, 0],
+                    [0, 0, 2],
+                ]
+            )
+        )

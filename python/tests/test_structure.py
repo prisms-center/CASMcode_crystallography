@@ -1,6 +1,10 @@
+import math
+
 import numpy as np
+import pytest
 
 import libcasm.xtal as xtal
+import libcasm.xtal.structures as xtal_structures
 
 
 def test_make_structure(example_structure_1):
@@ -396,3 +400,60 @@ def test_structure_is_equivalent_to():
     )
 
     assert structure1.is_equivalent_to(structure2)
+
+
+def test_make_superstructure_1():
+    struc = xtal_structures.BCC(r=1)
+    transformation_matrix = np.array(
+        [[0.0, 1.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0]]
+    ).T
+    assert transformation_matrix.dtype is np.dtype(np.float64)
+    with pytest.raises(TypeError):
+        xtal.make_superstructure(transformation_matrix, struc)
+
+
+def test_make_superstructure_2():
+    struc = xtal_structures.BCC(r=1)
+    transformation_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=int).T
+    assert transformation_matrix.dtype is np.dtype(np.int64)
+    xtal.make_superstructure(transformation_matrix, struc)
+
+
+def test_make_superstructure_and_rotate():
+    struc = xtal_structures.BCC(r=1)
+    assert len(struc.atom_type()) == 1
+
+    rotation_matrix = np.array(
+        [
+            [1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+            [-1 / np.sqrt(2), 1 / np.sqrt(2), 0],
+            [0, 0, 1],
+        ]
+    ).T
+    transformation_matrix = np.array(
+        [
+            [0, 1, 1],
+            [1, 0, 1],
+            [1, 1, 0],
+        ],
+        dtype=int,
+    ).T
+    assert math.isclose(np.linalg.det(transformation_matrix), 2.0)
+
+    superstruc = xtal.make_superstructure(transformation_matrix, struc)
+    L = struc.lattice().column_vector_matrix()
+    S = superstruc.lattice().column_vector_matrix()
+    assert np.allclose(S, L @ transformation_matrix)
+    assert len(superstruc.atom_type()) == 2
+
+    symop = xtal.SymOp(
+        matrix=rotation_matrix,
+        translation=np.zeros((3,)),
+        time_reversal=False,
+    )
+    rotated_superstruc = symop * superstruc
+
+    L = struc.lattice().column_vector_matrix()
+    S = rotated_superstruc.lattice().column_vector_matrix()
+    assert np.allclose(S, rotation_matrix @ L @ transformation_matrix)
+    assert len(rotated_superstruc.atom_type()) == 2
