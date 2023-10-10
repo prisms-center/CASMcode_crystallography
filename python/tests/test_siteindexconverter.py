@@ -73,3 +73,18 @@ def test_SiteIndexConverter_1():
     f.never_bring_within()
     f.always_bring_within()
     assert f.linear_site_index(bijk(0, 2, 2, 2)) == 0
+
+
+def test_SiteIndexConverter_2():
+    # test constructor
+    with pytest.raises(TypeError):
+        xtal.SiteIndexConverter(
+            transformation_matrix_to_super=np.array(
+                [
+                    [2.0, 0, 0],
+                    [0, 2, 0],
+                    [0, 0, 2],
+                ]
+            ),
+            n_sublattice=2,
+        )

@@ -804,7 +804,7 @@ xtal::SimpleStructure make_simplestructure_within(
 }
 
 xtal::SimpleStructure make_superstructure(
-    Eigen::Matrix3l const &transformation_matrix_to_super,
+    Eigen::Ref<Eigen::Matrix3l const> transformation_matrix_to_super,
     xtal::SimpleStructure const &simple) {
   return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
                                    simple);
@@ -2549,7 +2549,8 @@ PYBIND11_MODULE(_xtal, m) {
         "Equivalent to :func:`~casm.xtal.make_structure_within`");
 
   m.def("make_superstructure", &make_superstructure,
-        py::arg("transformation_matrix_to_super"), py::arg("structure"),
+        py::arg("transformation_matrix_to_super").noconvert(),
+        py::arg("structure"),
         R"pbdoc(
       Make a superstructure
 
@@ -3010,7 +3011,7 @@ PYBIND11_MODULE(_xtal, m) {
             self += xtal::UnitCell(translation);
             return self;
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by adding unit cell indices")
       .def(
           "__add__",
@@ -3018,7 +3019,7 @@ PYBIND11_MODULE(_xtal, m) {
              Eigen::Vector3l const &translation) {
             return self + xtal::UnitCell(translation);
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by adding unit cell indices")
       .def(
           "__isub__",
@@ -3026,7 +3027,7 @@ PYBIND11_MODULE(_xtal, m) {
             self -= xtal::UnitCell(translation);
             return self;
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by subtracting unit cell "
           "indices")
       .def(
@@ -3035,7 +3036,7 @@ PYBIND11_MODULE(_xtal, m) {
              Eigen::Vector3l const &translation) {
             return self - xtal::UnitCell(translation);
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by subtracting unit cell "
           "indices")
       .def(
@@ -3125,7 +3126,8 @@ PYBIND11_MODULE(_xtal, m) {
       Convert between integral site indices :math:`(b,i,j,k)` and linear site index :math:`l`.
       )pbdoc")
       .def(py::init<Eigen::Matrix3l const &, int>(),
-           py::arg("transformation_matrix_to_super"), py::arg("n_sublattice"),
+           py::arg("transformation_matrix_to_super").noconvert(),
+           py::arg("n_sublattice"),
            R"pbdoc(
 
           Parameters
@@ -3182,7 +3184,7 @@ PYBIND11_MODULE(_xtal, m) {
       For each supercell, CASM generates an ordering of lattice sites :math:`(i,j,k)`.
       )pbdoc")
       .def(py::init<Eigen::Matrix3l const &>(),
-           py::arg("transformation_matrix_to_super"),
+           py::arg("transformation_matrix_to_super").noconvert(),
            R"pbdoc(
 
           Parameters
@@ -3214,7 +3216,7 @@ PYBIND11_MODULE(_xtal, m) {
           R"pbdoc(
            Bring the given :class:`~libcasm.xtal.IntegralSiteCoordinate` into the superlattice using superlattice translations.
            )pbdoc",
-          py::arg("unitcell"))
+          py::arg("unitcell").noconvert())
       .def(
           "linear_unitcell_index",
           [](xtal::UnitCellIndexConverter const &f,
@@ -3222,7 +3224,7 @@ PYBIND11_MODULE(_xtal, m) {
           R"pbdoc(
            Given unitcell indices, :math:`(i,j,k)`, retreive the corresponding linear unitcell index. By default, if :func:`~libcasm.xtal.IntegralSiteCoordinateConverter.never_bring_within` has not been called, the lattice point is brought within the superlattice using superlattice translations.
            )pbdoc",
-          py::arg("unitcell"))
+          py::arg("unitcell").noconvert())
       .def(
           "unitcell",
           [](xtal::UnitCellIndexConverter const &f,
