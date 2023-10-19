@@ -127,6 +127,10 @@ def test_SymOp_mul_properties():
     assert "disp" in transformed_properties
     assert transformed_properties["disp"].shape == (3, 4)
 
+    matrix_rep = op.matrix_rep("disp")
+    transformed_disp = matrix_rep @ disp
+    assert np.allclose(transformed_disp, transformed_properties["disp"])
+
     # check 1d array - accepted, but returned as (6,1) array
     Hstrain = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     assert Hstrain.shape == (6,)
@@ -138,6 +142,10 @@ def test_SymOp_mul_properties():
     assert "Hstrain" in transformed_properties
     assert transformed_properties["Hstrain"].shape == (6, 1)
 
+    matrix_rep = op.matrix_rep("Hstrain")
+    transformed_Hstrain = matrix_rep @ Hstrain.reshape(-1, 1)
+    assert np.allclose(transformed_Hstrain, transformed_properties["Hstrain"])
+
     # check 2d column array - accepted, stays as (6,1) array
     Hstrain = np.array([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]]).transpose()
     assert Hstrain.shape == (6, 1)
@@ -148,6 +156,10 @@ def test_SymOp_mul_properties():
     print(transformed_properties)
     assert "Hstrain" in transformed_properties
     assert transformed_properties["Hstrain"].shape == (6, 1)
+
+    matrix_rep = op.matrix_rep("Hstrain")
+    transformed_Hstrain = matrix_rep @ Hstrain
+    assert np.allclose(transformed_Hstrain, transformed_properties["Hstrain"])
 
 
 def test_SymOp_mul_lattice(tetragonal_lattice):
