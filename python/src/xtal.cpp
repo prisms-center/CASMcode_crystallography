@@ -2008,6 +2008,46 @@ PYBIND11_MODULE(_xtal, m) {
           )pbdoc")
       .def("matrix", &xtal::get_matrix,
            "Returns the transformation matrix value.")
+      .def(
+          "matrix_rep",
+          [](xtal::SymOp const &op, std::string key) -> Eigen::MatrixXd {
+            Eigen::MatrixXd M;
+            try {
+              AnisoValTraits traits(key);
+              M = traits.symop_to_matrix(get_matrix(op), get_translation(op),
+                                         get_time_reversal(op));
+            } catch (std::exception &e) {
+              std::stringstream msg;
+              msg << "Error getting matrix rep: CASM does not know how to "
+                     "transform the property '"
+                  << key << "'.";
+              throw std::runtime_error(msg.str());
+            }
+            return M;
+          },
+          R"pbdoc(
+          Returns the matrix representation of a symmetry operation for transforming \
+          properties
+
+          Parameters
+          ----------
+          key: str
+              The name of the CASM-supported property to be transformed.
+
+          Returns
+          -------
+          matrix_rep : numpy.ndarray[numpy.float64[m, m]]
+              The matrix representation for transforming properties. The matrix is
+              square, with dimension equal to the standard dimension of the specified
+              property. For example, `m=3` for `key="disp"`, and `m=6` for
+              `key="Hstrain"`. Local properties, such as `"disp"`, stored as columns of
+              array `local_values`, can then be transformed using
+              ``matrix_rep @ local_values``. Global properties, such as `"Hstrain"`,
+              stored as array `global_values` with a single column, can similarly be
+              transformed using  ``matrix_rep @ global_values``.
+
+          )pbdoc",
+          py::arg("key"))
       .def("translation", &xtal::get_translation,
            "Returns the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
