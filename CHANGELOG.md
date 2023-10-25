@@ -5,6 +5,24 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [2.0a5] - 2023-10-25
+
+### Added
+
+- Added SymOp.matrix_rep to get matrix representations for transforming CASM-supported properties in the standard basis
+
+### Changed
+
+- Do not allow automatic conversion from floating point arrays to integer Eigen objects.
+- Added a parameter, `mode`, to Structure.from_poscar and Structure.from_poscar_str to specify whether the POSCAR should be read as atoms, molecules, or both. The default was set to "atoms". Previous behavior was equivalent to using "both".
+
+### Fixed
+
+- Fixed the xtal::Site::dof error message thrown when the requested DoF type does not exist on the site
+- Updated documentation for the `local_dofs` parameters in libcasm.xtal.prims
+
+
 ## [2.0a4] - 2023-09-29
 
 ### Fixed
