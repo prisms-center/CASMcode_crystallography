@@ -27,9 +27,7 @@ def cubic(
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
     local_dof : list[xtal.DoFSetBasis]=[]
-        Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
-        objects describing the DoF allowed on the `b`-th basis site.
+        Continuous DoF allowed on the basis site. No effect if empty.
     global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
     occupants : dict[str, xtal.Occupant]=[]
@@ -87,9 +85,7 @@ def BCC(
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
     local_dof : list[xtal.DoFSetBasis]=[]
-        Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
-        objects describing the DoF allowed on the `b`-th basis site.
+        Continuous DoF allowed on the basis site. No effect if empty.
     global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
     occupants : dict[str, xtal.Occupant]=[]
@@ -147,9 +143,7 @@ def FCC(
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
     local_dof : list[xtal.DoFSetBasis]=[]
-        Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
-        objects describing the DoF allowed on the `b`-th basis site.
+        Continuous DoF allowed on the basis site. No effect if empty.
     global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
     occupants : dict[str, xtal.Occupant]=[]
@@ -206,14 +200,12 @@ def HCP(
         If not specified, the ideal value is used :math:`c = `a \sqrt{8./3.}`.
     occ_dof : list[str] = ["A", "B"]
         Labels ('orientation names') of occupants allowed on the basis
-        site. The values may either be (i) the name of an isotropic
+        sites. The values may either be (i) the name of an isotropic
         atom (i.e. "Mg") or vacancy ("Va"), or (ii) a key
         in the occupants dictionary (i.e. "H2O", or "H2_xx"). The names
         are case sensitive, and "Va" is reserved for vacancies.
     local_dof : list[xtal.DoFSetBasis]=[]
-        Continuous DoF allowed on each basis site. No effect if empty.
-        If not empty, the value local_dof[b] is a list of :class:`~xtal.DoFSetBasis`
-        objects describing the DoF allowed on the `b`-th basis site.
+        Continuous DoF allowed on the basis sites. No effect if empty.
     global_dof : list[xtal.DoFSetBasis]=[]
         Global continuous DoF allowed for the entire crystal.
     occupants : dict[str, xtal.Occupant]=[]

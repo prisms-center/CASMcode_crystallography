@@ -212,10 +212,10 @@ void BasicStructure::read(std::istream &stream, double tol) {
   if (ch == 'S' || ch == 's') {
     SD_flag = true;
     stream.ignore(1000, '\n');
+    stream.get(ch);
     while (ch == ' ' || ch == '\t') {
       stream.get(ch);
     }
-    stream.get(ch);
   }
 
   if (ch == 'D' || ch == 'd') {
@@ -439,29 +439,33 @@ std::vector<std::string> struc_molecule_name(BasicStructure const &_struc) {
 /// Returns an std::vector of each *possible* Molecule in this Structure
 std::vector<std::vector<std::string>> allowed_molecule_unique_names(
     BasicStructure const &_struc) {
-  using IPair = std::pair<Index, Index>;
+  // construct name_map
   std::map<std::string, std::vector<Molecule>> name_map;
-  std::map<std::string, IPair> imap;
+  for (Index b = 0; b < _struc.basis().size(); ++b) {
+    for (Index j = 0; j < _struc.basis()[b].occupant_dof().size(); ++j) {
+      Molecule const &mol(_struc.basis()[b].occupant_dof()[j]);
+      auto it = name_map.find(mol.name());
+      if (it == name_map.end()) {
+        name_map[mol.name()].push_back(mol);
+      } else {
+        Index i = find_index(it->second, mol);
+        if (i == it->second.size()) {
+          it->second.push_back(mol);
+        }
+      }
+    }
+  }
 
+  // construct unique names
   std::vector<std::vector<std::string>> result(_struc.basis().size());
   for (Index b = 0; b < _struc.basis().size(); ++b) {
     for (Index j = 0; j < _struc.basis()[b].occupant_dof().size(); ++j) {
       Molecule const &mol(_struc.basis()[b].occupant_dof()[j]);
       result[b].push_back(mol.name());
       auto it = name_map.find(mol.name());
-      if (it == name_map.end()) {
-        name_map[mol.name()].push_back(mol);
-        imap[mol.name()] = {b, j};
-      } else {
+      if (it->second.size() > 1) {
         Index i = find_index(it->second, mol);
-        if (i == it->second.size()) {
-          it->second.push_back(mol);
-          if (i == 1) {
-            auto inds = imap[mol.name()];
-            result[inds.first][inds.second] += ".1";
-          }
-        }
-        if (i > 0) result[b][j] += ("." + std::to_string(i + 1));
+        result[b][j] += ("." + std::to_string(i + 1));
       }
     }
   }

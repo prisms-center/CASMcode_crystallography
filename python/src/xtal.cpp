@@ -428,15 +428,36 @@ std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_str(
   return prim_from_poscar_stream(poscar_stream, occ_dof, xtal_tol);
 }
 
-xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path) {
-  std::filesystem::path path(poscar_path);
-  std::ifstream poscar_stream(path);
-  return xtal::make_simple_structure(poscar_stream, TOL);
+xtal::SimpleStructure _simplestructure_from_poscar(std::istream &poscar_stream,
+                                                   std::string mode) {
+  xtal::SimpleStructure simple =
+      xtal::make_simple_structure(poscar_stream, TOL);
+  if (mode == "atoms") {
+    simple.mol_info.resize(0);
+    simple.mol_info.properties.clear();
+  } else if (mode == "molecules") {
+    simple.atom_info.resize(0);
+    simple.atom_info.properties.clear();
+  } else if (mode != "both") {
+    std::stringstream ss;
+    ss << "Invalid mode: '" << mode
+       << "' Must be one of 'atoms', 'molecules', or 'both'";
+    throw std::runtime_error(ss.str());
+  }
+  return simple;
 }
 
-xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str) {
+xtal::SimpleStructure simplestructure_from_poscar(std::string &poscar_path,
+                                                  std::string mode) {
+  std::filesystem::path path(poscar_path);
+  std::ifstream poscar_stream(path);
+  return _simplestructure_from_poscar(poscar_stream, mode);
+}
+
+xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
+                                                      std::string mode) {
   std::istringstream poscar_stream(poscar_str);
-  return xtal::make_simple_structure(poscar_stream, TOL);
+  return _simplestructure_from_poscar(poscar_stream, mode);
 }
 
 /// \brief Format xtal::BasicStructure as JSON string
@@ -783,7 +804,7 @@ xtal::SimpleStructure make_simplestructure_within(
 }
 
 xtal::SimpleStructure make_superstructure(
-    Eigen::Matrix3l const &transformation_matrix_to_super,
+    Eigen::Ref<Eigen::Matrix3l const> transformation_matrix_to_super,
     xtal::SimpleStructure const &simple) {
   return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
                                    simple);
@@ -1638,6 +1659,11 @@ PYBIND11_MODULE(_xtal, m) {
                   R"pbdoc(
             Construct a Prim from a VASP POSCAR file
 
+            Notes
+            -----
+            If present, selective dynamics are set as :class:`~libcasm.xtal.Occupant`
+            properties.
+
             Parameters
             ----------
             poscar_path : str
@@ -1663,6 +1689,11 @@ PYBIND11_MODULE(_xtal, m) {
       .def_static("from_poscar_str", &prim_from_poscar_str,
                   R"pbdoc(
             Construct a Prim from a VASP POSCAR string
+
+            Notes
+            -----
+            If present, selective dynamics are set as :class:`~libcasm.xtal.Occupant`
+            properties.
 
             Parameters
             ----------
@@ -1977,6 +2008,46 @@ PYBIND11_MODULE(_xtal, m) {
           )pbdoc")
       .def("matrix", &xtal::get_matrix,
            "Returns the transformation matrix value.")
+      .def(
+          "matrix_rep",
+          [](xtal::SymOp const &op, std::string key) -> Eigen::MatrixXd {
+            Eigen::MatrixXd M;
+            try {
+              AnisoValTraits traits(key);
+              M = traits.symop_to_matrix(get_matrix(op), get_translation(op),
+                                         get_time_reversal(op));
+            } catch (std::exception &e) {
+              std::stringstream msg;
+              msg << "Error getting matrix rep: CASM does not know how to "
+                     "transform the property '"
+                  << key << "'.";
+              throw std::runtime_error(msg.str());
+            }
+            return M;
+          },
+          R"pbdoc(
+          Returns the matrix representation of a symmetry operation for transforming \
+          properties
+
+          Parameters
+          ----------
+          key: str
+              The name of the CASM-supported property to be transformed.
+
+          Returns
+          -------
+          matrix_rep : numpy.ndarray[numpy.float64[m, m]]
+              The matrix representation for transforming properties. The matrix is
+              square, with dimension equal to the standard dimension of the specified
+              property. For example, `m=3` for `key="disp"`, and `m=6` for
+              `key="Hstrain"`. Local properties, such as `"disp"`, stored as columns of
+              array `local_values`, can then be transformed using
+              ``matrix_rep @ local_values``. Global properties, such as `"Hstrain"`,
+              stored as array `global_values` with a single column, can similarly be
+              transformed using  ``matrix_rep @ global_values``.
+
+          )pbdoc",
+          py::arg("key"))
       .def("translation", &xtal::get_translation,
            "Returns the translation value.")
       .def("time_reversal", &xtal::get_time_reversal,
@@ -2267,7 +2338,6 @@ PYBIND11_MODULE(_xtal, m) {
           "from_dict",
           [](const nlohmann::json &data) {
             jsonParser json{data};
-            std::cout << "JSON: " << json << std::endl;
             xtal::SimpleStructure simple;
             from_json(simple, json);
             return simple;
@@ -2303,14 +2373,20 @@ PYBIND11_MODULE(_xtal, m) {
             ----------
             poscar_path : str
                 Path to the POSCAR file
+            mode : str = "atoms"
+                Read POSCAR and construct a Structure with atom or molecule types,
+                coordinates, and if present, "selectivedynamics" properties. Accepts
+                one of "atoms", "molecules", or "both".
 
             Returns
             -------
-            struture : ~libcasm.xtal.Structure
-                A Structure
+            structure : ~libcasm.xtal.Structure
+                A Structure, with lattice, types, coordinates, and if present,
+                "selectivedynamics" properties.
 
             )pbdoc",
-                  py::arg("poscar_path"))
+                  py::arg("poscar_path"),
+                  py::arg("mode") = std::string("atoms"))
       .def_static("from_poscar_str", &simplestructure_from_poscar_str,
                   R"pbdoc(
             Construct a Structure from a VASP POSCAR string
@@ -2319,14 +2395,19 @@ PYBIND11_MODULE(_xtal, m) {
             ----------
             poscar_str : str
                 The POSCAR as a string
+            mode : str = "atoms"
+                Read POSCAR and construct a Structure with atom or molecule types,
+                coordinates, and if present, "selectivedynamics" properties. Accepts
+                one of "atoms", "molecules", or "both".
 
             Returns
             -------
-            struture : ~libcasm.xtal.Structure
-                A Structure
+            structure : ~libcasm.xtal.Structure
+                A Structure, with lattice, atom_type, and atom coordinates, and
+                if present, "selectivedynamics" atom properties.
 
             )pbdoc",
-                  py::arg("poscar_str"))
+                  py::arg("poscar_str"), py::arg("mode") = std::string("atoms"))
       .def("to_json", &simplestructure_to_json,
            "Represent the Structure as a JSON-formatted string. The `Structure "
            "reference "
@@ -2508,7 +2589,8 @@ PYBIND11_MODULE(_xtal, m) {
         "Equivalent to :func:`~casm.xtal.make_structure_within`");
 
   m.def("make_superstructure", &make_superstructure,
-        py::arg("transformation_matrix_to_super"), py::arg("structure"),
+        py::arg("transformation_matrix_to_super").noconvert(),
+        py::arg("structure"),
         R"pbdoc(
       Make a superstructure
 
@@ -2969,7 +3051,7 @@ PYBIND11_MODULE(_xtal, m) {
             self += xtal::UnitCell(translation);
             return self;
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by adding unit cell indices")
       .def(
           "__add__",
@@ -2977,7 +3059,7 @@ PYBIND11_MODULE(_xtal, m) {
              Eigen::Vector3l const &translation) {
             return self + xtal::UnitCell(translation);
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by adding unit cell indices")
       .def(
           "__isub__",
@@ -2985,7 +3067,7 @@ PYBIND11_MODULE(_xtal, m) {
             self -= xtal::UnitCell(translation);
             return self;
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by subtracting unit cell "
           "indices")
       .def(
@@ -2994,7 +3076,7 @@ PYBIND11_MODULE(_xtal, m) {
              Eigen::Vector3l const &translation) {
             return self - xtal::UnitCell(translation);
           },
-          py::arg("translation"),
+          py::arg("translation").noconvert(),
           "Translates the integral site coordinate by subtracting unit cell "
           "indices")
       .def(
@@ -3084,7 +3166,8 @@ PYBIND11_MODULE(_xtal, m) {
       Convert between integral site indices :math:`(b,i,j,k)` and linear site index :math:`l`.
       )pbdoc")
       .def(py::init<Eigen::Matrix3l const &, int>(),
-           py::arg("transformation_matrix_to_super"), py::arg("n_sublattice"),
+           py::arg("transformation_matrix_to_super").noconvert(),
+           py::arg("n_sublattice"),
            R"pbdoc(
 
           Parameters
@@ -3141,7 +3224,7 @@ PYBIND11_MODULE(_xtal, m) {
       For each supercell, CASM generates an ordering of lattice sites :math:`(i,j,k)`.
       )pbdoc")
       .def(py::init<Eigen::Matrix3l const &>(),
-           py::arg("transformation_matrix_to_super"),
+           py::arg("transformation_matrix_to_super").noconvert(),
            R"pbdoc(
 
           Parameters
@@ -3173,7 +3256,7 @@ PYBIND11_MODULE(_xtal, m) {
           R"pbdoc(
            Bring the given :class:`~libcasm.xtal.IntegralSiteCoordinate` into the superlattice using superlattice translations.
            )pbdoc",
-          py::arg("unitcell"))
+          py::arg("unitcell").noconvert())
       .def(
           "linear_unitcell_index",
           [](xtal::UnitCellIndexConverter const &f,
@@ -3181,7 +3264,7 @@ PYBIND11_MODULE(_xtal, m) {
           R"pbdoc(
            Given unitcell indices, :math:`(i,j,k)`, retreive the corresponding linear unitcell index. By default, if :func:`~libcasm.xtal.IntegralSiteCoordinateConverter.never_bring_within` has not been called, the lattice point is brought within the superlattice using superlattice translations.
            )pbdoc",
-          py::arg("unitcell"))
+          py::arg("unitcell").noconvert())
       .def(
           "unitcell",
           [](xtal::UnitCellIndexConverter const &f,

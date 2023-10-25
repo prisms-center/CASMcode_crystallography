@@ -99,18 +99,33 @@ std::vector<Index> superstructure_basis_idx(
 
 SimpleStructure make_simple_structure(BasicStructure const &_struc) {
   SimpleStructure result;
+  Index N_site = _struc.basis().size();
   result.lat_column_mat = _struc.lattice().lat_column_mat();
 
-  result.mol_info.coords.resize(3, _struc.basis().size());
-  result.mol_info.names.reserve(_struc.basis().size());
+  result.mol_info.coords.resize(3, N_site);
+  result.mol_info.names.reserve(N_site);
   Eigen::VectorXi _mol_occ;
   // For now, default to first occupant. In future we may decide
   // to force user to pass mol_occ explicitly
-  _mol_occ.setZero(_struc.basis().size());
-  for (Index b = 0; b < _struc.basis().size(); ++b) {
-    result.mol_info.cart_coord(b) = _struc.basis()[b].const_cart();
-    result.mol_info.names.push_back(
-        _struc.basis()[b].occupant_dof()[_mol_occ[b]].name());
+  _mol_occ.setZero(N_site);
+  for (Index b = 0; b < N_site; ++b) {
+    auto const &site = _struc.basis()[b];
+    auto const &mol = site.occupant_dof()[_mol_occ[b]];
+    result.mol_info.cart_coord(b) = site.const_cart();
+    result.mol_info.names.push_back(mol.name());
+
+    // Initialize mol_info.properties for *molecule* properties
+    for (auto const &attr : mol.properties()) {
+      auto it = result.mol_info.properties.find(attr.first);
+      if (it == result.mol_info.properties.end()) {
+        it = result.mol_info.properties
+                 .emplace(attr.first, Eigen::MatrixXd::Zero(
+                                          attr.second.traits().dim(), N_site))
+                 .first;
+      }
+      // Record properties of mol
+      it->second.col(b) = attr.second.value();
+    }
   }
   _atomize(result, _mol_occ, _struc);
   return result;

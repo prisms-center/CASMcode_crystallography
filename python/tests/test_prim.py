@@ -113,6 +113,40 @@ def test_prim_from_poscar_str_with_occ_dof(shared_datadir):
     check_lial_with_occ_dofs(prim, occ_dofs)
 
 
+def test_prim_from_poscar_str_selectivedynamics():
+    poscar_str = """test prim
+    1.0
+    4.0 0.0 0.0
+    0.0 4.0 0.0
+    0.0 0.0 4.0
+    A B
+    1 3
+    Selective dynamics
+    Cartesian
+    0.0 0.0 0.0 T T T
+    0.5 0.5 0.5 T T T
+    0.0 0.0 1.0 F F F
+    0.5 0.5 1.5 T T T
+    """
+    prim = xtal.Prim.from_poscar_str(poscar_str)
+    assert prim.occ_dof() == [["A"], ["B.1"], ["B.2"], ["B.1"]]
+
+    occ_props = prim.occupants()["A"].properties()
+    assert "selectivedynamics" in occ_props
+    assert np.allclose(occ_props["selectivedynamics"], np.array([1.0, 1.0, 1.0]))
+
+    occ_props = prim.occupants()["B.1"].properties()
+    assert "selectivedynamics" in occ_props
+    assert np.allclose(occ_props["selectivedynamics"], np.array([1.0, 1.0, 1.0]))
+
+    occ_props = prim.occupants()["B.2"].properties()
+    assert "selectivedynamics" in occ_props
+    assert np.allclose(occ_props["selectivedynamics"], np.array([0.0, 0.0, 0.0]))
+
+    assert prim.coordinate_frac().shape == (3, 4)
+    assert prim.local_dof() == [[], [], [], []]
+
+
 def test_prim_to_poscar_str(shared_datadir):
     poscar_path = os.path.join(shared_datadir, "lial.vasp")
     prim = xtal.Prim.from_poscar(poscar_path)
