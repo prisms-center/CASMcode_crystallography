@@ -10,6 +10,7 @@ jobs:
     uses: ./.github/workflows/test-linux-dependencies.yml
 
   build:
+    needs: build-depends
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
