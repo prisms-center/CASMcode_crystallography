@@ -804,7 +804,7 @@ xtal::SimpleStructure make_simplestructure_within(
 }
 
 xtal::SimpleStructure make_superstructure(
-    Eigen::Ref<Eigen::Matrix3l const> transformation_matrix_to_super,
+    py::EigenDRef<Eigen::Matrix3l const> transformation_matrix_to_super,
     xtal::SimpleStructure const &simple) {
   return xtal::make_superstructure(transformation_matrix_to_super.cast<int>(),
                                    simple);
@@ -852,6 +852,18 @@ xtal::UnitCellCoordRep make_unitcellcoord_rep(
     xtal::SymOp const &op, xtal::BasicStructure const &prim) {
   return xtal::make_unitcellcoord_rep(op, prim.lattice(),
                                       xtal::symop_site_map(op, prim));
+}
+
+xtal::UnitCellCoordIndexConverter make_SiteIndexConverter(
+    py::EigenDRef<Eigen::Matrix3l const> transformation_matrix_to_super,
+    int n_sublattice) {
+  return xtal::UnitCellCoordIndexConverter(transformation_matrix_to_super,
+                                           n_sublattice);
+}
+
+xtal::UnitCellIndexConverter make_UnitCellIndexConverter(
+    py::EigenDRef<Eigen::Matrix3l const> transformation_matrix_to_super) {
+  return xtal::UnitCellIndexConverter(transformation_matrix_to_super);
 }
 
 }  // namespace CASMpy
@@ -3165,7 +3177,7 @@ PYBIND11_MODULE(_xtal, m) {
                                                 R"pbdoc(
       Convert between integral site indices :math:`(b,i,j,k)` and linear site index :math:`l`.
       )pbdoc")
-      .def(py::init<Eigen::Matrix3l const &, int>(),
+      .def(py::init(&make_SiteIndexConverter),
            py::arg("transformation_matrix_to_super").noconvert(),
            py::arg("n_sublattice"),
            R"pbdoc(
@@ -3223,7 +3235,7 @@ PYBIND11_MODULE(_xtal, m) {
 
       For each supercell, CASM generates an ordering of lattice sites :math:`(i,j,k)`.
       )pbdoc")
-      .def(py::init<Eigen::Matrix3l const &>(),
+      .def(py::init(&make_UnitCellIndexConverter),
            py::arg("transformation_matrix_to_super").noconvert(),
            R"pbdoc(
 
