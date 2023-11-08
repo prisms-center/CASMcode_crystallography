@@ -2104,7 +2104,8 @@ PYBIND11_MODULE(_xtal, m) {
             return get_matrix(op) * coordinate_cart + get_translation(op);
           },
           py::arg("coordinate_cart"),
-          "Transform Cartesian coordinates, represented as a 1d array")
+          "Transform Cartesian coordinates, represented as a 1d array",
+          py::is_operator())
       .def(
           "__mul__",
           [](xtal::SymOp const &op, Eigen::MatrixXd const &coordinate_cart) {
@@ -2116,14 +2117,16 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("coordinate_cart"),
           "Transform multiple Cartesian coordinates, represented as columns of "
-          "a matrix.")
+          "a matrix.",
+          py::is_operator())
       .def(
           "__mul__",
           [](xtal::SymOp const &lhs, xtal::SymOp const &rhs) {
             return lhs * rhs;
           },
           py::arg("rhs"),
-          "Construct the SymOp equivalent to applying first `rhs`, then this.")
+          "Construct the SymOp equivalent to applying first `rhs`, then this.",
+          py::is_operator())
       .def(
           "__mul__",
           [](xtal::SymOp const &op,
@@ -2131,19 +2134,20 @@ PYBIND11_MODULE(_xtal, m) {
             return copy_apply(op, properties);
           },
           py::arg("rhs"),
-          "Transform CASM-supported properties (local or global).")
+          "Transform CASM-supported properties (local or global).",
+          py::is_operator())
       .def(
           "__mul__",
           [](xtal::SymOp const &op, xtal::Lattice const &lattice) {
             return sym::copy_apply(op, lattice);
           },
-          py::arg("lattice"), "Transform a Lattice.")
+          py::arg("lattice"), "Transform a Lattice.", py::is_operator())
       .def(
           "__mul__",
           [](xtal::SymOp const &op, xtal::SimpleStructure const &simple) {
             return copy_apply(op, simple);
           },
-          py::arg("structure"), "Transform a Structure.")
+          py::arg("structure"), "Transform a Structure.", py::is_operator())
       .def_static(
           "from_dict",
           [](const nlohmann::json &data) {
@@ -3199,7 +3203,8 @@ PYBIND11_MODULE(_xtal, m) {
             return copy_apply(rep, integral_site_coordinate);
           },
           py::arg("integral_site_coordinate"),
-          "Transform an :class:`~libcasm.xtal.IntegralSiteCoordinate`");
+          "Transform an :class:`~libcasm.xtal.IntegralSiteCoordinate`",
+          py::is_operator());
 
   m.def(
       "apply",
