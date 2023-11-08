@@ -414,9 +414,32 @@ def test_make_superstructure_1():
 
 def test_make_superstructure_2():
     struc = xtal_structures.BCC(r=1)
-    transformation_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=int).T
+    transformation_matrix = np.array([[0, 1, 1], [2, 0, 1], [1, 1, 0]], dtype=int).T
+    assert transformation_matrix.flags.f_contiguous
     assert transformation_matrix.dtype is np.dtype(np.int64)
-    xtal.make_superstructure(transformation_matrix, struc)
+    superstruc = xtal.make_superstructure(transformation_matrix, struc)
+    assert np.allclose(
+        superstruc.lattice().column_vector_matrix(),
+        struc.lattice().column_vector_matrix() @ transformation_matrix,
+    )
+
+    transformation_matrix_b = np.array([[0, 2, 1], [1, 0, 1], [1, 1, 0]], dtype=int)
+    assert transformation_matrix_b.flags.c_contiguous
+    assert transformation_matrix.dtype is np.dtype(np.int64)
+    superstruc_b = xtal.make_superstructure(transformation_matrix_b, struc)
+    assert np.allclose(
+        superstruc_b.lattice().column_vector_matrix(),
+        struc.lattice().column_vector_matrix() @ transformation_matrix_b,
+    )
+
+    assert np.allclose(
+        transformation_matrix,
+        transformation_matrix_b,
+    )
+    assert np.allclose(
+        superstruc.lattice().column_vector_matrix(),
+        superstruc_b.lattice().column_vector_matrix(),
+    )
 
 
 def test_make_superstructure_and_rotate():
