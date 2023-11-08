@@ -23,6 +23,9 @@ enum class symmetry_type {
 struct SymInfo {
   SymInfo(SymOp const &op, xtal::Lattice const &lat);
 
+  /// The lattice used for coordinates
+  xtal::Lattice lattice;
+
   /// One of: identity_op, mirror_op, glide_op, rotation_op, screw_op,
   ///         inversion_op, rotoinversion_op, or invalid_op
   symmetry_type op_type;

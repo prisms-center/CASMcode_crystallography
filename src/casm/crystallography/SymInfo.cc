@@ -6,9 +6,10 @@ namespace CASM {
 namespace xtal {
 
 SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
-    : axis(lat),
-      screw_glide_shift(lat),
-      location(lat),
+    : lattice(lat),
+      axis(lattice),
+      screw_glide_shift(lattice),
+      location(lattice),
       time_reversal(op.is_time_reversal_active) {
   auto matrix = op.matrix;
   auto tau = op.translation;
@@ -23,7 +24,7 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
     op_type = symmetry_type::identity_op;
     _axis = Eigen::Vector3d::Zero();
     _location = Eigen::Vector3d::Zero();
-    _set(_axis, _screw_glide_shift, _location, lat);
+    _set(_axis, _screw_glide_shift, _location, lattice);
     return;
   }
 
@@ -33,7 +34,7 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
     op_type = symmetry_type::inversion_op;
     _axis = Eigen::Vector3d::Zero();
     _location = tau / 2.;
-    _set(_axis, _screw_glide_shift, _location, lat);
+    _set(_axis, _screw_glide_shift, _location, lattice);
     return;
   }
 
@@ -81,7 +82,7 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
   if (det < 0) {
     if (almost_equal(angle, 180.)) {
       // shift is component of tau perpendicular to axis
-      xtal::Coordinate coord(tau - tau.dot(_axis) * _axis, lat, CART);
+      xtal::Coordinate coord(tau - tau.dot(_axis) * _axis, lattice, CART);
       _screw_glide_shift = coord.cart();
 
       // location is 1/2 of component of tau parallel to axis:
@@ -102,7 +103,7 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
     }
   } else {
     // shift is component of tau parallel to axis
-    xtal::Coordinate coord(tau.dot(_axis) * _axis, lat, CART);
+    xtal::Coordinate coord(tau.dot(_axis) * _axis, lattice, CART);
     _screw_glide_shift = coord.cart();
 
     // Can only solve 2d location problem
@@ -121,7 +122,7 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
     op_type = coord.is_lattice_shift() ? symmetry_type::rotation_op
                                        : symmetry_type::screw_op;
   }
-  _set(_axis, _screw_glide_shift, _location, lat);
+  _set(_axis, _screw_glide_shift, _location, lattice);
   return;
 }
 
