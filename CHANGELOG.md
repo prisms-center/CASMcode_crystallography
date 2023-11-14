@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.0a7] - 2023-11-14
+
+### Changed
+
+- Add py::is_operator() in the bindings of the `__mul__` operators xtal.SymOp and xtal.IntegralSiteCoordinateRep so it possible to add `__rmul__` operators to classes in other modules.
+
+
 ## [2.0a6] - 2023-11-07
 
 ### Changed
