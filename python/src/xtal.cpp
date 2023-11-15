@@ -1078,8 +1078,8 @@ PYBIND11_MODULE(_xtal, m) {
       point_group : list[:class:`~libcasm.xtal.SymOp`]
           The point group symmetry that generates equivalent lattices. Depending
           on the use case, this is often the prim crystal point group,
-          :func:`~casm.xtal.make_crystal_point_group()`, or the lattice
-          point group, :func:`~casm.xtal.make_point_group()`.
+          :func:`~libcasm.xtal.make_crystal_point_group()`, or the lattice
+          point group, :func:`~libcasm.xtal.make_point_group()`.
 
       Returns
       -------
@@ -1124,7 +1124,7 @@ PYBIND11_MODULE(_xtal, m) {
     )pbdoc");
 
   m.def("make_canonical", &make_canonical_lattice, py::arg("init_lattice"),
-        "Equivalent to :func:`~casm.xtal.make_canonical_lattice`");
+        "Equivalent to :func:`~libcasm.xtal.make_canonical_lattice`");
 
   m.def("fractional_to_cartesian", &fractional_to_cartesian, py::arg("lattice"),
         py::arg("coordinate_frac"), R"pbdoc(
@@ -1309,8 +1309,8 @@ PYBIND11_MODULE(_xtal, m) {
       point_group : list[:class:`~libcasm.xtal.SymOp`]
           The point group symmetry that determines if superlattices are equivalent.
           Depending on the use case, this is often the prim crystal point group,
-          :func:`~casm.xtal.make_crystal_point_group()`, or the lattice point group,
-          :func:`~casm.xtal.make_point_group()`.
+          :func:`~libcasm.xtal.make_crystal_point_group()`, or the lattice point group,
+          :func:`~libcasm.xtal.make_point_group()`.
       max_volume : int
           The maximum volume superlattice to enumerate, as a multiple of the volume of
           `unit_lattice`.
@@ -1357,7 +1357,7 @@ PYBIND11_MODULE(_xtal, m) {
       )pbdoc");
 
   py::class_<xtal::AtomPosition>(m, "AtomComponent", R"pbdoc(
-      An atomic component of a molecular :class:`~casm.xtal.Occupant`
+      An atomic component of a molecular :class:`~libcasm.xtal.Occupant`
       )pbdoc")
       .def(py::init(&make_atom_position), py::arg("name"),
            py::arg("coordinate"), py::arg("properties"), R"pbdoc(
@@ -1568,9 +1568,9 @@ PYBIND11_MODULE(_xtal, m) {
       Notes
       -----
       The Prim is not required to have the primitive equivalent cell at
-      construction. The :func:`~casm.xtal.make_primitive` method may be
+      construction. The :func:`~libcasm.xtal.make_primitive` method may be
       used to find the primitive equivalent, and the
-      :func:`~casm.xtal.make_canonical_prim` method may be used to find
+      :func:`~libcasm.xtal.make_canonical_prim` method may be used to find
       the equivalent with a Niggli cell lattice aligned in a CASM
       standard direction.
       )pbdoc")
@@ -1877,7 +1877,7 @@ PYBIND11_MODULE(_xtal, m) {
             )pbdoc");
 
   m.def("make_within", &make_within, py::arg("init_prim"),
-        "Equivalent to :func:`~casm.xtal.make_prim_within`");
+        "Equivalent to :func:`~libcasm.xtal.make_prim_within`");
 
   m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
             Returns a primitive equivalent Prim
@@ -1925,7 +1925,7 @@ PYBIND11_MODULE(_xtal, m) {
         )pbdoc");
 
   m.def("make_canonical", &make_canonical_prim, py::arg("init_prim"),
-        "Equivalent to :func:`~casm.xtal.make_canonical_prim`");
+        "Equivalent to :func:`~libcasm.xtal.make_canonical_prim`");
 
   m.def("asymmetric_unit_indices", &asymmetric_unit_indices, py::arg("prim"),
         R"pbdoc(
@@ -1965,7 +1965,7 @@ PYBIND11_MODULE(_xtal, m) {
           )pbdoc");
 
   m.def("make_factor_group", &make_prim_factor_group, py::arg("prim"),
-        "Equivalent to :func:`~casm.xtal.make_prim_factor_group`");
+        "Equivalent to :func:`~libcasm.xtal.make_prim_factor_group`");
 
   m.def("make_prim_crystal_point_group", &make_prim_crystal_point_group,
         py::arg("prim"),
@@ -1987,7 +1987,7 @@ PYBIND11_MODULE(_xtal, m) {
 
   m.def("make_crystal_point_group", &make_prim_crystal_point_group,
         py::arg("prim"),
-        "Equivalent to :func:`~casm.xtal.make_prim_crystal_point_group`");
+        "Equivalent to :func:`~libcasm.xtal.make_prim_crystal_point_group`");
 
   py::class_<xtal::SymOp>(m, "SymOp", R"pbdoc(
       A symmetry operation representation that acts on Cartesian coordinates
@@ -2599,7 +2599,7 @@ PYBIND11_MODULE(_xtal, m) {
 
   m.def("make_factor_group", &make_simplestructure_factor_group,
         py::arg("structure"),
-        "Equivalent to :func:`~casm.xtal.make_structure_factor_group`");
+        "Equivalent to :func:`~libcasm.xtal.make_structure_factor_group`");
 
   m.def("make_structure_crystal_point_group",
         &make_simplestructure_crystal_point_group, py::arg("structure"),
@@ -2625,9 +2625,10 @@ PYBIND11_MODULE(_xtal, m) {
            or properties, or to use a different tolerance, use a Prim.
            )pbdoc");
 
-  m.def("make_crystal_point_group", &make_simplestructure_crystal_point_group,
-        py::arg("structure"),
-        "Equivalent to :func:`~casm.xtal.make_structure_crystal_point_group`");
+  m.def(
+      "make_crystal_point_group", &make_simplestructure_crystal_point_group,
+      py::arg("structure"),
+      "Equivalent to :func:`~libcasm.xtal.make_structure_crystal_point_group`");
 
   m.def("make_structure_within", &make_simplestructure_within,
         py::arg("init_structure"), R"pbdoc(
@@ -2648,7 +2649,7 @@ PYBIND11_MODULE(_xtal, m) {
             )pbdoc");
 
   m.def("make_within", &make_simplestructure_within, py::arg("init_structure"),
-        "Equivalent to :func:`~casm.xtal.make_structure_within`");
+        "Equivalent to :func:`~libcasm.xtal.make_structure_within`");
 
   m.def("make_superstructure", &make_superstructure,
         py::arg("transformation_matrix_to_super").noconvert(),
@@ -2722,7 +2723,7 @@ PYBIND11_MODULE(_xtal, m) {
     For more information on strain metrics and using a symmetry-adapted or
     user-specified basis, see :ref:`Strain DoF <sec-strain-dof>`.
 
-    :class:`~casm.xtal.StrainConverter` supports the following choices of symmetric
+    :class:`~libcasm.xtal.StrainConverter` supports the following choices of symmetric
     strain metrics, :math:`E`, shape=(3,3):
 
     - `"GLstrain"`: Green-Lagrange strain metric, :math:`E = \frac{1}{2}(F^{\mathsf{T}} F - I)`

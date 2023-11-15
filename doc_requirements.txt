@@ -1,6 +1,7 @@
 numpydoc
 sphinx
 sphinx-argparse
+sphinx-favicon
 sphinx_rtd_theme
 sphinxcontrib-bibtex
 pydata-sphinx-theme

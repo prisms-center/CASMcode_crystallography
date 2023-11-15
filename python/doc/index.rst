@@ -1,6 +1,13 @@
-.. image:: _static/logo.svg
+.. image:: _static/logo_outline.svg
   :alt: CASM logo
   :width: 600
+  :class: only-light
+
+.. image:: _static/logo_dark_outline.svg
+  :alt: CASM logo
+  :width: 600
+  :class: only-dark
+
 
 libcasm-xtal
 ============

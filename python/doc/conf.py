@@ -60,6 +60,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
+    "sphinx_favicon",
     "sphinxarg.ext",
     "sphinxcontrib.bibtex",
     "sphinx.ext.intersphinx",
@@ -111,7 +112,7 @@ language = None
 exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+# pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -131,13 +132,18 @@ html_logo = "_static/small_logo.svg"
 html_theme_options = {
     "logo": {
         "text": "libcasm-xtal",
-    }
+        "image_light": "_static/small_logo.svg",
+        "image_dark": "_static/small_logo_dark.svg",
+    },
+    "pygment_light_style": "xcode",
+    "pygment_dark_style": "lightbulb",
 }
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_favicon = "_static/small_logo.svg"
+favicons = ["small_logo.svg"]
 html_css_files = [
     "css/custom.css",
 ]

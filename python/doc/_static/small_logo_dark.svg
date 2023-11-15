@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 28.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 151.6 141.8" style="enable-background:new 0 0 151.6 141.8;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#FFFFFF;stroke-width:0.5;stroke-miterlimit:10;}
+	.st1{clip-path:url(#SVGID_00000163780153549265780880000006925694219363606665_);}
+	.st2{fill:#CBDB2A;stroke:#FFFFFF;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#FFFFFF;stroke-miterlimit:10;}
+	.st4{fill:#6DC8BF;stroke:#FFFFFF;stroke-width:0.5;stroke-miterlimit:10;}
+</style>
+<line class="st0" x1="19.2" y1="69.8" x2="136.3" y2="69.8"/>
+<line class="st0" x1="19" y1="91.4" x2="65.7" y2="10.5"/>
+<line class="st0" x1="109" y1="127.8" x2="41.3" y2="10.6"/>
+<line class="st0" x1="42.2" y1="127.7" x2="109.7" y2="10.7"/>
+<line class="st0" x1="86.3" y1="127.7" x2="136.3" y2="41.1"/>
+<line class="st0" x1="64.6" y1="127.7" x2="18.8" y2="48.3"/>
+<line class="st0" x1="19" y1="108.2" x2="136.2" y2="108.2"/>
+<line class="st0" x1="19" y1="31.4" x2="136.2" y2="31.4"/>
+<line class="st0" x1="136.3" y1="97.6" x2="86.1" y2="10.5"/>
+<line class="st0" x1="20.7" y1="127.7" x2="19" y2="124.7"/>
+<line class="st0" x1="136.2" y1="21.1" x2="130" y2="10.5"/>
+<line class="st0" x1="19" y1="14.4" x2="21.3" y2="10.5"/>
+<line class="st0" x1="131.3" y1="127.7" x2="135.9" y2="119.7"/>
+<g>
+	<defs>
+		<rect id="SVGID_1_" x="19" y="10.5" width="117.2" height="117.2"/>
+	</defs>
+	<clipPath id="SVGID_00000034060244549958505710000001465159311067527816_">
+		<use xlink:href="#SVGID_1_"  style="overflow:visible;"/>
+	</clipPath>
+	<g style="clip-path:url(#SVGID_00000034060244549958505710000001465159311067527816_);">
+		<circle class="st2" cx="141.5" cy="30.4" r="9.2"/>
+		<circle class="st2" cx="142.4" cy="108.1" r="9.2"/>
+	</g>
+	<use xlink:href="#SVGID_1_"  style="overflow:visible;fill:none;stroke:#FFFFFF;stroke-miterlimit:10;"/>
+</g>
+<rect x="19" y="10.5" class="st3" width="117.2" height="117.2"/>
+<rect x="19" y="10.5" class="st3" width="117.2" height="117.2"/>
+<circle class="st4" cx="53.3" cy="31.4" r="9.2"/>
+<circle class="st4" cx="98.1" cy="31.4" r="9.2"/>
+<circle class="st4" cx="31.5" cy="69.8" r="9.2"/>
+<circle class="st2" cx="75.6" cy="69.8" r="9.2"/>
+<circle class="st2" cx="119.8" cy="69.8" r="9.2"/>
+<circle class="st4" cx="97.6" cy="108.1" r="9.2"/>
+<circle class="st4" cx="53.5" cy="108.2" r="9.2"/>
+</svg>
