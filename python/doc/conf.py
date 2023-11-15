@@ -35,7 +35,7 @@ intersphinx_mapping = {}
 
 # if LIBCASM_LOCAL_PYDOCS env variable is set, create local docs
 pydocs_path = os.environ.get("LIBCASM_LOCAL_PYDOCS", None)
-packages = [("global", "2.0")]
+packages = [("global", "2.0"), ("configuration", "2.0")]
 for package, vers in packages:
     if pydocs_path is None:
         url = (

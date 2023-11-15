@@ -97,7 +97,7 @@ def make_factor_group(
 
 
 def make_within(
-        obj: Union[_xtal.Prim, _xtal.Structure],
+    obj: Union[_xtal.Prim, _xtal.Structure],
 ) -> Any:
     """Returns an equivalent Prim or Structure with all site coordinates within the \
     unit cell
@@ -120,6 +120,4 @@ def make_within(
     elif isinstance(obj, _xtal.Structure):
         return _xtal.make_structure_within(obj)
     else:
-        raise TypeError(
-            f"TypeError in make_within: received {type(obj).__name__}"
-        )
+        raise TypeError(f"TypeError in make_within: received {type(obj).__name__}")

@@ -889,9 +889,20 @@ PYBIND11_MODULE(_xtal, m) {
     )pbdoc";
 
   py::class_<xtal::SymOp> pySymOp(m, "SymOp", R"pbdoc(
-      A symmetry operation representation that acts on Cartesian coordinates
+      The Cartesian representation, :math:`\left\{ \mathbf{R}, \vec{\tau} \right\}`, of a
+      symmetry operation acts on a Cartesian coordinate according to
 
-      A SymOp, `op`, transforms a Cartesian coordinate according to:
+      .. math::
+
+          \vec{r}^{\ after} = \mathbf{R} \vec{r}^{\ before} + \vec{\tau},
+
+      where :math:`\mathbf{R}` is a 3x3 matrix, :math:`\vec{\tau}` is a Cartesian
+      translation vector, :math:`\vec{r}^{\ before}` is the Cartesian coordinate before
+      application of symmetry, and :math:`\vec{r}^{\ after}` is the Cartesian
+      coordinate after application of symmetry.
+
+      In libcasm-xtal this is represented by a SymOp, `op`, that transforms a
+      Cartesian coordinate according to
 
       .. code-block:: Python
 
@@ -900,7 +911,8 @@ PYBIND11_MODULE(_xtal, m) {
       where `r_before` and `r_after` are shape=(3,) arrays with the Cartesian
       coordinates before and after transformation, respectively.
 
-      Additionally, the sign of magnetic spins is flipped according to:
+      Additionally, a symmetry operation may include a flip in the sign of magnetic
+      spins. In `libcasm-xtal`, the sign of magnetic spins is flipped according to:
 
       .. code-block:: Python
 
@@ -933,6 +945,24 @@ PYBIND11_MODULE(_xtal, m) {
         :class:`Lattice`.
       - ``X=Structure``, ``lhs=SymOp``, ``rhs=Structure``: Transform a
         :class:`Structure`.
+
+      .. note::
+
+          Other types of objects require additional information to be efficiently
+          transformed by a symmetry operation. Some other symmetry representations used
+          in CASM include:
+
+          - :class:`IntegralSiteCoordinateRep`: Transform
+            :class:`IntegralSiteCoordinate` and
+            :class:`~libcasm.clusterography.Cluster`.
+          - :class:`~libcasm.configuration.SupercellSymOp`: Transform
+            :class:`~libcasm.configuration.Configuration`
+          - :class:`~libcasm.occ_events.OccEventRep`: Transform
+            :class:`~libcasm.occ_events.OccEvent`
+          - Matrix representations (``numpy.ndarray``): Transform vectors of degree of
+            freedom (DoF) values, order parameters, etc.
+          - Permutation arrays (``list[int]``): Transform site indices
+
 
       .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
 
