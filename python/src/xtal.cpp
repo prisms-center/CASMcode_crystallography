@@ -382,6 +382,9 @@ void init_prim(
 std::shared_ptr<xtal::BasicStructure const> prim_from_json(
     std::string const &prim_json_str, double xtal_tol) {
   jsonParser json = jsonParser::parse(prim_json_str);
+  PyErr_WarnEx(PyExc_DeprecationWarning,
+               "Prim.from_json() is deprecated, use Prim.from_dict() instead.",
+               2);
   ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
   return std::make_shared<xtal::BasicStructure>(
       read_prim(json, xtal_tol, aniso_val_dict));
@@ -463,6 +466,8 @@ xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
 std::string prim_to_json(
     std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
     bool include_va) {
+  PyErr_WarnEx(PyExc_DeprecationWarning,
+               "Prim.to_json() is deprecated, use Prim.to_dict() instead.", 2);
   jsonParser json;
   COORD_TYPE mode = frac ? FRAC : CART;
   write_prim(*prim, json, mode, include_va);
@@ -660,6 +665,10 @@ std::string get_syminfo_brief_frac(xtal::SymInfo const &syminfo) {
 }
 
 std::string syminfo_to_json(xtal::SymInfo const &syminfo) {
+  PyErr_WarnEx(
+      PyExc_DeprecationWarning,
+      "SymInfo.to_json() is deprecated, use SymInfo.to_dict() instead.", 2);
+
   jsonParser json;
   to_json(syminfo, json);
 
@@ -763,6 +772,10 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
 }
 
 xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
+  PyErr_WarnEx(
+      PyExc_DeprecationWarning,
+      "Structure.from_json() is deprecated, use Structure.from_dict() instead.",
+      2);
   jsonParser json = jsonParser::parse(json_str);
   xtal::SimpleStructure simple;
   from_json(simple, json);
@@ -770,6 +783,9 @@ xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
 }
 
 std::string simplestructure_to_json(xtal::SimpleStructure const &simple) {
+  PyErr_WarnEx(
+      PyExc_DeprecationWarning,
+      "Structure.to_json() is deprecated, use Structure.to_dict() instead.", 2);
   jsonParser json;
   to_json(simple, json);
   std::stringstream ss;
