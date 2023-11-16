@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.0a8] - 2023-11-15
+
+### Changed
+
+- Updated docs for PyData Sphinx Theme 0.14.3, particularly dark theme colors and logo
+
+### Fixed
+
+- Fixed broken docs links to xtal.SymOp
+- Fixed return type docs
+
+### Deprecated
+
+- The to_json and from_json methods of xtal.Prim, xtal.Structure, and xtal.SymInfo are deprecated in favor of the to_dict / from_dict methods and the builtin json module
+
+
 ## [2.0a7] - 2023-11-14
 
 ### Changed

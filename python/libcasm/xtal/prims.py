@@ -75,7 +75,7 @@ def BCC(
     ----------
     r: Optional[float] = None
         Specify atomic radius and construct BCC primitive lattice
-        with conventional lattice parameter :math:`a = 4.0 * r / \sqrt{3.0}`
+        with conventional lattice parameter :math:`a = 4r / \sqrt{3}`
     a: Optional[float] = None
         Specify the conventional BCC lattice parameter :math:`a`.
     occ_dof : list[str] = ["A", "B"]
@@ -133,7 +133,7 @@ def FCC(
     ----------
     r: Optional[float] = None
         Specify atomic radius and construct FCC primitive lattice
-        with conventional lattice parameter :math:`a = 4.0 * r / \sqrt{2.0}`
+        with conventional lattice parameter :math:`a = 4r / \sqrt{2}`
     a: Optional[float] = None
         Specify the conventional FCC lattice parameter :math:`a`.
     occ_dof : list[str] = ["A", "B"]
@@ -192,12 +192,12 @@ def HCP(
     ----------
     r: Optional[float] = None
         Specify atomic radius and construct HCP primitive lattice
-        with conventional lattice parameter :math:`a = 2.0 * r`.
+        with conventional lattice parameter :math:`a = 2r`.
     a: Optional[float] = None
         Specify the conventional HCP lattice parameter :math:`a`.
     c: Optional[float] = None
         Specify the conventional HCP lattice parameter :math:`c`.
-        If not specified, the ideal value is used :math:`c = `a \sqrt{8./3.}`.
+        If not specified, the ideal value is used :math:`c = a \sqrt{8/3}`.
     occ_dof : list[str] = ["A", "B"]
         Labels ('orientation names') of occupants allowed on the basis
         sites. The values may either be (i) the name of an isotropic

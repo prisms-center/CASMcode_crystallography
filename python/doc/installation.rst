@@ -11,6 +11,8 @@ Install from PyPI
 
 The latest release of libcasm-xtal can be installed with:
 
+.. code-block:: bash
+
     pip install libcasm-xtal
 
 
