@@ -300,14 +300,19 @@ BasicStructure make_primitive(const BasicStructure &non_primitive_struc,
 
   // Fill up the basis
   BasicStructure primitive_struc(primitive_lattice);
+  std::vector<std::vector<std::string>> _unique_names;
+  Index i_site = 0;
   for (Site site_for_prim : non_primitive_struc.basis()) {
     site_for_prim.set_lattice(primitive_struc.lattice(), CART);
     if (find_index(primitive_struc.basis(), site_for_prim, tol) ==
         primitive_struc.basis().size()) {
       site_for_prim.within();
       primitive_struc.set_basis().emplace_back(std::move(site_for_prim));
+      _unique_names.push_back(non_primitive_struc.unique_names()[i_site]);
+      i_site++;
     }
   }
+  primitive_struc.set_unique_names(_unique_names);
 
   // TODO: Do we want this?
   primitive_struc.set_title(non_primitive_struc.title());
