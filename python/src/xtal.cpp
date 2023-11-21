@@ -573,7 +573,7 @@ std::shared_ptr<xtal::BasicStructure const> make_within(
   return prim;
 }
 
-std::shared_ptr<xtal::BasicStructure const> make_primitive(
+std::shared_ptr<xtal::BasicStructure const> make_primitive_prim(
     std::shared_ptr<xtal::BasicStructure const> const &init_prim) {
   auto prim = std::make_shared<xtal::BasicStructure>(*init_prim);
   *prim = xtal::make_primitive(*prim, prim->lattice().tol());
@@ -815,6 +815,37 @@ xtal::SimpleStructure make_simplestructure_within(
     xtal::SimpleStructure const &init_structure) {
   xtal::SimpleStructure structure = init_structure;
   structure.within();
+  return structure;
+}
+
+xtal::SimpleStructure make_primitive_simplestructure(
+    xtal::SimpleStructure const &init_structure) {
+  std::vector<std::vector<std::string>> occ_dof;
+  for (std::string name : init_structure.atom_info.names) {
+    occ_dof.push_back({name});
+  }
+  std::shared_ptr<xtal::BasicStructure const> prim = make_prim(
+      get_simplestructure_lattice(init_structure, TOL),
+      get_simplestructure_atom_coordinate_frac(init_structure), occ_dof);
+  prim = make_primitive_prim(prim);
+  xtal::SimpleStructure structure;
+
+  std::vector<std::string> atom_type;
+  for (auto const &site_names : prim->unique_names()) {
+    atom_type.push_back(site_names[0]);
+  }
+
+  return make_simplestructure(prim->lattice(), get_prim_coordinate_cart(prim),
+                              atom_type);
+}
+
+xtal::SimpleStructure make_canonical_simplestructure(
+    xtal::SimpleStructure const &init_structure) {
+  xtal::SimpleStructure structure = init_structure;
+  xtal::Lattice lattice = get_simplestructure_lattice(init_structure, TOL);
+  lattice.make_right_handed();
+  lattice = xtal::canonical::equivalent(lattice);
+  structure.lat_column_mat = lattice.lat_column_mat();
   return structure;
 }
 
@@ -2022,7 +2053,8 @@ PYBIND11_MODULE(_xtal, m) {
   m.def("make_within", &make_within, py::arg("init_prim"),
         "Equivalent to :func:`make_prim_within`");
 
-  m.def("make_primitive", &make_primitive, py::arg("init_prim"), R"pbdoc(
+  m.def("make_primitive_prim", &make_primitive_prim, py::arg("init_prim"),
+        R"pbdoc(
             Returns a primitive equivalent Prim
 
             A :class:`Prim` object is not forced to be the primitive equivalent
@@ -2039,7 +2071,7 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             -------
-            prim : Lattice
+            prim : Prim
                 The primitive equivalent prim.
             )pbdoc");
 
@@ -2760,6 +2792,55 @@ PYBIND11_MODULE(_xtal, m) {
 
   m.def("make_within", &make_simplestructure_within, py::arg("init_structure"),
         "Equivalent to :func:`make_structure_within`");
+
+  m.def("make_primitive_structure", &make_primitive_simplestructure,
+        py::arg("init_structure"), R"pbdoc(
+        Returns a primitive equivalent atomic Structure
+
+        This function finds and returns the primitive equivalent cell by checking for
+        internal translations that map all atoms onto equivalent atoms.
+
+        Notes
+        -----
+        Currently this method only considers atom coordinates and types. Molecular
+        coordinates and types are not considered. Properties are not considered.
+        The default CASM tolerance is used for comparisons. To consider molecules
+        or properties, or to use a different tolerance, use a Prim.
+
+        Parameters
+        ----------
+        init_structure: _xtal.Structure
+            The initial Structure
+
+        Returns
+        -------
+        structure: _xtal.Structure
+            The primitive equivalent Structure
+        )pbdoc");
+
+  m.def("make_canonical_structure", &make_canonical_simplestructure,
+        py::arg("init_structure"), R"pbdoc(
+        Returns an equivalent Structure with canonical lattice
+
+        Finds the canonical right-handed Niggli cell of the lattice, applying
+        lattice point group operations to find the equivalent lattice in a
+        standardized orientation. The canonical orientation prefers lattice
+        vectors that form symmetric matrices with large positive values on the
+        diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
+
+        .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+
+        Parameters
+        ----------
+        init_structure: _xtal.Structure
+            The initial Structure
+
+        Returns
+        -------
+        structure: _xtal.Structure
+            The structure with canonical lattice.
+
+        )pbdoc");
 
   m.def("make_superstructure", &make_superstructure,
         py::arg("transformation_matrix_to_super").noconvert(),

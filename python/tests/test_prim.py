@@ -165,12 +165,14 @@ def test_prim_to_poscar_str(shared_datadir):
 def test_make_primitive_occ(nonprimitive_cubic_occ_prim):
     assert nonprimitive_cubic_occ_prim.coordinate_frac().shape[1] == 2
     prim = xtal.make_primitive(nonprimitive_cubic_occ_prim)
+    assert isinstance(prim, xtal.Prim)
     assert prim.coordinate_frac().shape[1] == 1
 
 
 def test_make_primitive_manydof(test_nonprimitive_manydof_prim):
     assert test_nonprimitive_manydof_prim.coordinate_frac().shape[1] == 2
     prim = xtal.make_primitive(test_nonprimitive_manydof_prim)
+    assert isinstance(prim, xtal.Prim)
     assert prim.coordinate_frac().shape[1] == 1
 
 

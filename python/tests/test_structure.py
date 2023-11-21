@@ -442,6 +442,57 @@ def test_make_superstructure_2():
     )
 
 
+def test_make_primitive_structure_1():
+    struc = xtal_structures.BCC(r=1)
+    transformation_matrix = np.array([[0, 1, 1], [2, 0, 1], [1, 1, 0]], dtype=int).T
+    assert transformation_matrix.flags.f_contiguous
+    assert transformation_matrix.dtype is np.dtype(np.int64)
+    superstruc = xtal.make_superstructure(transformation_matrix, struc)
+    assert np.allclose(
+        superstruc.lattice().column_vector_matrix(),
+        struc.lattice().column_vector_matrix() @ transformation_matrix,
+    )
+
+    primitive_struc = xtal.make_primitive_structure(superstruc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_primitive_structure_2():
+    struc = xtal_structures.BCC(r=1)
+    conventional_struc = xtal_structures.BCC(r=1, conventional=True)
+    primitive_struc = xtal.make_primitive_structure(conventional_struc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_primitive_structure_3():
+    struc = xtal_structures.FCC(r=1)
+    conventional_struc = xtal_structures.FCC(r=1, conventional=True)
+    primitive_struc = xtal.make_primitive_structure(conventional_struc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_canonical_structure_1():
+    struc = xtal.Structure(
+        lattice=xtal.Lattice(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],  # z
+                    [1.0, 0.0, 0.0],  # x
+                    [0.0, 1.0, 0.0],  # y
+                ]
+            ).transpose()
+        ),
+        atom_coordinate_frac=np.array(
+            [
+                [0.0, 0.0, 0.0],
+            ]
+        ).transpose(),
+        atom_type=["A"],
+    )
+    canonical_struc = xtal.make_canonical_structure(struc)
+    assert np.allclose(canonical_struc.lattice().column_vector_matrix(), np.eye(3))
+
+
 def test_make_superstructure_and_rotate():
     struc = xtal_structures.BCC(r=1)
     assert len(struc.atom_type()) == 1

@@ -12,8 +12,9 @@ def BCC(
     atom_type: str = "A",
     atom_properties: dict[str, np.ndarray] = {},
     global_properties: dict[str, np.ndarray] = {},
+    conventional=False,
 ) -> xtal.Structure:
-    r"""Construct a primitive BCC structure
+    r"""Construct a BCC structure
 
     Parameters
     ----------
@@ -32,19 +33,36 @@ def BCC(
         Continuous properties associated with entire crystal, if present. Keys must be
         the name of a CASM-supported property type. Values are (m, 1) arrays with
         dimensions matching the standard dimension of the property type.
-
+    conventional : bool = False
+        If True, construct the 2-atom conventional BCC cell instead of the 1-atom
+        primitive cell. Default is False.
     Returns
     -------
     structure : xtal.Structure
         A primitive BCC structure
     """
-    return xtal.Structure(
+    structure = xtal.Structure(
         lattice=xtal_lattices.BCC(r=r, a=a),
         atom_coordinate_frac=np.array([0.0, 0.0, 0.0]),
         atom_type=[atom_type],
         atom_properties=atom_properties,
         global_properties=global_properties,
     )
+    if conventional is True:
+        T_bcc_conventional = np.array(
+            [
+                [0, 1, 1],
+                [1, 0, 1],
+                [1, 1, 0],
+            ],
+            dtype=int,
+        )
+        return xtal.make_superstructure(
+            T_bcc_conventional,
+            structure,
+        )
+    else:
+        return structure
 
 
 def FCC(
@@ -53,8 +71,9 @@ def FCC(
     atom_type: str = "A",
     atom_properties: dict[str, np.ndarray] = {},
     global_properties: dict[str, np.ndarray] = {},
+    conventional: bool = False,
 ) -> xtal.Structure:
-    r"""Construct a primitive FCC structure
+    r"""Construct a FCC structure
 
     Parameters
     ----------
@@ -73,19 +92,37 @@ def FCC(
         Continuous properties associated with entire crystal, if present. Keys must be
         the name of a CASM-supported property type. Values are (m, 1) arrays with
         dimensions matching the standard dimension of the property type.
+    conventional : bool = False
+        If True, construct the 4-atom conventional FCC cell instead of the 1-atom
+        primitive cell. Default is False.
 
     Returns
     -------
     structure : xtal.Structure
         A primitive FCC structure
     """
-    return xtal.Structure(
+    structure = xtal.Structure(
         lattice=xtal_lattices.FCC(r=r, a=a),
         atom_coordinate_frac=np.array([0.0, 0.0, 0.0]),
         atom_type=[atom_type],
         atom_properties=atom_properties,
         global_properties=global_properties,
     )
+    if conventional is True:
+        T_fcc_conventional = np.array(
+            [
+                [-1, 1, 1],
+                [1, -1, 1],
+                [1, 1, -1],
+            ],
+            dtype=int,
+        )
+        return xtal.make_superstructure(
+            T_fcc_conventional,
+            structure,
+        )
+    else:
+        return structure
 
 
 def HCP(

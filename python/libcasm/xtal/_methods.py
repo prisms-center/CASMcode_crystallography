@@ -3,27 +3,63 @@ from typing import Any, Union
 import libcasm.xtal._xtal as _xtal
 
 
-def make_canonical(
-    obj: Union[_xtal.Lattice, _xtal.Prim],
+def make_primitive(
+    obj: Union[_xtal.Prim, _xtal.Structure],
 ) -> Any:
-    """Make the canonical form of a Lattice or Prim
+    """Make the primitive cell of a Prim or atomic Structure
+
+    Notes
+    -----
+    Currently, for Structure this method only considers atom coordinates and types.
+    Molecular coordinates and types are not considered. Properties are not considered.
+    The default CASM tolerance is used for comparisons. To consider molecules
+    or properties, or to use a different tolerance, use a Prim.
 
     Parameters
     ----------
-    obj: Union[_xtal.Lattice, _xtal.Prim]
-        A Lattice or Prim, which determines whether
-        :func:`~libcasm.xtal.make_canonical_lattice` or
-        :func:`~libcasm.xtal.make_canonical_prim` is called.
+    obj: Union[ _xtal.Prim, _xtal.Structure]
+        A Prim or an atomic Structure, which determines whether
+        :func:`~libcasm.xtal.make_primitive_prim`, or
+        :func:`~libcasm.xtal.make_primitive_structure` is called.
 
     Returns
     -------
-    canonical_obj : Union[_xtal.Lattice, _xtal.Prim]
-        The canonical equivalent Lattice or Prim.
+    canonical_obj : Union[_xtal.Prim, _xtal.Structure]
+        The primitive equivalent Prim or atomic Structure.
+    """
+    if isinstance(obj, _xtal.Prim):
+        return _xtal.make_primitive_prim(obj)
+    elif isinstance(obj, _xtal.Structure):
+        return _xtal.make_primitive_structure(obj)
+    else:
+        raise TypeError(f"TypeError in make_primitive: received {type(obj).__name__}")
+
+
+def make_canonical(
+    obj: Union[_xtal.Lattice, _xtal.Prim, _xtal.Structure],
+) -> Any:
+    """Make an equivalent Lattice, Prim, or Structure with the canonical form
+    of the lattice
+
+    Parameters
+    ----------
+    obj: Union[_xtal.Lattice, _xtal.Prim, _xtal.Structure]
+        A Lattice, Prim, or Structure, which determines whether
+        :func:`~libcasm.xtal.make_canonical_lattice`, or
+        :func:`~libcasm.xtal.make_canonical_prim`,
+        :func:`~libcasm.xtal.make_canonical_structure` is called.
+
+    Returns
+    -------
+    canonical_obj : Union[_xtal.Lattice, _xtal.Prim, _xtal.Structure]
+        The equivalent Lattice, Prim, or Structure with canonical form of the lattice.
     """
     if isinstance(obj, _xtal.Prim):
         return _xtal.make_canonical_prim(obj)
     elif isinstance(obj, _xtal.Lattice):
         return _xtal.make_canonical_lattice(obj)
+    elif isinstance(obj, _xtal.Structure):
+        return _xtal.make_canonical_structure(obj)
     else:
         raise TypeError(f"TypeError in make_canonical: received {type(obj).__name__}")
 
