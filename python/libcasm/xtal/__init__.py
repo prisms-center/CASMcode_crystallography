@@ -10,6 +10,7 @@ from ._methods import (
     sort_structure_by_atom_coordinate_frac,
     sort_structure_by_atom_info,
     sort_structure_by_atom_type,
+    substitute_structure_species,
 )
 from ._xtal import (
     AtomComponent,

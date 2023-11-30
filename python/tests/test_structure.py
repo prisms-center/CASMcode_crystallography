@@ -77,7 +77,7 @@ def test_structure_to_dict(example_structure_1):
     assert len(data["global_properties"]) == 1
     assert "Hstrain" in data["global_properties"]
     expected = np.array(
-        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5], [0.0, 0.0, 1.0], [0.5, 0.5, 1.5]]
+        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.25], [0.0, 0.0, 0.5], [0.5, 0.5, 0.75]]
     )
     print(xtal.pretty_json(data["atom_coords"]))
     assert np.allclose(np.array(data["atom_coords"]), expected)
@@ -87,9 +87,9 @@ def test_structure_to_dict(example_structure_1):
     data = structure.to_dict(excluded_species=["B"])
     assert data["atom_type"] == ["A", "A"]
 
-    data = structure.to_dict(frac=True)
+    data = structure.to_dict(frac=False)
     expected = np.array(
-        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.25], [0.0, 0.0, 0.5], [0.5, 0.5, 0.75]]
+        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5], [0.0, 0.0, 1.0], [0.5, 0.5, 1.5]]
     )
     print(xtal.pretty_json(data["atom_coords"]))
     assert np.allclose(np.array(data["atom_coords"]), expected)
@@ -695,3 +695,21 @@ def test_structure_sort_structure_by_atom_coordinate_cart():
     ).transpose()
     # print(xtal.pretty_json(sorted_struc.to_dict()))
     assert np.allclose(sorted_struc.atom_coordinate_cart(), expected)
+
+
+def test_substitute_structure_species_1(example_structure_1):
+    assert example_structure_1.atom_type() == ["A", "A", "B", "B"]
+    s2 = xtal.substitute_structure_species(
+        example_structure_1,
+        {"A": "C"},
+    )
+    assert s2.atom_type() == ["C", "C", "B", "B"]
+
+
+def test_substitute_structure_species_2(example_structure_1):
+    assert example_structure_1.atom_type() == ["A", "A", "B", "B"]
+    s2 = xtal.substitute_structure_species(
+        example_structure_1,
+        {"A": "C", "B": "D"},
+    )
+    assert s2.atom_type() == ["C", "C", "D", "D"]

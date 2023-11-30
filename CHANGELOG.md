@@ -11,14 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed make_primitive to act on either Prim or Structure.
+- Changed default of `xtal.Structure.to_dict` to output in fractional coordinates
 - Added `excluded_species` and `frac` parameters to xtal.Structure.to_dict
 
 ### Added
 
 - Add to libcasm.xtal: make_primitive_prim (equivalent to current make_primitive), make_primtive_structure, and make_canonical_structure. 
 - Add options to the BCC and FCC structure factory functions in libcasm.xtal.structures to make the conventional cubic unit cells.
-- Added StructureAtomInfo namedtuple, and methods sort_structure_by_atom_info, sort_structure_by_atom_type, sort_structure_by_atom_coordinate_frac, and sort_structure_by_atom_coordinate_cart
-
+- Add to libcasm.xtal: StructureAtomInfo namedtuple, and methods sort_structure_by_atom_info, sort_structure_by_atom_type, sort_structure_by_atom_coordinate_frac, and sort_structure_by_atom_coordinate_cart
+- Add to libcasm.xtal: substitute_structure_species 
 
 ## [2.0a8] - 2023-11-15
 

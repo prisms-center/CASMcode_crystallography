@@ -177,14 +177,16 @@ class ApproximateFloatArray:
 
         Parameters
         ----------
-        arr: np.ndarray
+        arr: numpy.ndarray
             The array to be compared
 
-        abs_tol: float = libcasm.casmglobal.TOL
+        abs_tol: float = :data:`~libcasm.casmglobal.TOL`
             The absolute tolerance
         """
         if not isinstance(arr, np.ndarray):
-            raise Exception("Error in ApproximateFloatArray: arr must be a np.ndarray")
+            raise TypeError(
+                "Error in ApproximateFloatArray: arr must be a numpy.ndarray"
+            )
         self.arr = arr
         self.abs_tol = abs_tol
 
@@ -209,6 +211,25 @@ StructureAtomInfo = namedtuple(
     "StructureAtomInfo",
     ["atom_type", "atom_coordinate_frac", "atom_coordinate_cart", "atom_properties"],
 )
+""" A namedtuple, used to hold atom info when sorting atoms in a 
+:class:`~_xtal.Structure`.
+
+.. rubric:: Constructor
+
+Parameters
+----------
+atom_type: str
+    The atom type, from :func:`~_xtal.Structure.atom_type`.
+atom_coordinate_frac: numpy.ndarray[numpy.float64[3]]
+    The fractional coordinate of the atom, from 
+    :func:`~_xtal.Structure.atom_type.atom_coordinate_frac`.
+atom_coordinate_cart: numpy.ndarray[numpy.float64[3]]
+    The Cartesian coordinate of the atom, from 
+    :func:`~_xtal.Structure.atom_type.atom_coordinate_cart`.
+atom_properties: dict[str, numpy.ndarray[numpy.float64[m]]]
+    The continuous properties associated with the atoms, if present, from 
+    :func:`~_xtal.Structure.atom_type.atom_coordinate_frac`.
+"""
 
 
 def sort_structure_by_atom_info(
@@ -221,8 +242,7 @@ def sort_structure_by_atom_info(
     Parameters
     ----------
     structure: _xtal.Structure
-        The structure to be sorted. Must be an atomic structure only. Raises if
-        ``len(structure.mol_type()) != 0``.
+        The structure to be sorted. Must be an atomic structure only.
     key: Callable[[StructureAtomInfo], Any]
         The function used to return a value which is sorted. This is passed to the
         `key` parameter of `list.sort()` to sort a `list[StructureAtomInfo]`.
@@ -234,10 +254,15 @@ def sort_structure_by_atom_info(
     -------
     sorted_structure: _xtal.Structure
         An equivalent structure with atoms sorted as specified.
+
+    Raises
+    ------
+    ValueError
+        For non-atomic structure, if ``len(structure.mol_type()) != 0``.
     """
 
     if len(structure.mol_type()) != 0:
-        raise Exception(
+        raise ValueError(
             "Error: only atomic structures may be sorted using sort_by_atom_info"
         )
     atom_type = structure.atom_type()
@@ -286,8 +311,7 @@ def sort_structure_by_atom_type(
     Parameters
     ----------
     structure: _xtal.Structure
-        The structure to be sorted. Must be an atomic structure only. Raises if
-        ``len(structure.mol_type()) != 0``.
+        The structure to be sorted. Must be an atomic structure only.
     reverse: bool = False
         By default, sort in ascending order. If ``reverse==True``, then sort in
         descending order.
@@ -296,6 +320,11 @@ def sort_structure_by_atom_type(
     -------
     sorted_structure: _xtal.Structure
         An equivalent structure with atoms sorted by atom type.
+
+    Raises
+    ------
+    ValueError
+        For non-atomic structure, if ``len(structure.mol_type()) != 0``.
     """
     return sort_structure_by_atom_info(
         structure,
@@ -315,13 +344,12 @@ def sort_structure_by_atom_coordinate_frac(
     Parameters
     ----------
     structure: _xtal.Structure
-        The structure to be sorted. Must be an atomic structure only. Raises if
-        ``len(structure.mol_type()) != 0``.
+        The structure to be sorted. Must be an atomic structure only.
     order: str = "cba"
         Sort order of fractional coordinate components. Default "cba" sorts by
         fractional coordinate along the "c" (third) lattice vector first, "b" (second)
         lattice vector second, and "a" (first) lattice vector third.
-    abs_tol: float = libcasm.casmglobal.TOL
+    abs_tol: float = :data:`~libcasm.casmglobal.TOL`
         Floating point tolerance for coordinate comparisons.
     reverse: bool = False
         By default, sort in ascending order. If ``reverse==True``, then sort in
@@ -331,6 +359,11 @@ def sort_structure_by_atom_coordinate_frac(
     -------
     sorted_structure: _xtal.Structure
         An equivalent structure with atoms sorted by fractional coordinates.
+
+    Raises
+    ------
+    ValueError
+        For non-atomic structure, if ``len(structure.mol_type()) != 0``.
     """
 
     def compare_f(atom_info):
@@ -366,13 +399,12 @@ def sort_structure_by_atom_coordinate_cart(
     Parameters
     ----------
     structure: _xtal.Structure
-        The structure to be sorted. Must be an atomic structure only. Raises if
-        ``len(structure.mol_type()) != 0``.
+        The structure to be sorted. Must be an atomic structure only.
     order: str = "zyx"
         Sort order of Cartesian coordinate components. Default "zyx" sorts by
         "z" Cartesian coordinate first, "y" Cartesian coordinate second, and "x"
         Cartesian coordinate third.
-    abs_tol: float = libcasm.casmglobal.TOL
+    abs_tol: float = :data:`~libcasm.casmglobal.TOL`
         Floating point tolerance for coordinate comparisons.
     reverse: bool = False
         By default, sort in ascending order. If ``reverse==True``, then sort in
@@ -382,6 +414,11 @@ def sort_structure_by_atom_coordinate_cart(
     -------
     sorted_structure: _xtal.Structure
         An equivalent structure with atoms sorted by Cartesian coordinates.
+
+    Raises
+    ------
+    ValueError
+        For non-atomic structure, if ``len(structure.mol_type()) != 0``.
     """
 
     def compare_f(atom_info):
@@ -403,4 +440,37 @@ def sort_structure_by_atom_coordinate_cart(
         structure,
         key=compare_f,
         reverse=reverse,
+    )
+
+
+def substitute_structure_species(
+    structure: _xtal.Structure,
+    substitutions: dict[str, str],
+) -> _xtal.Structure:
+    """Create a copy of a structure with renamed atomic and molecular species
+
+    Parameters
+    ----------
+    structure: _xtal.Structure
+        The initial structure
+    substitutions: dict[str, str]
+        The substitutions to make, using the convention key->value. For example, using
+        ``substitutions = { "B": "C"}`` results in all `atom_type` and `mol_type`
+        equal to "B" in the input structure being changed to "C" in the output
+        structure.
+
+    Returns
+    -------
+    structure_with_substitutions: _xtal.Structure
+        A copy of `structure`, with substitutions of `atom_type` and `mol_type`.
+    """
+    return _xtal.Structure(
+        lattice=structure.lattice(),
+        atom_coordinate_frac=structure.atom_coordinate_frac(),
+        atom_type=[substitutions.get(x, x) for x in structure.atom_type()],
+        atom_properties=structure.atom_properties(),
+        mol_coordinate_frac=structure.mol_coordinate_frac(),
+        mol_type=[substitutions.get(x, x) for x in structure.mol_type()],
+        mol_properties=structure.mol_properties(),
+        global_properties=structure.global_properties(),
     )

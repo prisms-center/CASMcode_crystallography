@@ -1831,9 +1831,9 @@ PYBIND11_MODULE(_xtal, m) {
             Parameters
             ----------
             frac : boolean, default=True
-                If True, write basis site positions in fractional coordinates
-                relative to the lattice vectors. If False, write basis site positions
-                in Cartesian coordinates.
+                By default, basis site positions are written in fractional
+                coordinates relative to the lattice vectors. If False, write basis site
+                positions in Cartesian coordinates.
             include_va : boolean, default=False
                 If a basis site only allows vacancies, it is not printed by default.
                 If this is True, basis sites with only vacancies will be included.
@@ -1964,7 +1964,7 @@ PYBIND11_MODULE(_xtal, m) {
             Parameters
             ----------
             frac : boolean, default=True
-                If True, write basis site positions in fractional coordinates
+                By default, basis site positions are written in fractional coordinates
                 relative to the lattice vectors. If False, write basis site positions
                 in Cartesian coordinates.
             include_va : boolean, default=False
@@ -2554,7 +2554,7 @@ PYBIND11_MODULE(_xtal, m) {
           },
           py::arg("excluded_species") =
               std::vector<std::string>({"Va", "VA", "va"}),
-          py::arg("frac") = false, R"pbdoc(
+          py::arg("frac") = true, R"pbdoc(
           Represent the Structure as a Python dict.
 
           Parameters
@@ -2562,10 +2562,9 @@ PYBIND11_MODULE(_xtal, m) {
           excluded_species : list[str] = ["Va", "VA", "va"]
               The names of any molecular or atomic species that should not be included
               in the output.
-          frac : boolean, default=False
-                If True, write coordinates using fractional coordinates
-                relative to the lattice vectors. If False, write coordinates using
-                Cartesian coordinates.
+          frac : boolean, default=True
+              By default, coordinates are written in fractional coordinates relative to
+              the lattice vectors. If False, write coordinates in Cartesian coordinates.
 
           Returns
           -------
