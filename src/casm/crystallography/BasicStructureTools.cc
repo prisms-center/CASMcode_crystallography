@@ -308,9 +308,11 @@ BasicStructure make_primitive(const BasicStructure &non_primitive_struc,
         primitive_struc.basis().size()) {
       site_for_prim.within();
       primitive_struc.set_basis().emplace_back(std::move(site_for_prim));
-      _unique_names.push_back(non_primitive_struc.unique_names()[i_site]);
-      i_site++;
+      if (!non_primitive_struc.unique_names().empty()) {
+        _unique_names.push_back(non_primitive_struc.unique_names()[i_site]);
+      }
     }
+    i_site++;
   }
   primitive_struc.set_unique_names(_unique_names);
 
