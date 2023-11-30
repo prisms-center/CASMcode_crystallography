@@ -2543,14 +2543,35 @@ PYBIND11_MODULE(_xtal, m) {
           py::arg("data"))
       .def(
           "to_dict",
-          [](xtal::SimpleStructure const &simple) {
+          [](xtal::SimpleStructure const &simple,
+             std::vector<std::string> const &excluded_species, bool frac) {
             jsonParser json;
-            to_json(simple, json);
+            COORD_TYPE mode = frac ? FRAC : CART;
+            std::set<std::string> _excluded_species(excluded_species.begin(),
+                                                    excluded_species.end());
+            to_json(simple, json, _excluded_species, mode);
             return static_cast<nlohmann::json>(json);
           },
-          "Represent the Structure as a Python dict. The `Structure reference "
-          "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
-          "crystallography/SimpleStructure/>`_ documents the format.")
+          py::arg("excluded_species") =
+              std::vector<std::string>({"Va", "VA", "va"}),
+          py::arg("frac") = false, R"pbdoc(
+          Represent the Structure as a Python dict.
+
+          Parameters
+          ----------
+          excluded_species : list[str] = ["Va", "VA", "va"]
+              The names of any molecular or atomic species that should not be included
+              in the output.
+          frac : boolean, default=False
+                If True, write coordinates using fractional coordinates
+                relative to the lattice vectors. If False, write coordinates using
+                Cartesian coordinates.
+
+          Returns
+          -------
+          data : json
+              The `Structure reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/SimpleStructure/>`_ documents the format.
+          )pbdoc")
       .def_static("from_json", &simplestructure_from_json, R"pbdoc(
           Construct a Structure from a JSON-formatted string.
 
