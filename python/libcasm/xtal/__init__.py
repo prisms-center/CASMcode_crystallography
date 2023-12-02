@@ -1,9 +1,16 @@
 """CASM Crystallography"""
 from ._methods import (
+    StructureAtomInfo,
     make_canonical,
     make_crystal_point_group,
     make_factor_group,
+    make_primitive,
     make_within,
+    sort_structure_by_atom_coordinate_cart,
+    sort_structure_by_atom_coordinate_frac,
+    sort_structure_by_atom_info,
+    sort_structure_by_atom_type,
+    substitute_structure_species,
 )
 from ._xtal import (
     AtomComponent,
@@ -29,12 +36,14 @@ from ._xtal import (
     make_atom,
     make_canonical_lattice,
     make_canonical_prim,
+    make_canonical_structure,
     make_equivalent_property_values,
     make_point_group,
     make_prim_crystal_point_group,
     make_prim_factor_group,
     make_prim_within,
-    make_primitive,
+    make_primitive_prim,
+    make_primitive_structure,
     make_structure_crystal_point_group,
     make_structure_factor_group,
     make_structure_within,

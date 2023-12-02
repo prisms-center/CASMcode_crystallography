@@ -69,14 +69,30 @@ def test_structure_to_dict(example_structure_1):
 
     assert "lattice_vectors" in data
     assert "coordinate_mode" in data
+    assert len(data["atom_type"]) == 4
     assert "atom_coords" in data
     assert "atom_properties" in data
     assert len(data["atom_properties"]) == 1
     assert "disp" in data["atom_properties"]
     assert len(data["global_properties"]) == 1
     assert "Hstrain" in data["global_properties"]
+    expected = np.array(
+        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.25], [0.0, 0.0, 0.5], [0.5, 0.5, 0.75]]
+    )
+    print(xtal.pretty_json(data["atom_coords"]))
+    assert np.allclose(np.array(data["atom_coords"]), expected)
 
     assert isinstance(xtal.pretty_json(data), str)
+
+    data = structure.to_dict(excluded_species=["B"])
+    assert data["atom_type"] == ["A", "A"]
+
+    data = structure.to_dict(frac=False)
+    expected = np.array(
+        [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5], [0.0, 0.0, 1.0], [0.5, 0.5, 1.5]]
+    )
+    print(xtal.pretty_json(data["atom_coords"]))
+    assert np.allclose(np.array(data["atom_coords"]), expected)
 
 
 def test_structure_from_dict():
@@ -442,6 +458,57 @@ def test_make_superstructure_2():
     )
 
 
+def test_make_primitive_structure_1():
+    struc = xtal_structures.BCC(r=1)
+    transformation_matrix = np.array([[0, 1, 1], [2, 0, 1], [1, 1, 0]], dtype=int).T
+    assert transformation_matrix.flags.f_contiguous
+    assert transformation_matrix.dtype is np.dtype(np.int64)
+    superstruc = xtal.make_superstructure(transformation_matrix, struc)
+    assert np.allclose(
+        superstruc.lattice().column_vector_matrix(),
+        struc.lattice().column_vector_matrix() @ transformation_matrix,
+    )
+
+    primitive_struc = xtal.make_primitive_structure(superstruc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_primitive_structure_2():
+    struc = xtal_structures.BCC(r=1)
+    conventional_struc = xtal_structures.BCC(r=1, conventional=True)
+    primitive_struc = xtal.make_primitive_structure(conventional_struc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_primitive_structure_3():
+    struc = xtal_structures.FCC(r=1)
+    conventional_struc = xtal_structures.FCC(r=1, conventional=True)
+    primitive_struc = xtal.make_primitive_structure(conventional_struc)
+    assert primitive_struc.is_equivalent_to(struc)
+
+
+def test_make_canonical_structure_1():
+    struc = xtal.Structure(
+        lattice=xtal.Lattice(
+            np.array(
+                [
+                    [0.0, 0.0, 1.0],  # z
+                    [1.0, 0.0, 0.0],  # x
+                    [0.0, 1.0, 0.0],  # y
+                ]
+            ).transpose()
+        ),
+        atom_coordinate_frac=np.array(
+            [
+                [0.0, 0.0, 0.0],
+            ]
+        ).transpose(),
+        atom_type=["A"],
+    )
+    canonical_struc = xtal.make_canonical_structure(struc)
+    assert np.allclose(canonical_struc.lattice().column_vector_matrix(), np.eye(3))
+
+
 def test_make_superstructure_and_rotate():
     struc = xtal_structures.BCC(r=1)
     assert len(struc.atom_type()) == 1
@@ -480,3 +547,169 @@ def test_make_superstructure_and_rotate():
     S = rotated_superstruc.lattice().column_vector_matrix()
     assert np.allclose(S, rotation_matrix @ L @ transformation_matrix)
     assert len(rotated_superstruc.atom_type()) == 2
+
+
+def test_structure_sort_structure_by_atom_type():
+    struc = xtal_structures.BCC(a=1.0, conventional=True)
+    superstruc = xtal.make_superstructure(np.eye(3, dtype=int) * 3, struc)
+    unsorted_atom_type = ["A", "B"] * 27
+    unsorted_struc = xtal.Structure(
+        lattice=superstruc.lattice(),
+        atom_type=unsorted_atom_type,
+        atom_coordinate_frac=superstruc.atom_coordinate_frac(),
+    )
+    assert unsorted_struc.atom_type() == unsorted_atom_type
+    # print(xtal.pretty_json(unsorted_struc.to_dict()))
+
+    sorted_struc = xtal.sort_structure_by_atom_type(unsorted_struc)
+    # print(xtal.pretty_json(sorted_struc.to_dict()))
+    assert sorted_struc.atom_type() == ["A"] * 27 + ["B"] * 27
+
+
+def test_structure_sort_structure_by_atom_coordinate_frac():
+    struc = xtal_structures.BCC(r=1.0)
+    unsorted_struc = xtal.make_superstructure(np.eye(3, dtype=int) * 2, struc)
+
+    sorted_struc = xtal.sort_structure_by_atom_coordinate_frac(
+        unsorted_struc,
+        order="cba",
+    )
+    expected = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.5, 0.0, 0.0],
+            [0.0, 0.5, 0.0],
+            [0.5, 0.5, 0.0],
+            [0.0, 0.0, 0.5],
+            [0.5, 0.0, 0.5],
+            [0.0, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+        ]
+    ).transpose()
+    # print(xtal.pretty_json(unsorted_struc.to_dict(frac=True)))
+    assert np.allclose(sorted_struc.atom_coordinate_frac(), expected)
+
+    sorted_struc = xtal.sort_structure_by_atom_coordinate_frac(
+        unsorted_struc,
+        order="abc",
+    )
+    expected = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.5],
+            [0.0, 0.5, 0.0],
+            [0.0, 0.5, 0.5],
+            [0.5, 0.0, 0.0],
+            [0.5, 0.0, 0.5],
+            [0.5, 0.5, 0.0],
+            [0.5, 0.5, 0.5],
+        ]
+    ).transpose()
+    # print(xtal.pretty_json(sorted_struc.to_dict(frac=True)))
+    assert np.allclose(sorted_struc.atom_coordinate_frac(), expected)
+
+
+def test_structure_sort_structure_by_atom_coordinate_cart():
+    struc = xtal_structures.BCC(a=1.0, conventional=True)
+    unsorted_struc = xtal.make_superstructure(np.eye(3, dtype=int) * 2, struc)
+    # print(xtal.pretty_json(unsorted_struc.to_dict()))
+
+    sorted_struc = xtal.sort_structure_by_atom_coordinate_cart(
+        unsorted_struc,
+        order="zyx",
+    )
+    expected = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.5, 0.5, 0.5],
+            [1.5, 0.5, 0.5],
+            [0.5, 1.5, 0.5],
+            [1.5, 1.5, 0.5],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [0.5, 0.5, 1.5],
+            [1.5, 0.5, 1.5],
+            [0.5, 1.5, 1.5],
+            [1.5, 1.5, 1.5],
+        ]
+    ).transpose()
+    # print(xtal.pretty_json(sorted_struc.to_dict()))
+    assert np.allclose(sorted_struc.atom_coordinate_cart(), expected)
+
+    sorted_struc = xtal.sort_structure_by_atom_coordinate_cart(
+        unsorted_struc,
+        order="zyx",
+        reverse=True,
+    )
+    expected = np.array(
+        [
+            [1.5, 1.5, 1.5],
+            [0.5, 1.5, 1.5],
+            [1.5, 0.5, 1.5],
+            [0.5, 0.5, 1.5],
+            [1.0, 1.0, 1.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [1.5, 1.5, 0.5],
+            [0.5, 1.5, 0.5],
+            [1.5, 0.5, 0.5],
+            [0.5, 0.5, 0.5],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+        ]
+    ).transpose()
+    # print(xtal.pretty_json(sorted_struc.to_dict()))
+    assert np.allclose(sorted_struc.atom_coordinate_cart(), expected)
+
+    sorted_struc = xtal.sort_structure_by_atom_coordinate_cart(
+        unsorted_struc,
+        order="xyz",
+    )
+    expected = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, 1.5],
+            [0.5, 1.5, 0.5],
+            [0.5, 1.5, 1.5],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 1.0, 1.0],
+            [1.5, 0.5, 0.5],
+            [1.5, 0.5, 1.5],
+            [1.5, 1.5, 0.5],
+            [1.5, 1.5, 1.5],
+        ]
+    ).transpose()
+    # print(xtal.pretty_json(sorted_struc.to_dict()))
+    assert np.allclose(sorted_struc.atom_coordinate_cart(), expected)
+
+
+def test_substitute_structure_species_1(example_structure_1):
+    assert example_structure_1.atom_type() == ["A", "A", "B", "B"]
+    s2 = xtal.substitute_structure_species(
+        example_structure_1,
+        {"A": "C"},
+    )
+    assert s2.atom_type() == ["C", "C", "B", "B"]
+
+
+def test_substitute_structure_species_2(example_structure_1):
+    assert example_structure_1.atom_type() == ["A", "A", "B", "B"]
+    s2 = xtal.substitute_structure_species(
+        example_structure_1,
+        {"A": "C", "B": "D"},
+    )
+    assert s2.atom_type() == ["C", "C", "D", "D"]

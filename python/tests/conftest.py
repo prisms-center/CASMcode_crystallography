@@ -407,7 +407,6 @@ def example_structure_1():
         ]
     ).transpose()
     atom_properties = {"disp": atom_disp}
-    print(atom_properties)
 
     # global properties
     np.array(
@@ -421,7 +420,6 @@ def example_structure_1():
     # Hstrain_vector = converter.from_F(F)
     Hstrain_vector = np.array([0.009950330853168087, 0.0, 0.0, 0.0, 0.0, 0.0])
     global_properties = {"Hstrain": Hstrain_vector}
-    print(global_properties)
 
     return xtal.Structure(
         lattice=lattice,
