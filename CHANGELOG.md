@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0a9] - X
 
+### Fixed
+
+- Fix CASM::xtal::make_primitive, which was not copying unique_names. This also fixes the output of libcasm.xtal.make_primitive which was losing the occ_dof list as a result.
+
 ### Changed
 
 - Changed make_primitive to act on either Prim or Structure.
