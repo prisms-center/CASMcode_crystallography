@@ -56,6 +56,7 @@ def check_lial(prim):
     )
     assert np.allclose(frac_coords, prim.coordinate_frac(), 1e-4, 1e-4) is True
     assert prim.occ_dof() == [["Li"], ["Li"], ["Al"], ["Al"]]
+    assert prim.labels() == [-1] * 4
 
 
 def check_lial_with_occ_dofs(prim_with_occ_dofs, occ_dofs):
@@ -71,6 +72,7 @@ def check_lial_with_occ_dofs(prim_with_occ_dofs, occ_dofs):
         is True
     )
     assert prim_with_occ_dofs.occ_dof() == occ_dofs
+    assert prim_with_occ_dofs.labels() == [-1] * 4
 
 
 def test_prim_from_poscar(shared_datadir):
@@ -349,3 +351,51 @@ def test_from_json():
     prim_global_dof = prim.global_dof()
     assert len(prim_global_dof) == 1
     assert prim_global_dof[0].dofname() == "Hstrain"
+
+
+def test_prim_with_labels():
+    lattice = xtal.Lattice(np.eye(3))
+    coordinate_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.5, 0.5],
+            [0.5, 0.0, 0.5],
+            [0.5, 0.5, 0.0],
+        ]
+    ).transpose()
+    occ_dof = [
+        ["A", "B"],
+        ["B", "A"],
+        ["A", "B"],
+        ["A", "B"],
+    ]
+
+    ## No basis site labels
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        occ_dof=occ_dof,
+    )
+    factor_group = xtal.make_factor_group(prim)
+    assert len(factor_group) == 48 * 4
+    assert prim.labels() == [-1] * 4
+    data = prim.to_dict()
+    assert len(data["basis"]) == 4
+    for site in data["basis"]:
+        assert "label" not in site
+
+    ## Add basis site labels
+    prim = xtal.Prim(
+        lattice=lattice,
+        coordinate_frac=coordinate_frac,
+        occ_dof=occ_dof,
+        labels=[0, 1, 1, 1],
+    )
+    factor_group = xtal.make_factor_group(prim)
+    assert len(factor_group) == 48
+    assert prim.labels() == [0, 1, 1, 1]
+
+    data = prim.to_dict()
+    assert len(data["basis"]) == 4
+    for site in data["basis"]:
+        assert "label" in site

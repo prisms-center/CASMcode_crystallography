@@ -296,7 +296,8 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     std::vector<DoFSetBasis> const &global_dof = std::vector<DoFSetBasis>{},
     std::map<std::string, xtal::Molecule> const &molecules =
         std::map<std::string, xtal::Molecule>{},
-    std::string title = std::string("prim")) {
+    std::string title = std::string("prim"),
+    std::optional<std::vector<Index>> labels = std::nullopt) {
   // validation
   if (coordinate_frac.rows() != 3) {
     throw std::runtime_error("Error in make_prim: coordinate_frac.rows() != 3");
@@ -310,6 +311,21 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     throw std::runtime_error(
         "Error in make_prim: local_dof.size() && "
         "coordinate_frac.cols() != occ_dof.size()");
+  }
+  if (labels.has_value() && labels.value().size() != coordinate_frac.cols()) {
+    throw std::runtime_error(
+        "Error in make_prim: labels.has_value() && "
+        "labels.value().size() != coordinate_frac.cols()");
+  }
+  if (labels.has_value()) {
+    for (Index i = 0; i < labels.value().size(); ++i) {
+      if (labels.value()[i] < 0) {
+        std::stringstream msg;
+        msg << "Error in make_prim: labels.value()[" << i
+            << "] < 0 (=" << labels.value()[i] << ")";
+        throw std::runtime_error(msg.str());
+      }
+    }
   }
 
   // construct prim
@@ -343,6 +359,10 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     }
 
     xtal::Site site{coord, site_occ, site_dofsets};
+
+    if (labels.has_value()) {
+      site.set_label(labels.value()[b]);
+    }
     prim.push_back(site, FRAC);
   }
   prim.set_unique_names(occ_dof);
@@ -564,6 +584,15 @@ std::map<std::string, xtal::Molecule> get_prim_molecules(
     ++b;
   }
   return molecules;
+}
+
+std::vector<Index> get_prim_labels(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  std::vector<Index> labels;
+  for (auto const &site : prim->basis()) {
+    labels.push_back(site.label());
+  }
+  return labels;
 }
 
 std::shared_ptr<xtal::BasicStructure const> make_within(
@@ -1101,9 +1130,8 @@ PYBIND11_MODULE(_xtal, m) {
 
       .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
       )pbdoc")
-      .def(py::init<Eigen::Matrix3d const &, double, bool>(),
-           "Construct a Lattice", py::arg("column_vector_matrix"),
-           py::arg("tol") = TOL, py::arg("force") = false, R"pbdoc(
+      .def(py::init<Eigen::Matrix3d const &, double>(), "Construct a Lattice",
+           py::arg("column_vector_matrix"), py::arg("tol") = TOL, R"pbdoc(
 
       .. rubric:: Constructor
 
@@ -1120,6 +1148,34 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the tolerance used for crystallographic comparisons.")
       .def("set_tol", &xtal::Lattice::set_tol, py::arg("tol"),
            "Set the tolerance used for crystallographic comparisons.")
+      .def("reciprocal", &xtal::Lattice::reciprocal,
+           "Return the reciprocal lattice")
+      .def(
+          "lengths_and_angles",
+          [](xtal::Lattice const &self) -> std::vector<double> {
+            std::vector<double> v;
+            v.push_back(self.length(0));
+            v.push_back(self.length(1));
+            v.push_back(self.length(2));
+            v.push_back(self.angle(0));
+            v.push_back(self.angle(1));
+            v.push_back(self.angle(2));
+            return v;
+          },
+          R"pbdoc(
+           Return the lattice vector lengths and angles,
+           :math:`[a, b, c, \alpha, \beta, \gamma]`.
+           )pbdoc")
+      .def("volume", &xtal::Lattice::volume, R"pbdoc(
+           Return the signed volume of the unit cell.
+           )pbdoc")
+      .def_static("from_lengths_and_angles",
+                  &xtal::Lattice::from_lengths_and_angles,
+                  py::arg("lengths_and_angles"), py::arg("tol") = TOL,
+                  R"pbdoc(
+            Construct a Lattice from the lattice vector lengths and angles,
+            :math:`[a, b, c, \alpha, \beta, \gamma]`
+            )pbdoc")
       .def(py::self < py::self,
            "Sorts lattices by how canonical the lattice vectors are")
       .def(py::self <= py::self,
@@ -1745,6 +1801,7 @@ PYBIND11_MODULE(_xtal, m) {
            py::arg("global_dof") = std::vector<DoFSetBasis>{},
            py::arg("occupants") = std::map<std::string, xtal::Molecule>{},
            py::arg("title") = std::string("prim"),
+           py::arg("labels") = std::nullopt,
            R"pbdoc(
 
       .. _prim-init:
@@ -1772,18 +1829,20 @@ PYBIND11_MODULE(_xtal, m) {
       global_dof : list[:class:`DoFSetBasis`], default=[]
           Global continuous DoF allowed for the entire crystal.
       occupants : dict[str,:class:`Occupant`], default=[]
-          :class:`Occupant` allowed in the crystal. The keys are labels
-          ('orientation names') used in the occ_dof parameter. This may
-          include isotropic atoms, vacancies, atoms with fixed anisotropic
-          properties, and molecular occupants. A seperate key and value is
-          required for all species with distinct anisotropic properties
-          (i.e. "H2_xy", "H2_xz", and "H2_yz" for distinct orientations,
-          or "A.up", and "A.down" for distinct collinear magnetic spins,
-          etc.).
+          :class:`Occupant` allowed in the crystal. The keys are names
+          used in the occ_dof parameter. This may include isotropic atoms,
+          vacancies, atoms with fixed anisotropic properties, and molecular
+          occupants. A seperate key and value is required for all species
+          with distinct anisotropic properties (i.e. "H2_xy", "H2_xz", and
+          "H2_yz" for distinct orientations, or "A.up", and "A.down" for
+          distinct collinear magnetic spins, etc.).
       title : str, default="prim"
           A title for the prim. When the prim is used to construct a
           cluster expansion, this must consist of alphanumeric characters
           and underscores only. The first character may not be a number.
+      labels : Optional[list[int]] = None
+          If provided, an integer for each basis site, greater than or equal to zero,
+          that distinguishes otherwise identical sites.
       )pbdoc")
       .def("lattice", &get_prim_lattice, "Returns the lattice, as a copy.")
       .def("coordinate_frac", &get_prim_coordinate_frac,
@@ -1793,8 +1852,7 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the basis site positions, as columns of a 2d array, in "
            "Cartesian coordinates")
       .def("occ_dof", &get_prim_occ_dof,
-           "Returns the labels (orientation names) of occupants allowed on "
-           "each basis site")
+           "Returns the names of occupants allowed on each basis site")
       .def("local_dof", &get_prim_local_dof,
            "Returns the continuous DoF allowed on each basis site")
       .def(
@@ -1802,6 +1860,9 @@ PYBIND11_MODULE(_xtal, m) {
           "Returns the continuous DoF allowed for the entire crystal structure")
       .def("occupants", &get_prim_molecules,
            "Returns the :class:`Occupant` allowed in the crystal.")
+      .def("labels", &get_prim_labels,
+           "Returns the integer label associated with each basis site. If no "
+           "labels were provided, it will be a list of -1.")
       .def_static(
           "from_dict",
           [](const nlohmann::json &data, double xtal_tol) {
