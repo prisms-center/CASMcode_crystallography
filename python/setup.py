@@ -70,7 +70,7 @@ ext_modules = [
 setup(
     name="libcasm-xtal",
     version=__version__,
-    packages=["libcasm", "libcasm.xtal"],
+    packages=["libcasm", "libcasm.xtal", "libcasm.xtal.convert"],
     install_requires=["pybind11", "libcasm-global>=2.0.2"],
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
