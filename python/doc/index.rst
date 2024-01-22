@@ -24,7 +24,7 @@ The libcasm-xtal package is the CASM crystallography module. This includes:
 About CASM
 ==========
 
-The libcasm-global package is part of the CASM_ open source software package, which is designed to perform first-principles statistical mechanical studies of multi-component crystalline solids.
+The libcasm-xtal package is part of the CASM_ open source software package, which is designed to perform first-principles statistical mechanical studies of multi-component crystalline solids.
 
 CASM is developed by the Van der Ven group, originally at the University of Michigan and currently at the University of California Santa Barbara.
 
