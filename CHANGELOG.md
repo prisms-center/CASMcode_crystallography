@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add libcasm.xtal.convert.pymatgen
 
 
+## Unreleased
+
+## Added
+
+- Added `unit_cell`, `diagonal_only`, and `fixed_shape` parameters to libcasm.xtal.enumerate_superlattices.
+
+
 ## [2.0a8] - 2023-11-15
 
 ### Changed

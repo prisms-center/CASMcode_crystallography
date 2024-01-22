@@ -108,8 +108,15 @@ std::vector<xtal::SymOp> make_lattice_point_group(
 std::vector<xtal::Lattice> enumerate_superlattices(
     xtal::Lattice const &unit_lattice,
     std::vector<xtal::SymOp> const &point_group, Index max_volume,
-    Index min_volume = 1, std::string dirs = std::string("abc")) {
-  xtal::ScelEnumProps enum_props{min_volume, max_volume + 1, dirs};
+    Index min_volume = 1, std::string dirs = std::string("abc"),
+    std::optional<Eigen::Matrix3i> unit_cell = std::nullopt,
+    bool diagonal_only = false, bool fixed_shape = false) {
+  if (!unit_cell.has_value()) {
+    unit_cell = Eigen::Matrix3i::Identity();
+  }
+  xtal::ScelEnumProps enum_props{min_volume,    max_volume + 1,
+                                 dirs,          unit_cell.value(),
+                                 diagonal_only, fixed_shape};
   xtal::SuperlatticeEnumerator enumerator{unit_lattice, point_group,
                                           enum_props};
   std::vector<xtal::Lattice> superlattices;
@@ -1474,24 +1481,12 @@ PYBIND11_MODULE(_xtal, m) {
          If `superlattice` is not a superlattice of `unit_lattice`.
      )pbdoc");
 
-  m.def(
-      "enumerate_superlattices",
-      [](xtal::Lattice unit_lattice, std::vector<xtal::SymOp> point_group,
-         Index max_volume, Index min_volume,
-         std::string dirs) -> std::vector<xtal::Lattice> {
-        xtal::ScelEnumProps enum_props{min_volume, max_volume + 1, dirs};
-        xtal::SuperlatticeEnumerator enumerator{unit_lattice, point_group,
-                                                enum_props};
-        std::vector<xtal::Lattice> superlattices;
-        for (auto const &superlat : enumerator) {
-          superlattices.push_back(xtal::canonical::equivalent(
-              superlat, point_group, unit_lattice.tol()));
-        }
-        return superlattices;
-      },
-      py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
-      py::arg("min_volume") = Index(1), py::arg("dirs") = std::string("abc"),
-      R"pbdoc(
+  m.def("enumerate_superlattices", &enumerate_superlattices,
+        py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
+        py::arg("min_volume") = Index(1), py::arg("dirs") = std::string("abc"),
+        py::arg("unit_cell") = std::nullopt, py::arg("diagonal_only") = false,
+        py::arg("fixed_shape") = false,
+        R"pbdoc(
       Enumerate symmetrically distinct superlattices
 
       Superlattices satify:
@@ -1505,14 +1500,14 @@ PYBIND11_MODULE(_xtal, m) {
       transformation matrix.
 
       Superlattices `S1` and `S2` are symmetrically equivalent if there exists `p` and
-      `U` such that:
+      `A` such that:
 
       .. code-block:: Python
 
-          S2 = p.matrix() @ S1 @ U,
+          S2 = p.matrix() @ S1 @ A,
 
-      where `p` is an element in the point group, and `U` is a unimodular matrix
-      (integer matrix, with abs(det(U))==1).
+      where `p` is an element in the point group, and `A` is a unimodular matrix
+      (integer matrix, with abs(det(A))==1).
 
       Parameters
       ----------
@@ -1524,15 +1519,26 @@ PYBIND11_MODULE(_xtal, m) {
           :func:`make_crystal_point_group()`, or the lattice point group,
           :func:`make_point_group()`.
       max_volume : int
-          The maximum volume superlattice to enumerate, as a multiple of the volume of
-          `unit_lattice`.
+          The maximum volume superlattice to enumerate. The volume is measured
+          relative the unit cell being used to generate supercells.
       min_volume : int, default=1
-          The minimum volume superlattice to enumerate, as a multiple of the volume of
-          `unit_lattice`.
+          The minimum volume superlattice to enumerate. The volume is measured
+          relative the unit cell being used to generate supercells.
       dirs : str, default="abc"
           A string indicating which lattice vectors to enumerate over. Some combination
           of 'a', 'b', and 'c', where 'a' indicates the first lattice vector of the
           unit cell, 'b' the second, and 'c' the third.
+      unit_cell: Optional[np.ndarray] = None,
+          An integer shape=(3,3) transformation matrix `U` allows
+          specifying an alternative unit cell that can be used to generate
+          superlattices of the form `S = (L @ U) @ T`. If None, `U` is set to the
+          identity matrix.
+      diagonal_only: bool = False
+          If true, restrict :math:`T` to diagonal matrices.
+      fixed_shape: bool = False
+          If true, restrict `T` to diagonal matrices with diagonal coefficients
+          `[m, 1, 1]` (1d), `[m, m, 1]` (2d), or `[m, m, m]` (3d),
+          where the dimension is determined from ``len(dirs)``.
 
       Returns
       -------
