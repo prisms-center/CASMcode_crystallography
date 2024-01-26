@@ -190,7 +190,7 @@ The ``==`` and ``!=`` operators can be used to check if two lattices have identi
 Lattice equivalence
 -------------------
 
-A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~libcasm.xtal.is_equivalent_to` method checks for the equivalence of lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of another choice of lattice vectors according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
+A lattice can be represented using any choice of lattice vectors that results in the same lattice points. The :func:`~libcasm.xtal.Lattice.is_equivalent_to` method checks for the equivalence of lattices that do not have identical lattice vectors by determining if one choice of lattice vectors can be formed by linear combination of another choice of lattice vectors according to :math:`L_1 = L_2 U`, where :math:`L_1` and :math:`L_2` are the lattice vectors as columns of matrices, and :math:`U` is an integer matrix with :math:`\det(U) = \pm 1`:
 
 .. code-block:: Python
 
