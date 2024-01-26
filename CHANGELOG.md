@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add to libcasm.xtal: make_primitive_prim (equivalent to current make_primitive), make_primtive_structure, and make_canonical_structure. 
+- Add to libcasm.xtal: make_primitive_prim (equivalent to current make_primitive), make_primitive_structure, and make_canonical_structure. 
 - Add options to the BCC and FCC structure factory functions in libcasm.xtal.structures to make the conventional cubic unit cells.
 - Add to libcasm.xtal: StructureAtomInfo namedtuple, and methods sort_structure_by_atom_info, sort_structure_by_atom_type, sort_structure_by_atom_coordinate_frac, and sort_structure_by_atom_coordinate_cart
 - Add to libcasm.xtal: substitute_structure_species 
