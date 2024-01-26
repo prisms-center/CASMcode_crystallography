@@ -27,8 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add to libcasm.xtal: substitute_structure_species 
 - Add to libcasm.xtal.Prim: method labels, constructor parameter `labels`
 - Add to libcasm.xtal.Lattice: methods reciprocal, volume, lengths_and_angles, from_lengths_and_angles
-- Add libcasm.xtal.convert package
-- Add libcasm.xtal.convert.pymatgen
 
 
 ## Unreleased
