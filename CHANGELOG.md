@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [2.0a9] - X
+## [2.0a9] - Unreleased
 
 ### Fixed
 
@@ -27,12 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add to libcasm.xtal: substitute_structure_species 
 - Add to libcasm.xtal.Prim: method labels, constructor parameter `labels`
 - Add to libcasm.xtal.Lattice: methods reciprocal, volume, lengths_and_angles, from_lengths_and_angles
-
-
-## Unreleased
-
-## Added
-
 - Added `unit_cell`, `diagonal_only`, and `fixed_shape` parameters to libcasm.xtal.enumerate_superlattices.
 
 
