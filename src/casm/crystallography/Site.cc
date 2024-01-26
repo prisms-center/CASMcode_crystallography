@@ -483,7 +483,10 @@ xtal::Site copy_apply(const xtal::SymOp &op, xtal::Site site) {
                             sym::copy_apply(op, name_dof_pr.second));
   }
 
-  return xtal::Site(transformed_coord, transformed_occupants, transformed_dof);
+  xtal::Site new_site(transformed_coord, transformed_occupants,
+                      transformed_dof);
+  new_site.set_label(site.label());
+  return new_site;
 }
 }  // namespace sym
 }  // namespace CASM

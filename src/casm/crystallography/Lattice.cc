@@ -11,15 +11,9 @@ namespace xtal {
 
 Lattice::Lattice(Eigen::Ref<const Eigen::Vector3d> const &vec1,
                  Eigen::Ref<const Eigen::Vector3d> const &vec2,
-                 Eigen::Ref<const Eigen::Vector3d> const &vec3, double xtal_tol,
-                 bool force)
+                 Eigen::Ref<const Eigen::Vector3d> const &vec3, double xtal_tol)
     : m_tol(xtal_tol) {
   m_lat_mat << vec1, vec2, vec3;
-  if (!force && m_lat_mat.determinant() < 0) {
-    // this->make_right_handed();
-    // throw std::runtime_error("Attempted to construct a left-handed lattice.
-    // Try again or override if you know what you're doing");
-  }
   m_inv_lat_mat = m_lat_mat.inverse();
 }
 
@@ -74,13 +68,49 @@ std::vector<Eigen::Matrix3d> const &Lattice::skew_transforms() {
 /// are columns
 ///(e.g., lat_mat is equivalent to lat_column_mat())
 Lattice::Lattice(const Eigen::Ref<const Eigen::Matrix3d> &lat_mat,
-                 double xtal_tol, bool force)
-    : m_lat_mat(lat_mat), m_inv_lat_mat(lat_mat.inverse()), m_tol(xtal_tol) {
-  if (!force && m_lat_mat.determinant() < 0) {
-    // this->make_right_handed();
-    // throw std::runtime_error("Attempted to construct a left-handed lattice.
-    // Try again or override if you know what you're doing");
+                 double xtal_tol)
+    : m_lat_mat(lat_mat), m_inv_lat_mat(lat_mat.inverse()), m_tol(xtal_tol) {}
+
+/// \brief Construct a Lattice from lengths and angles
+///
+/// \param lengths_and_angles The lattice vector lengths and angles, in order
+///     [a, b, c, \alpha, \beta, \gamma]
+/// \param xtal_tol The tolerance used for comparisons
+///
+Lattice Lattice::from_lengths_and_angles(std::vector<double> lengths_and_angles,
+                                         double xtal_tol) {
+  if (lengths_and_angles.size() != 6) {
+    throw std::runtime_error(
+        "Error in Lattice::from_lengths_and_angles: lengths_and_angles.size() "
+        "!= 6");
   }
+
+  double a = lengths_and_angles[0];
+  double b = lengths_and_angles[1];
+  double c = lengths_and_angles[2];
+  double alpha = lengths_and_angles[3];
+  double beta = lengths_and_angles[4];
+  double gamma = lengths_and_angles[5];
+
+  double _alpha = alpha * (M_PI / 180);
+  double _beta = beta * (M_PI / 180);
+  double _gamma = gamma * (M_PI / 180);
+
+  double b_x = b * std::cos(_gamma);
+  double b_y = b * std::sin(_gamma);
+  double c_x = c * std::cos(_beta);
+
+  // b_x *c_x + b_y *c_y = b * c * cos(_alpha)
+  double c_y = (b * c * std::cos(_alpha) - b_x * c_x) / b_y;
+
+  // c_y ** 2 + c_z ** 2 = pow(c * sin(_beta), 2.)
+  double c_z = std::sqrt(std::pow(c * std::sin(_beta), 2.0) - c_y * c_y);
+
+  Eigen::MatrixXd column_vector_matrix(3, 3);
+  column_vector_matrix.col(0) << a, 0.0, 0.0;
+  column_vector_matrix.col(1) << b_x, b_y, 0.0;
+  column_vector_matrix.col(2) << c_x, c_y, c_z;
+  return Lattice(column_vector_matrix, xtal_tol);
 }
 
 Lattice Lattice::fcc(double tol) {

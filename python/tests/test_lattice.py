@@ -187,3 +187,58 @@ def test_is_equivalent_superlattice_of():
     )
     assert is_equivalent_superlattice_of is True
     assert np.allclose(S2, point_group[p].matrix() @ S1 @ T)
+
+
+def test_construct_from_lattice_parameters():
+    from math import degrees
+
+    a = 1.0
+    b = 1.3
+    c = 1.6
+    alpha = 90
+    beta = 120
+    gamma = 130
+    lengths_and_angles = [a, b, c, alpha, beta, gamma]
+    lat = xtal.Lattice.from_lengths_and_angles(lengths_and_angles)
+    assert isinstance(lat, xtal.Lattice)
+
+    L = lat.column_vector_matrix()
+
+    assert math.isclose(np.linalg.norm(L[:, 0]), a)
+    assert math.isclose(np.linalg.norm(L[:, 1]), b)
+    assert math.isclose(np.linalg.norm(L[:, 2]), c)
+    assert math.isclose(degrees(np.arccos(np.dot(L[:, 0], L[:, 1]) / (a * b))), gamma)
+    assert math.isclose(degrees(np.arccos(np.dot(L[:, 0], L[:, 2]) / (a * c))), beta)
+    assert math.isclose(degrees(np.arccos(np.dot(L[:, 1], L[:, 2]) / (b * c))), alpha)
+
+    assert np.allclose(
+        np.array(lengths_and_angles),
+        np.array(lat.lengths_and_angles()),
+    )
+
+
+def test_repiprocal():
+    x = 1.0 / math.sqrt(2.0)
+    L = np.array(
+        [
+            [0.0, x, x],
+            [x, 0.0, x],
+            [x, x, 0.0],
+        ]
+    ).transpose()
+    fcc_lattice = xtal.Lattice(L)
+
+    vol = np.dot(L[:, 0], np.cross(L[:, 1], L[:, 2]))
+    b1 = np.cross(L[:, 1], L[:, 2]) * (2 * math.pi) / vol
+    b2 = np.cross(L[:, 2], L[:, 0]) * (2 * math.pi) / vol
+    b3 = np.cross(L[:, 0], L[:, 1]) * (2 * math.pi) / vol
+
+    assert np.isclose(fcc_lattice.volume(), vol)
+
+    reciprocal_lattice = fcc_lattice.reciprocal()
+    L_recip = reciprocal_lattice.column_vector_matrix()
+
+    assert np.isclose(reciprocal_lattice.volume(), ((2 * math.pi) ** 3) / vol)
+    assert np.allclose(L_recip[:, 0], b1)
+    assert np.allclose(L_recip[:, 1], b2)
+    assert np.allclose(L_recip[:, 2], b3)

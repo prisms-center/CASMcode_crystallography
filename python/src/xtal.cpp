@@ -108,8 +108,15 @@ std::vector<xtal::SymOp> make_lattice_point_group(
 std::vector<xtal::Lattice> enumerate_superlattices(
     xtal::Lattice const &unit_lattice,
     std::vector<xtal::SymOp> const &point_group, Index max_volume,
-    Index min_volume = 1, std::string dirs = std::string("abc")) {
-  xtal::ScelEnumProps enum_props{min_volume, max_volume + 1, dirs};
+    Index min_volume = 1, std::string dirs = std::string("abc"),
+    std::optional<Eigen::Matrix3i> unit_cell = std::nullopt,
+    bool diagonal_only = false, bool fixed_shape = false) {
+  if (!unit_cell.has_value()) {
+    unit_cell = Eigen::Matrix3i::Identity();
+  }
+  xtal::ScelEnumProps enum_props{min_volume,    max_volume + 1,
+                                 dirs,          unit_cell.value(),
+                                 diagonal_only, fixed_shape};
   xtal::SuperlatticeEnumerator enumerator{unit_lattice, point_group,
                                           enum_props};
   std::vector<xtal::Lattice> superlattices;
@@ -296,7 +303,8 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     std::vector<DoFSetBasis> const &global_dof = std::vector<DoFSetBasis>{},
     std::map<std::string, xtal::Molecule> const &molecules =
         std::map<std::string, xtal::Molecule>{},
-    std::string title = std::string("prim")) {
+    std::string title = std::string("prim"),
+    std::optional<std::vector<Index>> labels = std::nullopt) {
   // validation
   if (coordinate_frac.rows() != 3) {
     throw std::runtime_error("Error in make_prim: coordinate_frac.rows() != 3");
@@ -310,6 +318,21 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     throw std::runtime_error(
         "Error in make_prim: local_dof.size() && "
         "coordinate_frac.cols() != occ_dof.size()");
+  }
+  if (labels.has_value() && labels.value().size() != coordinate_frac.cols()) {
+    throw std::runtime_error(
+        "Error in make_prim: labels.has_value() && "
+        "labels.value().size() != coordinate_frac.cols()");
+  }
+  if (labels.has_value()) {
+    for (Index i = 0; i < labels.value().size(); ++i) {
+      if (labels.value()[i] < 0) {
+        std::stringstream msg;
+        msg << "Error in make_prim: labels.value()[" << i
+            << "] < 0 (=" << labels.value()[i] << ")";
+        throw std::runtime_error(msg.str());
+      }
+    }
   }
 
   // construct prim
@@ -343,6 +366,10 @@ std::shared_ptr<xtal::BasicStructure> make_prim(
     }
 
     xtal::Site site{coord, site_occ, site_dofsets};
+
+    if (labels.has_value()) {
+      site.set_label(labels.value()[b]);
+    }
     prim.push_back(site, FRAC);
   }
   prim.set_unique_names(occ_dof);
@@ -564,6 +591,15 @@ std::map<std::string, xtal::Molecule> get_prim_molecules(
     ++b;
   }
   return molecules;
+}
+
+std::vector<Index> get_prim_labels(
+    std::shared_ptr<xtal::BasicStructure const> const &prim) {
+  std::vector<Index> labels;
+  for (auto const &site : prim->basis()) {
+    labels.push_back(site.label());
+  }
+  return labels;
 }
 
 std::shared_ptr<xtal::BasicStructure const> make_within(
@@ -1101,9 +1137,8 @@ PYBIND11_MODULE(_xtal, m) {
 
       .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
       )pbdoc")
-      .def(py::init<Eigen::Matrix3d const &, double, bool>(),
-           "Construct a Lattice", py::arg("column_vector_matrix"),
-           py::arg("tol") = TOL, py::arg("force") = false, R"pbdoc(
+      .def(py::init<Eigen::Matrix3d const &, double>(), "Construct a Lattice",
+           py::arg("column_vector_matrix"), py::arg("tol") = TOL, R"pbdoc(
 
       .. rubric:: Constructor
 
@@ -1120,6 +1155,34 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the tolerance used for crystallographic comparisons.")
       .def("set_tol", &xtal::Lattice::set_tol, py::arg("tol"),
            "Set the tolerance used for crystallographic comparisons.")
+      .def("reciprocal", &xtal::Lattice::reciprocal,
+           "Return the reciprocal lattice")
+      .def(
+          "lengths_and_angles",
+          [](xtal::Lattice const &self) -> std::vector<double> {
+            std::vector<double> v;
+            v.push_back(self.length(0));
+            v.push_back(self.length(1));
+            v.push_back(self.length(2));
+            v.push_back(self.angle(0));
+            v.push_back(self.angle(1));
+            v.push_back(self.angle(2));
+            return v;
+          },
+          R"pbdoc(
+           Return the lattice vector lengths and angles,
+           :math:`[a, b, c, \alpha, \beta, \gamma]`.
+           )pbdoc")
+      .def("volume", &xtal::Lattice::volume, R"pbdoc(
+           Return the signed volume of the unit cell.
+           )pbdoc")
+      .def_static("from_lengths_and_angles",
+                  &xtal::Lattice::from_lengths_and_angles,
+                  py::arg("lengths_and_angles"), py::arg("tol") = TOL,
+                  R"pbdoc(
+            Construct a Lattice from the lattice vector lengths and angles,
+            :math:`[a, b, c, \alpha, \beta, \gamma]`
+            )pbdoc")
       .def(py::self < py::self,
            "Sorts lattices by how canonical the lattice vectors are")
       .def(py::self <= py::self,
@@ -1418,24 +1481,12 @@ PYBIND11_MODULE(_xtal, m) {
          If `superlattice` is not a superlattice of `unit_lattice`.
      )pbdoc");
 
-  m.def(
-      "enumerate_superlattices",
-      [](xtal::Lattice unit_lattice, std::vector<xtal::SymOp> point_group,
-         Index max_volume, Index min_volume,
-         std::string dirs) -> std::vector<xtal::Lattice> {
-        xtal::ScelEnumProps enum_props{min_volume, max_volume + 1, dirs};
-        xtal::SuperlatticeEnumerator enumerator{unit_lattice, point_group,
-                                                enum_props};
-        std::vector<xtal::Lattice> superlattices;
-        for (auto const &superlat : enumerator) {
-          superlattices.push_back(xtal::canonical::equivalent(
-              superlat, point_group, unit_lattice.tol()));
-        }
-        return superlattices;
-      },
-      py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
-      py::arg("min_volume") = Index(1), py::arg("dirs") = std::string("abc"),
-      R"pbdoc(
+  m.def("enumerate_superlattices", &enumerate_superlattices,
+        py::arg("unit_lattice"), py::arg("point_group"), py::arg("max_volume"),
+        py::arg("min_volume") = Index(1), py::arg("dirs") = std::string("abc"),
+        py::arg("unit_cell") = std::nullopt, py::arg("diagonal_only") = false,
+        py::arg("fixed_shape") = false,
+        R"pbdoc(
       Enumerate symmetrically distinct superlattices
 
       Superlattices satify:
@@ -1449,14 +1500,14 @@ PYBIND11_MODULE(_xtal, m) {
       transformation matrix.
 
       Superlattices `S1` and `S2` are symmetrically equivalent if there exists `p` and
-      `U` such that:
+      `A` such that:
 
       .. code-block:: Python
 
-          S2 = p.matrix() @ S1 @ U,
+          S2 = p.matrix() @ S1 @ A,
 
-      where `p` is an element in the point group, and `U` is a unimodular matrix
-      (integer matrix, with abs(det(U))==1).
+      where `p` is an element in the point group, and `A` is a unimodular matrix
+      (integer matrix, with abs(det(A))==1).
 
       Parameters
       ----------
@@ -1468,15 +1519,26 @@ PYBIND11_MODULE(_xtal, m) {
           :func:`make_crystal_point_group()`, or the lattice point group,
           :func:`make_point_group()`.
       max_volume : int
-          The maximum volume superlattice to enumerate, as a multiple of the volume of
-          `unit_lattice`.
+          The maximum volume superlattice to enumerate. The volume is measured
+          relative the unit cell being used to generate supercells.
       min_volume : int, default=1
-          The minimum volume superlattice to enumerate, as a multiple of the volume of
-          `unit_lattice`.
+          The minimum volume superlattice to enumerate. The volume is measured
+          relative the unit cell being used to generate supercells.
       dirs : str, default="abc"
           A string indicating which lattice vectors to enumerate over. Some combination
           of 'a', 'b', and 'c', where 'a' indicates the first lattice vector of the
           unit cell, 'b' the second, and 'c' the third.
+      unit_cell: Optional[np.ndarray] = None,
+          An integer shape=(3,3) transformation matrix `U` allows
+          specifying an alternative unit cell that can be used to generate
+          superlattices of the form `S = (L @ U) @ T`. If None, `U` is set to the
+          identity matrix.
+      diagonal_only: bool = False
+          If true, restrict :math:`T` to diagonal matrices.
+      fixed_shape: bool = False
+          If true, restrict `T` to diagonal matrices with diagonal coefficients
+          `[m, 1, 1]` (1d), `[m, m, 1]` (2d), or `[m, m, m]` (3d),
+          where the dimension is determined from ``len(dirs)``.
 
       Returns
       -------
@@ -1745,6 +1807,7 @@ PYBIND11_MODULE(_xtal, m) {
            py::arg("global_dof") = std::vector<DoFSetBasis>{},
            py::arg("occupants") = std::map<std::string, xtal::Molecule>{},
            py::arg("title") = std::string("prim"),
+           py::arg("labels") = std::nullopt,
            R"pbdoc(
 
       .. _prim-init:
@@ -1772,18 +1835,20 @@ PYBIND11_MODULE(_xtal, m) {
       global_dof : list[:class:`DoFSetBasis`], default=[]
           Global continuous DoF allowed for the entire crystal.
       occupants : dict[str,:class:`Occupant`], default=[]
-          :class:`Occupant` allowed in the crystal. The keys are labels
-          ('orientation names') used in the occ_dof parameter. This may
-          include isotropic atoms, vacancies, atoms with fixed anisotropic
-          properties, and molecular occupants. A seperate key and value is
-          required for all species with distinct anisotropic properties
-          (i.e. "H2_xy", "H2_xz", and "H2_yz" for distinct orientations,
-          or "A.up", and "A.down" for distinct collinear magnetic spins,
-          etc.).
+          :class:`Occupant` allowed in the crystal. The keys are names
+          used in the occ_dof parameter. This may include isotropic atoms,
+          vacancies, atoms with fixed anisotropic properties, and molecular
+          occupants. A seperate key and value is required for all species
+          with distinct anisotropic properties (i.e. "H2_xy", "H2_xz", and
+          "H2_yz" for distinct orientations, or "A.up", and "A.down" for
+          distinct collinear magnetic spins, etc.).
       title : str, default="prim"
           A title for the prim. When the prim is used to construct a
           cluster expansion, this must consist of alphanumeric characters
           and underscores only. The first character may not be a number.
+      labels : Optional[list[int]] = None
+          If provided, an integer for each basis site, greater than or equal to zero,
+          that distinguishes otherwise identical sites.
       )pbdoc")
       .def("lattice", &get_prim_lattice, "Returns the lattice, as a copy.")
       .def("coordinate_frac", &get_prim_coordinate_frac,
@@ -1793,8 +1858,7 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns the basis site positions, as columns of a 2d array, in "
            "Cartesian coordinates")
       .def("occ_dof", &get_prim_occ_dof,
-           "Returns the labels (orientation names) of occupants allowed on "
-           "each basis site")
+           "Returns the names of occupants allowed on each basis site")
       .def("local_dof", &get_prim_local_dof,
            "Returns the continuous DoF allowed on each basis site")
       .def(
@@ -1802,6 +1866,9 @@ PYBIND11_MODULE(_xtal, m) {
           "Returns the continuous DoF allowed for the entire crystal structure")
       .def("occupants", &get_prim_molecules,
            "Returns the :class:`Occupant` allowed in the crystal.")
+      .def("labels", &get_prim_labels,
+           "Returns the integer label associated with each basis site. If no "
+           "labels were provided, it will be a list of -1.")
       .def_static(
           "from_dict",
           [](const nlohmann::json &data, double xtal_tol) {

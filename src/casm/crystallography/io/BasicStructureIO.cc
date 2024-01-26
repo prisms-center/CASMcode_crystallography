@@ -536,6 +536,10 @@ void write_prim(const xtal::BasicStructure &prim, jsonParser &json,
                 json["species"][mol_names[i][j]], c2f_mat);
       }
     }
+
+    if (valid_index(prim.basis()[i].label())) {
+      sjson["label"] = prim.basis()[i].label();
+    }
   }
 }
 

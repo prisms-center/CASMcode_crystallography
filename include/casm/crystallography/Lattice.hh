@@ -33,15 +33,17 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
 
   Lattice(Eigen::Ref<const Eigen::Vector3d> const &vec1,
           Eigen::Ref<const Eigen::Vector3d> const &vec2,
-          Eigen::Ref<const Eigen::Vector3d> const &vec3, double xtal_tol = TOL,
-          bool force = false);
+          Eigen::Ref<const Eigen::Vector3d> const &vec3, double xtal_tol = TOL);
 
   /// Construct Lattice from a matrix of lattice vectors, where lattice vectors
   /// are columns
   ///(e.g., lat_mat is equivalent to coord_trans[FRAC])
   Lattice(Eigen::Ref<const Eigen::Matrix3d> const &lat_mat =
               Eigen::Matrix3d::Identity(),
-          double xtal_tol = TOL, bool force = false);
+          double xtal_tol = TOL);
+
+  static Lattice from_lengths_and_angles(std::vector<double> lengths_and_angles,
+                                         double xtal_tol = TOL);
 
   /// \brief Construct FCC primitive cell of unit volume
   static Lattice fcc(double tol = TOL);

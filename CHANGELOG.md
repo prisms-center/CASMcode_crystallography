@@ -6,11 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [2.0a9] - X
+## [2.0a9] - Unreleased
 
 ### Fixed
 
 - Fix CASM::xtal::make_primitive, which was not copying unique_names. This also fixes the output of libcasm.xtal.make_primitive which was losing the occ_dof list as a result.
+- Fix JSON output of xtal::BasicStructure site label
 
 ### Changed
 
@@ -20,10 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add to libcasm.xtal: make_primitive_prim (equivalent to current make_primitive), make_primtive_structure, and make_canonical_structure. 
+- Add to libcasm.xtal: make_primitive_prim (equivalent to current make_primitive), make_primitive_structure, and make_canonical_structure. 
 - Add options to the BCC and FCC structure factory functions in libcasm.xtal.structures to make the conventional cubic unit cells.
 - Add to libcasm.xtal: StructureAtomInfo namedtuple, and methods sort_structure_by_atom_info, sort_structure_by_atom_type, sort_structure_by_atom_coordinate_frac, and sort_structure_by_atom_coordinate_cart
 - Add to libcasm.xtal: substitute_structure_species 
+- Add to libcasm.xtal.Prim: method labels, constructor parameter `labels`
+- Add to libcasm.xtal.Lattice: methods reciprocal, volume, lengths_and_angles, from_lengths_and_angles
+- Added `unit_cell`, `diagonal_only`, and `fixed_shape` parameters to libcasm.xtal.enumerate_superlattices.
+
 
 ## [2.0a8] - 2023-11-15
 
