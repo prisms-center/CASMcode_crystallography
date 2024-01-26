@@ -6,7 +6,7 @@ requires = [
     "cmake>=3.20",
     "ninja",
     "pybind11>=2.6",
-    "libcasm-global>=2.0.2",
+    "libcasm-global>=2.0.4",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "libcasm-global>=2.0.2",
+  "libcasm-global>=2.0.4",
   "numpy",
 ]
 
@@ -57,7 +57,7 @@ build = "cp39-* cp310-* cp311-*"
 skip =  "pp*"
 
 # Need libcasm-global at wheel repair stage
-before-build = "pip install libcasm-global>=2.0.2"
+before-build = "pip install libcasm-global>=2.0.4"
 
 # Testing
 test-requires = "pytest pytest-datadir"
