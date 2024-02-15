@@ -761,4 +761,3 @@ def test_combine_structures(example_structure_1):
         ),
     )
     assert combined.atom_type() == atom_type * 2
-
