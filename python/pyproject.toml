@@ -4,6 +4,6 @@ requires = [
     "setuptools",
     "wheel",
     "pybind11>=2.8.0",
-    "libcasm-global>=2.0.2",
+    "libcasm-global>=2.0.4",
 ]
 build-backend = "setuptools.build_meta"

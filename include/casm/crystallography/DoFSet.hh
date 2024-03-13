@@ -41,11 +41,7 @@ class DoFSet {
     assert(m_basis.rows() ==
            this->traits().dim());  // TODO: This makes sense I think?
     if (basis().cols() > 0 && basis().rows() > 0) {
-      m_inv_basis = basis()
-                        .transpose()
-                        .colPivHouseholderQr()
-                        .solve(Eigen::MatrixXd::Identity(dim(), dim()))
-                        .transpose();
+      m_inv_basis = basis().completeOrthogonalDecomposition().pseudoInverse();
     }
   }
 
@@ -223,11 +219,6 @@ struct SiteDoFSetIsEquivalent_f : private DoFSetIsEquivalent_f {
     return this->m_reference_excluded_occs == other_value.excluded_occupants();
   }
 };
-
-/// Create the symmtery representation for going from one basis to another
-Eigen::MatrixXd dofset_transformation_matrix(const Eigen::MatrixXd &from_basis,
-                                             const Eigen::MatrixXd &to_basis,
-                                             double tol);
 
 }  // namespace xtal
 }  // namespace CASM

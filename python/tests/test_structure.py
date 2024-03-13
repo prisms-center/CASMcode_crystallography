@@ -713,3 +713,51 @@ def test_substitute_structure_species_2(example_structure_1):
         {"A": "C", "B": "D"},
     )
     assert s2.atom_type() == ["C", "C", "D", "D"]
+
+
+def test_combine_structures(example_structure_1):
+    lattice = xtal.Lattice(
+        np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]).transpose()
+    )
+
+    atom_coordinate_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.5, 0.5],
+            [0.5, 0.0, 0.5],
+            [0.5, 0.5, 0.0],
+        ]
+    ).transpose()
+
+    atom_type = ["A", "B", "B", "B"]
+
+    s1 = xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=atom_coordinate_frac,
+        atom_type=atom_type,
+    )
+
+    combined = xtal.combine_structures([s1])
+    assert combined.atom_type() == atom_type
+    print(xtal.pretty_json(combined.to_dict(frac=False)))
+
+    translation = xtal.SymOp(
+        matrix=np.eye(3),
+        translation=np.array([0.0, 0.0, 3.0]),
+        time_reversal=False,
+    )
+    s2 = translation * s1
+    print(xtal.pretty_json(s2.to_dict(frac=False)))
+    combined = xtal.combine_structures(
+        structures=[s1, s2],
+        lattice=xtal.Lattice(
+            np.array(
+                [
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 2.0],
+                ]
+            ).transpose()
+        ),
+    )
+    assert combined.atom_type() == atom_type * 2

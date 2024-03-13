@@ -45,11 +45,7 @@ using namespace CASM;
 namespace _xtal_impl {
 
 Eigen::MatrixXd pseudoinverse(Eigen::MatrixXd const &M) {
-  Index dim = M.rows();
-  return M.transpose()
-      .colPivHouseholderQr()
-      .solve(Eigen::MatrixXd::Identity(dim, dim))
-      .transpose();
+  return M.completeOrthogonalDecomposition().pseudoInverse();
 }
 }  // namespace _xtal_impl
 
@@ -913,6 +909,8 @@ std::vector<Eigen::VectorXd> make_equivalent_property_values(
   if (basis.cols() == 0) {
     basis = Eigen::MatrixXd::Identity(dim, dim);
   }
+  // B * x_after = M * B * x_before
+  // x_after = B_pinv * M * B * x_before
   Eigen::MatrixXd basis_pinv = _xtal_impl::pseudoinverse(basis);
   for (auto const &op : point_group) {
     Eigen::VectorXd x_standard = basis * x;
@@ -1297,7 +1295,8 @@ PYBIND11_MODULE(_xtal, m) {
           of `p` is undefined.
       )pbdoc");
 
-  m.def("make_canonical_lattice", &make_canonical_lattice, py::arg("lattice"),
+  m.def("make_canonical_lattice", &make_canonical_lattice,
+        py::arg("init_lattice"),
         R"pbdoc(
     Returns the canonical equivalent lattice
 

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix CASM::xtal::make_primitive, which was not copying unique_names. This also fixes the output of libcasm.xtal.make_primitive which was losing the occ_dof list as a result.
 - Fix JSON output of xtal::BasicStructure site label
+- Changed pseudoinverse calculation for basis changes to `completeOrthogonalDecomposition().pseudoInverse()`
 
 ### Changed
 
@@ -28,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add to libcasm.xtal.Prim: method labels, constructor parameter `labels`
 - Add to libcasm.xtal.Lattice: methods reciprocal, volume, lengths_and_angles, from_lengths_and_angles
 - Added `unit_cell`, `diagonal_only`, and `fixed_shape` parameters to libcasm.xtal.enumerate_superlattices.
+- Add to libcasm.xtal: combine_structures, filter_structure_by_atom_info, make_structure_atom_info, and make_structure_from_atom_info
 
 
 ## [2.0a8] - 2023-11-15

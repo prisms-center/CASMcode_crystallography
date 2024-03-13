@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: CASMcode_global/dist
-          key: ${{ runner.os }}-libcasm-global-v2-0-3
+          key: ${{ runner.os }}-libcasm-global-v2-0-4
 
       - name: checkout libcasm-global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
@@ -32,7 +32,7 @@ jobs:
         with:
           repository: prisms-center/CASMcode_global
           path: CASMcode_global
-          ref: v2.0.3
+          ref: v2.0.4
 
       - name: make global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
