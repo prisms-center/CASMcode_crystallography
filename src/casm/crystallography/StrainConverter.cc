@@ -14,11 +14,7 @@ namespace xtal {
 StrainConverter::StrainConverter(std::string _metric,
                                  Eigen::MatrixXd const &_basis)
     : m_metric(_metric), m_basis(_basis) {
-  Index dim = m_basis.cols();
-  m_basis_pinv = m_basis.transpose()
-                     .colPivHouseholderQr()
-                     .solve(Eigen::MatrixXd::Identity(dim, dim))
-                     .transpose();
+  m_basis_pinv = m_basis.completeOrthogonalDecomposition().pseudoInverse();
 }
 
 /// \brief Decompose deformation tensor, F, as Q*U

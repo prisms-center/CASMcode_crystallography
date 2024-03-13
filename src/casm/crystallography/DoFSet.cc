@@ -49,15 +49,6 @@ bool DoFSetIsEquivalent_f::operator()(const DoFSet &other_value) const {
          this->_basis_spans_same_space(other_value);
 }
 
-Eigen::MatrixXd dofset_transformation_matrix(const Eigen::MatrixXd &from_basis,
-                                             const Eigen::MatrixXd &to_basis,
-                                             double tol) {
-  Eigen::MatrixXd U = from_basis.colPivHouseholderQr().solve(to_basis);
-  if (!(U.transpose() * U).eval().isIdentity(tol)) {
-    throw std::runtime_error("Cannot find orthogonal symmetry representation!");
-  }
-  return U;
-}
 }  // namespace xtal
 }  // namespace CASM
 

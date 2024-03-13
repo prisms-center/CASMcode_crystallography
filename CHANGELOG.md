@@ -6,12 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [2.0a9] - 2024-01-29
+## [2.0a9] - Unreleased
 
 ### Fixed
 
 - Fix CASM::xtal::make_primitive, which was not copying unique_names. This also fixes the output of libcasm.xtal.make_primitive which was losing the occ_dof list as a result.
 - Fix JSON output of xtal::BasicStructure site label
+- Changed pseudoinverse calculation for basis changes to `completeOrthogonalDecomposition().pseudoInverse()`
 
 ### Changed
 
