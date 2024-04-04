@@ -8,7 +8,11 @@ project_desc = "CASM Crystallography"
 logo_text = "libcasm-xtal"
 github_url = "https://github.com/prisms-center/CASMcode_crystallography/"
 pypi_url = "https://pypi.org/project/libcasm-xtal/"
-intersphinx_libcasm_packages = [("global", "2.0"), ("configuration", "2.0")]
+intersphinx_libcasm_packages = [
+    ("global", "2.0"),
+    ("configuration", "2.0"),
+    ("mapping", "2.0"),
+]
 
 
 # -- CASM common configuration ---

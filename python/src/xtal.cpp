@@ -1193,19 +1193,28 @@ PYBIND11_MODULE(_xtal, m) {
            "True if lattice vectors are approximately equal")
       .def(py::self != py::self,
            "True if lattice vectors are not approximately equal")
-      .def("is_equivalent_to", &lattice_is_equivalent_to, py::arg("other"),
+      .def("is_equivalent_to", &lattice_is_equivalent_to, py::arg("lattice2"),
            R"pbdoc(
             Check if this lattice is equivalent to another lattice
 
-            Two lattices, L1 and L2, are equivalent (i.e. have the same
-            lattice points) if there exists `U` such that:
+            Two lattices, L1 and L2, are equivalent in the sense that the
+            lattice points have the same Cartesian coordinates if there exists
+            `U` such that:
 
             .. code-block:: Python
 
                 L1 = L2 @ U,
 
-            where `L1` and `L2` are the lattice vectors as matrix columns, and
-            `U` is a unimodular matrix (integer matrix, with abs(det(U))==1).
+            where `L1` and `L2` are the Cartesian lattice vectors as matrix
+            columns, and `U` is a unimodular matrix (integer matrix, with
+            abs(det(U))==1).
+
+            Notes
+            -----
+
+            - Use :func:`libcasm.mapping.methods.map_lattices` to check if
+              lattices are equivalent in the sense that a rigid rotation can
+              map the Cartesian coordinates of one lattice onto the other.
 
             Parameters
             ----------
@@ -1215,7 +1224,10 @@ PYBIND11_MODULE(_xtal, m) {
             Returns
             -------
             is_equivalent: bool
-                True if self is equivalent to `lattice2`.
+                True if `self`, with lattice vectors `L1`, is equivalent to
+                `lattice2`, with lattice vectors `L2`, in the sense that
+                the lattice points have the same Cartesian coordinates; False
+                otherwise.
             )pbdoc")
       .def("is_superlattice_of", &is_superlattice_of, py::arg("lattice2"),
            R"pbdoc(
