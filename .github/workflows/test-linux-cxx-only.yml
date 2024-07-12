@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: CASMcode_global/dist
-          key: ${{ runner.os }}-libcasm-global-v2-0-4
+          key: ${{ runner.os }}-libcasm-global-v2-0-5
 
       - name: Install CASM dependencies
         run: |
