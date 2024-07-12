@@ -1,7 +1,10 @@
 name: Build CASM dependencies on Ubuntu
 
 on:
-  workflow_call:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 12 * * 0'
 
 jobs:
   build-depends:
@@ -24,7 +27,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: CASMcode_global/dist
-          key: ${{ runner.os }}-libcasm-global-v2-0-4
+          key: ${{ runner.os }}-libcasm-global-v2-0-5
 
       - name: checkout libcasm-global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
@@ -32,7 +35,7 @@ jobs:
         with:
           repository: prisms-center/CASMcode_global
           path: CASMcode_global
-          ref: v2.0.4
+          ref: v2.0.5
 
       - name: make global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'

@@ -1,6 +1,10 @@
 name: Build wheels
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 12 * * 0'
 
 jobs:
   build_wheels_linux_x86_64:
@@ -20,7 +24,7 @@ jobs:
           name: dist_linux
           path: ./wheelhouse/*.whl
 
-  build_wheels_macos_x86_64:
+  build_wheels_macos12_x86_64:
     name: Build x86_64 wheels on macos-12
     runs-on: macos-12
 
@@ -34,7 +38,24 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dist_macos
+          name: dist_macos12_x86_64
+          path: ./wheelhouse/*.whl
+
+  build_wheels_macos14_arm64:
+    name: Build arm64 wheels on macos-14
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.19.2
+        env:
+          CIBW_ARCHS_MACOS: arm64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist_macos14_arm64
           path: ./wheelhouse/*.whl
 
   build_sdist:
