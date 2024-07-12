@@ -6,13 +6,13 @@ requires = [
     "cmake>=3.20",
     "ninja",
     "pybind11>=2.6",
-    "libcasm-global>=2.0.4",
+    "libcasm-global>=2.0.5",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "libcasm-xtal"
-version = "2.0a9"
+version = "2.0a10"
 authors = [
   { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
 ]
@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "libcasm-global>=2.0.4",
+  "libcasm-global>=2.0.5",
   "numpy",
 ]
 
@@ -41,13 +41,13 @@ source-dir = "doc"
 build-dir  = "doc/build"
 all_files  = 1
 
-[tool.ruff]
-select = ["E", "F", "I"]
+[tool.ruff.lint]
+select = ["NPY201", "E", "F", "I"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["libcasm", "casm"]
 
 [tool.cibuildwheel]
@@ -57,7 +57,7 @@ build = "cp39-* cp310-* cp311-* cp312-*"
 skip =  "pp*"
 
 # Need libcasm-global at wheel repair stage
-before-build = "pip install libcasm-global>=2.0.4"
+before-build = "pip install libcasm-global>=2.0.5"
 
 # Testing
 test-requires = "pytest pytest-datadir"

@@ -5,11 +5,14 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0a10] - 2024-07-12
 
 ### Changed
 
 - Clarified documentation for `libcasm.xtal.Lattice.is_equivalent_to`
+- Wheels compiled with numpy>=2.0.0
+- Run github actions on push, pull_request, and weekly
+- Use ruff NPY201
 
 
 ## [2.0a9] - 2024-03-13
