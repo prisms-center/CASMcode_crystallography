@@ -41,3 +41,17 @@ TEST(SymInfoTest, Test2) {
   }
   EXPECT_TRUE(true);
 }
+
+TEST(SymInfoTest, Test3) {
+  // Check that the copy constructor sets the "home" lattice correctly for
+  // all xtal::Coordinate in SymInfo
+  xtal::BasicStructure prim = test::SimpleCubic_ising_prim();
+
+  auto fg = xtal::make_factor_group(prim);
+
+  xtal::SymInfo syminfo_first{fg.at(0), prim.lattice()};
+  xtal::SymInfo syminfo_second(syminfo_first);
+  EXPECT_EQ(&syminfo_second.axis.home(), &syminfo_second.lattice);
+  EXPECT_EQ(&syminfo_second.screw_glide_shift.home(), &syminfo_second.lattice);
+  EXPECT_EQ(&syminfo_second.location.home(), &syminfo_second.lattice);
+}
