@@ -5,6 +5,13 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Make a user-defined CASM::xtal::SymInfo copy constructor so that member xtal::Coordinate have the correct "home" lattice
+
+
 ## [2.0a10] - 2024-07-12
 
 ### Changed

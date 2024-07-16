@@ -23,6 +23,8 @@ enum class symmetry_type {
 struct SymInfo {
   SymInfo(SymOp const &op, xtal::Lattice const &lat);
 
+  SymInfo(SymInfo const &sym_info);
+
   /// The lattice used for coordinates
   xtal::Lattice lattice;
 
