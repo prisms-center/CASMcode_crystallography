@@ -1,4 +1,5 @@
 """CASM Crystallography"""
+
 from ._methods import (
     StructureAtomInfo,
     combine_structures,
@@ -59,3 +60,5 @@ from ._xtal import (
     min_periodic_displacement,
     pretty_json,
 )
+
+from .cluster_point_group import cluster_point_group
