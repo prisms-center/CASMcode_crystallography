@@ -988,10 +988,16 @@ def cluster_point_group(
 
         # If the molecule has inversion symmetry and linear it belongs to D-inf Eh group
         if check_if_the_molecule_has_inversion_symmetry(molecule, tol):
-            return "D\u221Eh"
+            raise NotImplementedError(
+                "Method not implemented to get point group of a linear molecule"
+            )
+            # return "D\u221Eh"
 
         # If the molecule has no inversion symmetry and linear it belongs to C-inf Ev group
-        return "C\u221Ev"
+        raise NotImplementedError(
+            "Method not implemented to get point group of a linear molecule"
+        )
+        # return "C\u221Ev"
 
     point_group = []
     # Identity is always a sym op
@@ -1069,4 +1075,9 @@ def cluster_point_group(
             if is_symop_unique(sym_op, point_group, tol):
                 point_group.append(sym_op)
 
-    return point_group
+    cluster_point_group = [
+        xtal.SymOp(matrix=cart_op, translation=np.zeros(3), time_reversal=False)
+        for cart_op in point_group
+    ]
+
+    return cluster_point_group
