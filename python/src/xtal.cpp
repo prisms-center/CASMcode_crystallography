@@ -1703,7 +1703,8 @@ PYBIND11_MODULE(_xtal, m) {
       Parameters
       ----------
       name : str
-          A \"chemical name\", which must be identical for occupants to be found symmetrically equivalent. The names are case
+          A \"chemical name\", which must be identical for occupants
+          to be found symmetrically equivalent. The names are case
           sensitive, and "Va" is reserved for vacancies.
       )pbdoc");
 
