@@ -1592,7 +1592,9 @@ PYBIND11_MODULE(_xtal, m) {
       An atomic component of a molecular :class:`Occupant`
       )pbdoc")
       .def(py::init(&make_atom_position), py::arg("name"),
-           py::arg("coordinate"), py::arg("properties"), R"pbdoc(
+           py::arg("coordinate"),
+           py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{},
+           R"pbdoc(
 
       .. rubric:: Constructor
 
