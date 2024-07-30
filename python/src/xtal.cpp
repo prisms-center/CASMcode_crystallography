@@ -1608,7 +1608,7 @@ PYBIND11_MODULE(_xtal, m) {
           Position of the atom, in Cartesian coordinates, relative
           to the basis site at which the occupant containing this
           atom is placed.
-      properties : dict[str, array_like]
+      properties : dict[str, array_like], default={}
           Fixed properties of the atom, such as magnetic sping or
           selective dynamics flags. Keys must be the name of a
           CASM-supported property type. Values are arrays with
@@ -1703,8 +1703,7 @@ PYBIND11_MODULE(_xtal, m) {
       Parameters
       ----------
       name : str
-          A \"chemical name\", which must be identical for occupants
-          to be found symmetrically equivalent. The names are case
+          A \"chemical name\", which must be identical for occupants to be found symmetrically equivalent. The names are case
           sensitive, and "Va" is reserved for vacancies.
       )pbdoc");
 
