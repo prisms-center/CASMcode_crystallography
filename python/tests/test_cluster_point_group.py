@@ -12,7 +12,7 @@ def supply_molecules_and_expected_point_group_operations(
 
     Parameters
     ----------
-    pytest_root_dir : str
+    session_shared_datadir : str
     molecule_name : str
 
     Returns

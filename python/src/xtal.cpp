@@ -290,7 +290,7 @@ std::map<std::string, Eigen::MatrixXd> get_molecule_properties(
 }
 
 xtal::Molecule make_molecule_from_xyz_string(
-    std::string xyz_string, bool divisible = false,
+    std::string xyz_string, bool is_divisible = false,
     std::map<std::string, Eigen::MatrixXd> properties = {}) {
   std::istringstream xyz_string_stream(xyz_string);
   std::vector<std::string> xyz_lines;
@@ -335,7 +335,7 @@ xtal::Molecule make_molecule_from_xyz_string(
     atom_positions.push_back(atom_position);
   }
 
-  xtal::Molecule molecule(name_of_molecule, atom_positions, divisible);
+  xtal::Molecule molecule(name_of_molecule, atom_positions, is_divisible);
   molecule.set_properties(make_species_properties(properties));
 
   return molecule;
@@ -1742,8 +1742,42 @@ PYBIND11_MODULE(_xtal, m) {
            "True if occupant is a single isotropic atom or vacancy")
       .def_static(
           "from_xyz_string", &make_molecule_from_xyz_string,
-          py::arg("xyz_string"), py::arg("divisible") = false,
-          py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{});
+          py::arg("xyz_string"), py::arg("is_divisible") = false,
+          py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{},
+          R"pbdoc(
+	     Make xtal.Occupant by reading the atom types and coordinates 
+	     of individual atoms represented in the xyz format
+
+            Parameters
+            ----------
+            xyz_string: str
+	    	String containing the atom types and coordinates
+		of the molecule in the xyz format
+
+		xyz format for molecules uses the following notation:
+		```
+		<number of atoms>
+		comment line (will be used to set the name of the molecule)
+		<element_1> <cart_coord_x_1> <cart_coord_y_1> <cart_coord_z_1>
+		<element_2> <cart_coord_x_2> <cart_coord_y_2> <cart_coord_z_2>
+		...
+		```
+	    is_divisible: bool
+          	If True, indicates an Occupant that may split into components
+          	during kinetic Monte Carlo calculations.
+      	    properties : dict[str, array_like], default={}
+      	        Fixed properties of the occupant, such as magnetic
+      	        spin or selective dynamics flags. Keys must be the name of a
+      	        CASM-supported property type. Values are arrays with
+      	        dimensions matching the standard dimension of the property
+      	        type.
+
+            Returns
+            -------
+            occupant: xtal.Occupant
+            )pbdoc"
+
+      );
 
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy
