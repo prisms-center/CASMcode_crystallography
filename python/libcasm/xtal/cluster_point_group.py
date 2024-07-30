@@ -925,9 +925,7 @@ def issue_warning_if_origin_is_not_center_of_geometry(
         tol,
         tol,
     ):
-        import warnings
-
-        warnings.warn(
+        print(
             "WARNING: Geometric center of mass of the molecule is not at origin. Shifting it to origin. If you are working on the molecule further please shift it's geometric center of mass to origin."
         )
     return None
