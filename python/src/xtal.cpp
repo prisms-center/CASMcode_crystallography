@@ -289,6 +289,58 @@ std::map<std::string, Eigen::MatrixXd> get_molecule_properties(
   return result;
 }
 
+xtal::Molecule make_molecule_from_xyz_string(
+    std::string xyz_string, bool divisible = false,
+    std::map<std::string, Eigen::MatrixXd> properties = {}) {
+  std::istringstream xyz_string_stream(xyz_string);
+  std::vector<std::string> xyz_lines;
+
+  std::string first_line;
+  std::getline(xyz_string_stream, first_line);
+  // the first line in the xyz format will be number of atoms in the molecule
+  int number_of_atoms_in_molecule = std::stoi(first_line);
+
+  std::string name_of_molecule;
+  // the second line in the xyz format will be the name of the molecule
+  std::getline(xyz_string_stream, name_of_molecule);
+
+  // from 3rd line, the xyz fomat follows "atom_type cart_coord_x cart_coord_y
+  // cart_coord_z" notation
+
+  std::vector<xtal::AtomPosition> atom_positions;
+  for (std::string line; std::getline(xyz_string_stream, line);) {
+    // create a string stream for each line
+    // and parse atom_type and cartesian coordinates
+    std::stringstream line_stream(line);
+
+    std::string atom_type;
+    line_stream >> atom_type;
+
+    std::string cart_x_str;
+    line_stream >> cart_x_str;
+
+    double cart_coord_x = std::stod(cart_x_str);
+
+    std::string cart_y_str;
+    line_stream >> cart_y_str;
+    double cart_coord_y = std::stod(cart_y_str);
+
+    std::string cart_z_str;
+    line_stream >> cart_z_str;
+    double cart_coord_z = std::stod(cart_z_str);
+
+    xtal::AtomPosition atom_position(
+        Eigen::Vector3d(cart_coord_x, cart_coord_y, cart_coord_z), atom_type);
+
+    atom_positions.push_back(atom_position);
+  }
+
+  xtal::Molecule molecule(name_of_molecule, atom_positions, divisible);
+  molecule.set_properties(make_species_properties(properties));
+
+  return molecule;
+}
+
 // Prim
 
 std::shared_ptr<xtal::BasicStructure> make_prim(
@@ -1687,7 +1739,11 @@ PYBIND11_MODULE(_xtal, m) {
       .def("is_vacancy", &xtal::Molecule::is_vacancy,
            "True if occupant is a vacancy.")
       .def("is_atomic", &xtal::Molecule::is_atomic,
-           "True if occupant is a single isotropic atom or vacancy");
+           "True if occupant is a single isotropic atom or vacancy")
+      .def_static(
+          "from_xyz_string", &make_molecule_from_xyz_string,
+          py::arg("xyz_string"), py::arg("divisible") = false,
+          py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{});
 
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy

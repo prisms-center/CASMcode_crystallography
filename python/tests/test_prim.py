@@ -75,16 +75,16 @@ def check_lial_with_occ_dofs(prim_with_occ_dofs, occ_dofs):
     assert prim_with_occ_dofs.labels() == [-1] * 4
 
 
-def test_prim_from_poscar(shared_datadir):
-    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+def test_prim_from_poscar(session_shared_datadir):
+    poscar_path = os.path.join(session_shared_datadir, "lial.vasp")
 
     # with no occ dofs
     prim = xtal.Prim.from_poscar(poscar_path)
     check_lial(prim)
 
 
-def test_prim_from_poscar_with_occ_dof(shared_datadir):
-    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+def test_prim_from_poscar_with_occ_dof(session_shared_datadir):
+    poscar_path = os.path.join(session_shared_datadir, "lial.vasp")
 
     # with occ dofs
     occ_dofs = [["Li", "Va"], ["Li"], ["Al", "Va"], ["Li", "Al"]]
@@ -92,8 +92,8 @@ def test_prim_from_poscar_with_occ_dof(shared_datadir):
     check_lial_with_occ_dofs(prim, occ_dofs)
 
 
-def test_prim_from_poscar_str(shared_datadir):
-    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+def test_prim_from_poscar_str(session_shared_datadir):
+    poscar_path = os.path.join(session_shared_datadir, "lial.vasp")
 
     with open(poscar_path, "r") as f:
         poscar_str = f.read()
@@ -103,8 +103,8 @@ def test_prim_from_poscar_str(shared_datadir):
     check_lial(prim)
 
 
-def test_prim_from_poscar_str_with_occ_dof(shared_datadir):
-    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+def test_prim_from_poscar_str_with_occ_dof(session_shared_datadir):
+    poscar_path = os.path.join(session_shared_datadir, "lial.vasp")
 
     with open(poscar_path, "r") as f:
         poscar_str = f.read()
@@ -149,8 +149,8 @@ def test_prim_from_poscar_str_selectivedynamics():
     assert prim.local_dof() == [[], [], [], []]
 
 
-def test_prim_to_poscar_str(shared_datadir):
-    poscar_path = os.path.join(shared_datadir, "lial.vasp")
+def test_prim_to_poscar_str(session_shared_datadir):
+    poscar_path = os.path.join(session_shared_datadir, "lial.vasp")
     prim = xtal.Prim.from_poscar(poscar_path)
     structure = xtal.Structure(
         lattice=prim.lattice(),
