@@ -206,4 +206,14 @@ Structure manipulation
 
 The :func:`~libcasm.xtal.make_structure_within` method returns an equivalent :py:class:`~libcasm.xtal.Structure` with all atom and mol site coordinates within the unit cell.
 
-The :func:`~libcasm.xtal.make_superstructure` method can be used to create super structures.
+The :func:`~libcasm.xtal.make_superstructure` method can be used to create super structures. CASM treats the lattice vectors of a structure as column vectors internally. However, when writing output files, such as VASP POSCARs or dictionaries with the :func:`~libcasm.xtal.Structure.to_dict()` method, lattice vectors are written as the rows of a 3x3 matrix. It is important to keep track of which representation is being used. For example, the :func:`~libcasm.xtal.make_superstructure` method can be used to create superstructures. This method takes a supercell transformation matrix and applies it onto the lattice vectors, as columns, from the right. However, if a superstructure is constructed manually from a dictionary, the transpose of the original transformation matrix must be applied from the left.
+
+Structure rotations can be performed using the :py:class:`~libcasm.xtal.SymOp` class. For example, to perform a 90 degree counterclockwise rotation of a structure about the z-axis, a rotation operation can be constructed by passing the rotation matrix into a :py:class:`~libcasm.xtal.SymOp` and multiplying it with original structure:
+
+.. code-block:: Python
+
+    rotation_matrix = np.array([[0, -1, 0],
+                                [1, 0, 0],
+				[0, 0, 1]])
+    rotation_operation = xtal.SymOp(rotation_matrix)
+    rotated_structure = rotation_matrix * structure
