@@ -31,7 +31,7 @@ def test_integral_site_coordinate_str(ZrO_prim):
     b = 0
     unitcell = np.array([1, 2, 3])
     integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
-    assert str(integral_site_coordinate) == "0, 1 2 3"
+    assert str(integral_site_coordinate) == "[0, 1, 2, 3]"
 
 
 def test_integral_site_coordinate_translate_add(ZrO_prim):
@@ -127,3 +127,67 @@ def test_integral_site_coordinate_from_coordinate_frac(ZrO_prim):
             basis_coordinate_frac[:, b], ZrO_prim
         )
         assert site.to_list() == [b, 0, 0, 0]
+
+
+def test_IntegralSiteCoordinateRep_1(ZrO_prim):
+    from libcasm.counter import IntCounter
+
+    prim = ZrO_prim
+    factor_group = xtal.make_factor_group(prim)
+
+    counter = IntCounter(
+        initial=[0, 0, 0, 0],
+        final=[len(prim.occ_dof()) - 1, 2, 2, 2],
+        increment=[1, 1, 1, 1],
+    )
+    for x in counter:
+        b = x[0]
+        unitcell = np.array(x[1:])
+        site = xtal.IntegralSiteCoordinate(b, unitcell)
+        r_cart = site.coordinate_cart(prim)
+
+        for op in factor_group:
+            rep = xtal.IntegralSiteCoordinateRep(op, prim)
+            site_after = rep * site
+            assert np.allclose(
+                site_after.coordinate_cart(prim),
+                op * r_cart,
+            )
+
+
+def test_IntegralSiteCoordinateRep_copy(ZrO_prim):
+    import copy
+
+    prim = ZrO_prim
+    factor_group = xtal.make_factor_group(prim)
+    op = factor_group[1]
+    obj = xtal.IntegralSiteCoordinateRep(op, prim)
+
+    obj1 = obj.copy()
+    assert isinstance(obj1, xtal.IntegralSiteCoordinateRep)
+    assert obj1 is not obj
+
+    obj2 = copy.copy(obj)
+    assert isinstance(obj2, xtal.IntegralSiteCoordinateRep)
+    assert obj2 is not obj
+
+    obj3 = copy.deepcopy(obj)
+    assert isinstance(obj3, xtal.IntegralSiteCoordinateRep)
+    assert obj3 is not obj
+
+
+def test_IntegralSiteCoordinateRep_repr(ZrO_prim):
+    prim = ZrO_prim
+    factor_group = xtal.make_factor_group(prim)
+
+    import io
+    from contextlib import redirect_stdout
+
+    op = factor_group[1]
+    rep = xtal.IntegralSiteCoordinateRep(op, prim)
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print(rep)
+    out = f.getvalue()
+    assert "matrix_frac" in out

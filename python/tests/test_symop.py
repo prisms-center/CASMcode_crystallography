@@ -29,6 +29,37 @@ def test_SymOp_from_dict():
     assert op.time_reversal() == time_reversal
 
 
+def test_SymOp_repr():
+    import io
+    from contextlib import redirect_stdout
+
+    op = xtal.SymOp(np.eye(3), np.zeros((3, 1)), False)
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print(op)
+    out = f.getvalue()
+    assert "matrix" in out
+
+
+def test_SymOp_copy():
+    import copy
+
+    op = xtal.SymOp(np.eye(3), np.zeros((3, 1)), False)
+
+    op1 = op.copy()
+    assert isinstance(op1, xtal.SymOp)
+    assert op1 is not op
+
+    op2 = copy.copy(op)
+    assert isinstance(op2, xtal.SymOp)
+    assert op2 is not op
+
+    op3 = copy.deepcopy(op)
+    assert isinstance(op3, xtal.SymOp)
+    assert op3 is not op
+
+
 def test_SymOp_mul_SymOp():
     R = np.array(
         [

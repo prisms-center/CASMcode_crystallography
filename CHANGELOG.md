@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added `Lattice.copy`, `Lattice.__copy__`, `Lattice.__deepcopy__`, `Lattice.__repr__`,  `Lattice.to_dict`, and `Lattice.from_dict`
+- Added `AtomComponent.copy`, `AtomComponent.__copy__`, `AtomComponent.__deepcopy__`, `AtomComponent.__repr__`,  `AtomComponent.to_dict`, and `AtomComponent.from_dict`
+- Added `Occupant.copy`, `Occupant.__copy__`, `Occupant.__deepcopy__`, `Occupant.__repr__`,  `Occupant.to_dict`, and `Occupant.from_dict`
+- Added `DoFSetBasis.copy`, `DoFSetBasis.__copy__`, `DoFSetBasis.__deepcopy__`, `DoFSetBasis.__repr__`,  `DoFSetBasis.to_dict`, and `DoFSetBasis.from_dict`
+- Added `Prim.copy`, `Prim.__copy__`, `Prim.__deepcopy__`, and `Prim.__repr__`
+- Added `SymOp.copy`, `SymOp.__copy__`, `SymOp.__deepcopy__`, and `SymOp.__repr__`
+- Added `Structure.copy` and `Structure.__repr__`
+- Added `IntegralSiteCoordinate.copy`, `IntegralSiteCoordinate.__copy__`, and `IntegralSiteCoordinate.__deepcopy__`
+- Added `IntegralSiteCoordinateRep.copy`, `IntegralSiteCoordinateRep.__copy__`, `IntegralSiteCoordinateRep.__deepcopy__`, and `IntegralSiteCoordinateRep.__repr__`
+
+### Changed
+
+- Changed `IntegralSiteCoordinate.__str__` to `IntegralSiteCoordinate.__repr__` and changed the output from "b, i j k" to "[b, i, j, k]"
+
+
 ### Fixed
 
 - Make a user-defined CASM::xtal::SymInfo copy constructor so that member xtal::Coordinate have the correct "home" lattice

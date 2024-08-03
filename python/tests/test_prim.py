@@ -233,6 +233,23 @@ def test_is_same_prim(simple_cubic_1d_disp_prim, simple_cubic_binary_prim):
     assert xtal._xtal._is_same_prim(second, first) is False
 
 
+def test_copy(simple_cubic_binary_prim):
+    import copy
+
+    prim = simple_cubic_binary_prim
+    prim1 = prim.copy()
+    assert isinstance(prim1, xtal.Prim)
+    assert prim1 is not prim
+
+    prim2 = copy.copy(prim)
+    assert isinstance(prim2, xtal.Prim)
+    assert prim2 is not prim
+
+    prim3 = copy.deepcopy(prim)
+    assert isinstance(prim3, xtal.Prim)
+    assert prim3 is not prim
+
+
 def test_to_dict(simple_cubic_binary_va_disp_Hstrain_prim):
     prim = simple_cubic_binary_va_disp_Hstrain_prim
 
@@ -289,6 +306,19 @@ def test_from_dict():
     prim_global_dof = prim.global_dof()
     assert len(prim_global_dof) == 1
     assert prim_global_dof[0].dofname() == "Hstrain"
+
+
+def test_repr(simple_cubic_binary_va_disp_Hstrain_prim):
+    import io
+    from contextlib import redirect_stdout
+
+    prim = simple_cubic_binary_va_disp_Hstrain_prim
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print(prim)
+    out = f.getvalue()
+    assert "basis" in out
 
 
 def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
