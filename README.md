@@ -6,7 +6,7 @@ The libcasm-xtal package is the CASM crystallography module. This includes:
 
 - Data structures for representing lattices, crystal structures, and
   degrees of freedom (DoF).
-- Methods for enumerating superlattices, making super structures, finding primitive and reduced cells, and finding symmetry operations.
+- Methods for enumerating superlattices, making superstructures, finding primitive and reduced cells, and finding symmetry operations.
 
 
 #### Install

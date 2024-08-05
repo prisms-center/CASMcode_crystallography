@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `Structure.copy` and `Structure.__repr__`
 - Added `IntegralSiteCoordinate.copy`, `IntegralSiteCoordinate.__copy__`, and `IntegralSiteCoordinate.__deepcopy__`
 - Added `IntegralSiteCoordinateRep.copy`, `IntegralSiteCoordinateRep.__copy__`, `IntegralSiteCoordinateRep.__deepcopy__`, and `IntegralSiteCoordinateRep.__repr__`
+- Added usage documentation for Structure manipulation and input / output
+
 
 ### Changed
 

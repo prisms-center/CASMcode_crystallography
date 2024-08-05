@@ -586,7 +586,7 @@ def combine_structures(
     lattice: Optional[_xtal.Lattice] = None,
     global_properties: dict[str, np.ndarray[np.float64]] = {},
 ) -> _xtal.Structure:
-    """Return a new structure which combines the species of all input structures
+    """Return a new structure which combines the atomic species of all input structures
 
     Parameters
     ----------

@@ -1059,7 +1059,7 @@ PYBIND11_MODULE(_xtal, m) {
 
         - Data structures for representing lattices, crystal structures, and
           degrees of freedom (DoF).
-        - Methods for enumerating lattices, making super structures,
+        - Methods for enumerating lattices, making superstructures,
           finding primitive and reduced cells, and finding symmetry
           operations.
 
