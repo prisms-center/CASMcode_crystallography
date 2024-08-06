@@ -162,6 +162,18 @@ xtal::SymOpVector make_factor_group_from_point_group(
       // correct this.
       translation -= drift;
 
+      // If components of the translation are very close to zero,
+      // just set them to zero
+      {
+        Eigen::VectorXd translation_cart = translation.const_cart();
+        for (int i = 0; i < 3; ++i) {
+          if (CASM::almost_zero(translation_cart[i], tol * 1e-5)) {
+            translation_cart[i] = 0.0;
+          }
+        }
+        translation.cart() = translation_cart;
+      }
+
       // Now that the translation has been adjusted, create the symmetry
       // operation and add it if we don't have an equivalent one already
       xtal::SymOp translation_operation =

@@ -20,11 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `IntegralSiteCoordinateRep.copy`, `IntegralSiteCoordinateRep.__copy__`, `IntegralSiteCoordinateRep.__deepcopy__`, and `IntegralSiteCoordinateRep.__repr__`
 - Added usage documentation for Structure manipulation and input / output
 
-
 ### Changed
 
 - Changed `IntegralSiteCoordinate.__str__` to `IntegralSiteCoordinate.__repr__` and changed the output from "b, i j k" to "[b, i, j, k]"
-
+- Changed `xtal::make_point_group` to remove the `symmetrized_with_fractional` step.
+- Changed construction of factor group translations to set components very close to zero (absolute value less than tol * 1e-5) to exactly zero.
 
 ### Fixed
 

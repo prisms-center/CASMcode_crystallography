@@ -18,7 +18,7 @@ typedef bool SymOpTimeReversalType;
 
 /// Within the scope of crystallography, this struct will serve as the symmetry
 /// object, which holds a transformation matrix, translation vector, and time
-/// reversal boolean, whithout any other overhead.
+/// reversal boolean, without any other overhead.
 struct SymOp {
   SymOp(const SymOpMatrixType &mat, const SymOpTranslationType &translation,
         SymOpTimeReversalType time_reversal)
