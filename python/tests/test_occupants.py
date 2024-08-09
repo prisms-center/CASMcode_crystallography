@@ -3,7 +3,7 @@ import numpy as np
 from libcasm.xtal import Occupant
 
 
-def test_occupant_from_xyz(session_shared_datadir):
+def test_occupant_from_xyz(shared_datadir):
     """Test making xtal.Occupant.from_xyz_string()
     method
 
@@ -17,9 +17,7 @@ def test_occupant_from_xyz(session_shared_datadir):
 
     """
 
-    with open(
-        os.path.join(session_shared_datadir, "input_molecules", "water.xyz"), "r"
-    ) as f:
+    with open(os.path.join(shared_datadir, "input_molecules", "water.xyz"), "r") as f:
         water_xyz_string = f.read()
 
     water = Occupant.from_xyz_string(water_xyz_string)

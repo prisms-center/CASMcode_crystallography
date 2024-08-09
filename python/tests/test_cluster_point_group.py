@@ -5,7 +5,7 @@ import libcasm.xtal as xtal
 
 
 def supply_molecules_and_expected_point_group_operations(
-    session_shared_datadir: str, molecule_name: str
+    shared_datadir: str, molecule_name: str
 ) -> Tuple[xtal.Occupant, str, float]:
     """Supplies a list of some general molecules on which
     you can test the point group code
@@ -23,7 +23,7 @@ def supply_molecules_and_expected_point_group_operations(
 
 
     """
-    molecules_dir = os.path.join(session_shared_datadir, "input_molecules")
+    molecules_dir = os.path.join(shared_datadir, "input_molecules")
 
     # For ammonia, you will have 6 point group operations
     if molecule_name == "ammonia":
@@ -89,7 +89,7 @@ def supply_molecules_and_expected_point_group_operations(
         "water",
     ],
 )
-def test_point_group_molecule(session_shared_datadir: str, molecule: str):
+def test_point_group_molecule(shared_datadir: str, molecule: str):
     """Tests the point group of molecule for the given code
     Currently tests against the hard coded number of point
     group operations a molecule should have.
@@ -103,9 +103,7 @@ def test_point_group_molecule(session_shared_datadir: str, molecule: str):
         occupant,
         expected_number_of_pg_operations,
         tol,
-    ) = supply_molecules_and_expected_point_group_operations(
-        session_shared_datadir, molecule
-    )
+    ) = supply_molecules_and_expected_point_group_operations(shared_datadir, molecule)
 
     point_group = xtal.cluster_point_group(occupant, tol)
     assert len(point_group) == expected_number_of_pg_operations
