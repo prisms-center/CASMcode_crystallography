@@ -242,3 +242,73 @@ def test_repiprocal():
     assert np.allclose(L_recip[:, 0], b1)
     assert np.allclose(L_recip[:, 1], b2)
     assert np.allclose(L_recip[:, 2], b3)
+
+
+def test_Lattice_to_from_dict():
+    lattice = xtal.Lattice(
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [-0.3, 1.0, 0.0],  # b
+                [0.2, 0.4, 1.0],  # c
+            ]
+        ).transpose()
+    )
+
+    data = lattice.to_dict()
+
+    assert "lattice_vectors" in data
+    assert np.allclose(
+        np.array(data["lattice_vectors"]).transpose(), lattice.column_vector_matrix()
+    )
+
+    lattice2 = xtal.Lattice.from_dict(data)
+    assert isinstance(lattice2, xtal.Lattice)
+    assert lattice == lattice2
+
+
+def test_Lattice_copy():
+    import copy
+
+    obj = xtal.Lattice(
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [-0.3, 1.0, 0.0],  # b
+                [0.2, 0.4, 1.0],  # c
+            ]
+        ).transpose()
+    )
+
+    obj1 = obj.copy()
+    assert isinstance(obj1, xtal.Lattice)
+    assert obj1 is not obj
+
+    obj2 = copy.copy(obj)
+    assert isinstance(obj2, xtal.Lattice)
+    assert obj2 is not obj
+
+    obj3 = copy.deepcopy(obj)
+    assert isinstance(obj3, xtal.Lattice)
+    assert obj3 is not obj
+
+
+def test_Lattice_repr():
+    import io
+    from contextlib import redirect_stdout
+
+    lattice = xtal.Lattice(
+        np.array(
+            [
+                [1.0, 0.0, 0.0],  # a
+                [-0.3, 1.0, 0.0],  # b
+                [0.2, 0.4, 1.0],  # c
+            ]
+        ).transpose()
+    )
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print(lattice)
+    out = f.getvalue()
+    assert "lattice_vectors" in out

@@ -126,6 +126,19 @@ SymInfo::SymInfo(SymOp const &op, xtal::Lattice const &lat)
   return;
 }
 
+SymInfo::SymInfo(SymInfo const &other)
+    : lattice(other.lattice),
+      op_type(other.op_type),
+      axis(other.axis),
+      angle(other.angle),
+      screw_glide_shift(other.screw_glide_shift),
+      location(other.location),
+      time_reversal(other.time_reversal) {
+  axis.set_lattice(lattice, CART);
+  screw_glide_shift.set_lattice(lattice, CART);
+  location.set_lattice(lattice, CART);
+}
+
 void SymInfo::_set(Eigen::Vector3d const &_axis,
                    Eigen::Vector3d const &_screw_glide_shift,
                    Eigen::Vector3d const &_location, xtal::Lattice const &lat) {

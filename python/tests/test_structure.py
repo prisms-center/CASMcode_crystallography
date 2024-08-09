@@ -298,12 +298,26 @@ def test_copy_structure(example_structure_1):
 
     structure1 = copy.copy(example_structure_1)
     structure2 = copy.deepcopy(example_structure_1)
+    structure3 = example_structure_1.copy()
 
     assert isinstance(example_structure_1, xtal.Structure)
     assert isinstance(structure1, xtal.Structure)
     assert structure1 is not example_structure_1
     assert isinstance(structure2, xtal.Structure)
     assert structure2 is not example_structure_1
+    assert isinstance(structure3, xtal.Structure)
+    assert structure3 is not example_structure_1
+
+
+def test_Structure_repr(example_structure_1):
+    import io
+    from contextlib import redirect_stdout
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        print(example_structure_1)
+    out = f.getvalue()
+    assert "atom_type" in out
 
 
 def test_structure_is_equivalent_to():

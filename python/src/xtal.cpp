@@ -1,4 +1,5 @@
 #include <pybind11/eigen.h>
+#include <pybind11/iostream.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -10,8 +11,9 @@
 #include "pybind11_json/pybind11_json.hpp"
 
 // CASM
+#include "casm/casm_io/Log.hh"
 #include "casm/casm_io/container/json_io.hh"
-#include "casm/casm_io/json/jsonParser.hh"
+#include "casm/casm_io/json/InputParser_impl.hh"
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/BasicStructureTools.hh"
 #include "casm/crystallography/CanonicalForm.hh"
@@ -30,6 +32,7 @@
 #include "casm/crystallography/io/SimpleStructureIO.hh"
 #include "casm/crystallography/io/SymInfo_json_io.hh"
 #include "casm/crystallography/io/SymInfo_stream_io.hh"
+#include "casm/crystallography/io/UnitCellCoordIO.hh"
 #include "casm/crystallography/io/VaspIO.hh"
 
 #define STRINGIFY(x) #x
@@ -236,6 +239,95 @@ DoFSetBasis make_dofsetbasis(
     std::vector<std::string> const &axis_names = std::vector<std::string>{},
     Eigen::MatrixXd const &basis = Eigen::MatrixXd(0, 0)) {
   return DoFSetBasis(dofname, axis_names, basis);
+}
+
+jsonParser &to_json(DoFSetBasis const &dofsetbasis, jsonParser &json) {
+  if (!json.is_object()) {
+    throw std::runtime_error(
+        "Error in to_json(DoFSetBasis): json must be an object");
+  }
+  json[dofsetbasis.dofname]["basis"] = dofsetbasis.basis.transpose();
+  json[dofsetbasis.dofname]["axis_names"] = dofsetbasis.axis_names;
+  return json;
+}
+
+/// \brief Parse a JSON object into a vector of DoFSetBasis
+void parse(InputParser<std::vector<DoFSetBasis>> &parser,
+           ParsingDictionary<AnisoValTraits> const *_aniso_val_dict = nullptr) {
+  ParsingDictionary<AnisoValTraits> default_aniso_val_dict =
+      make_parsing_dictionary<AnisoValTraits>();
+  if (_aniso_val_dict == nullptr) _aniso_val_dict = &default_aniso_val_dict;
+
+  jsonParser const &json = parser.self;
+  if (!json.is_object()) {
+    parser.error.insert("must be an object");
+  }
+
+  parser.value = notstd::make_unique<std::vector<DoFSetBasis>>();
+  auto &dof = *parser.value;
+  for (auto it = json.begin(); it != json.end(); ++it) {
+    std::string dofname = it.name();
+
+    if (!_aniso_val_dict->contains(dofname)) {
+      try {
+        AnisoValTraits const &traits = _aniso_val_dict->lookup(dofname);
+      } catch (std::runtime_error const &e) {
+        parser.insert_error(dofname, e.what());
+        continue;
+      }
+    }
+    AnisoValTraits const &traits = _aniso_val_dict->lookup(dofname);
+
+    jsonParser const &dof_json = json[dofname];
+    if (!dof_json.is_object()) {
+      parser.insert_error(dofname, "must be an object");
+      continue;
+    }
+
+    // if non-standard basis, both basis and axis_names are required
+    // if standard basis, neither are allowed
+    if (dof_json.contains("basis") != dof_json.contains("axis_names")) {
+      std::stringstream msg;
+      msg << "Error reading DoF input: if either is present, 'axis_names' and "
+             "'basis' must both be present";
+      parser.insert_error(dofname, msg.str());
+      continue;
+    }
+
+    // standard basis
+    if (!json.contains("axis_names")) {
+      std::vector<std::string> axis_names = traits.standard_var_names();
+      Eigen::MatrixXd basis =
+          Eigen::MatrixXd::Identity(traits.dim(), traits.dim());
+      dof.push_back(DoFSetBasis(dofname, axis_names, basis));
+      continue;
+    }
+
+    // non-standard basis
+    std::vector<std::string> axis_names;
+    parser.require(axis_names, "axis_names");
+
+    Eigen::MatrixXd row_vector_basis;
+    parser.require(row_vector_basis, "basis");
+
+    if (row_vector_basis.rows() != axis_names.size()) {
+      std::stringstream msg;
+      msg << "the number of basis vectors (" << row_vector_basis.rows() << ") "
+          << "does not match the number of axis names (" << axis_names.size()
+          << ")";
+      parser.insert_error(dofname, msg.str());
+    }
+
+    if (row_vector_basis.cols() != traits.dim()) {
+      std::stringstream msg;
+      msg << "basis vector sizes (" << row_vector_basis.cols() << ") "
+          << "do not match the standard dimension (" << traits.dim() << ")";
+      parser.insert_error(dofname, msg.str());
+    }
+
+    dof.push_back(
+        DoFSetBasis(dofname, axis_names, row_vector_basis.transpose()));
+  }
 }
 
 // SpeciesProperty -> properties
@@ -456,6 +548,8 @@ void init_prim(
 /// \brief Construct xtal::BasicStructure from JSON string
 std::shared_ptr<xtal::BasicStructure const> prim_from_json(
     std::string const &prim_json_str, double xtal_tol) {
+  // print errors and warnings to sys.stdout
+  py::scoped_ostream_redirect redirect;
   jsonParser json = jsonParser::parse(prim_json_str);
   PyErr_WarnEx(PyExc_DeprecationWarning,
                "Prim.from_json() is deprecated, use Prim.from_dict() instead.",
@@ -856,6 +950,8 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
 }
 
 xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
+  // print errors and warnings to sys.stdout
+  py::scoped_ostream_redirect redirect;
   PyErr_WarnEx(
       PyExc_DeprecationWarning,
       "Structure.from_json() is deprecated, use Structure.from_dict() instead.",
@@ -1015,7 +1111,7 @@ PYBIND11_MODULE(_xtal, m) {
 
         - Data structures for representing lattices, crystal structures, and
           degrees of freedom (DoF).
-        - Methods for enumerating lattices, making super structures,
+        - Methods for enumerating lattices, making superstructures,
           finding primitive and reduced cells, and finding symmetry
           operations.
 
@@ -1079,6 +1175,9 @@ PYBIND11_MODULE(_xtal, m) {
       - ``X=Structure``, ``lhs=SymOp``, ``rhs=Structure``: Transform a
         :class:`Structure`.
 
+      - SymOp may be copied with :func:`SymOp.copy <libcasm.xtal.SymOp.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
+
       .. note::
 
           Other types of objects require additional information to be efficiently
@@ -1135,7 +1234,8 @@ PYBIND11_MODULE(_xtal, m) {
 
     .. rubric:: Special Methods
 
-    - Structure may be copied with `copy.copy` or `copy.deepcopy`.
+    - Structure may be copied with :func:`Structure.copy <libcasm.xtal.Structure.copy>`,
+      `copy.copy`, or `copy.deepcopy`.
 
 
     .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
@@ -1183,6 +1283,10 @@ PYBIND11_MODULE(_xtal, m) {
           assert L1 == L1
           assert (L1 != L1) == False
           assert xtal.is_equivalent_to(L1, L2) == True
+
+      - Lattice may be copied with
+        :func:`Lattice.copy <libcasm.xtal.Lattice.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
 
 
       .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
@@ -1357,7 +1461,97 @@ PYBIND11_MODULE(_xtal, m) {
           If ``is_equivalent_superlattice_of==True``, `p` is the index of the first
           :class:`SymOp` into `point_group` for which it is true; otherwise the value
           of `p` is undefined.
-      )pbdoc");
+      )pbdoc")
+      .def(
+          "copy", [](xtal::Lattice const &self) { return xtal::Lattice(self); },
+          R"pbdoc(
+          Returns a copy of the Lattice.
+          )pbdoc")
+      .def("__copy__",
+           [](xtal::Lattice const &self) { return xtal::Lattice(self); })
+      .def("__deepcopy__", [](xtal::Lattice const &self,
+                              py::dict) { return xtal::Lattice(self); })
+      .def("__repr__",
+           [](xtal::Lattice const &self) {
+             std::stringstream ss;
+             jsonParser json;
+             json["lattice_vectors"] = self.lat_column_mat().transpose();
+             ss << json;
+             return ss.str();
+           })
+      .def_static(
+          "from_dict",  // Lattice.from_dict
+          [](const nlohmann::json &data, double xtal_tol) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
+            jsonParser json{data};
+            Eigen::Matrix3d latvec_transpose;
+            try {
+              from_json(latvec_transpose, json["lattice_vectors"]);
+            } catch (std::exception &e) {
+              log() << e.what() << std::endl;
+              throw std::runtime_error("Error parsing Lattice from JSON.");
+            }
+            return xtal::Lattice(latvec_transpose.transpose(), xtal_tol);
+          },
+          R"pbdoc(
+          Construct a Lattice from a Python dict
+
+          Expected format:
+
+          .. code-block:: Python
+
+              data = {
+                  "lattice_vectors": [
+                      [a1, a2, a3],
+                      [b1, b2, b3],
+                      [c1, c2, c3],
+                  ]
+              }
+
+          Parameters
+          ----------
+          data: dict
+              The Python dict representation of the Lattice.
+          xtal_tol: float = :data:`~libcasm.casmglobal.TOL`
+              The tolerance used for crystallographic comparisons.
+
+          Returns
+          -------
+          lattice: Lattice
+              The Lattice.
+
+          )pbdoc",
+          py::arg("data"), py::arg("xtal_tol") = TOL)
+      .def(
+          "to_dict",
+          [](xtal::Lattice const &lattice) {
+            jsonParser json;
+            json["lattice_vectors"] = lattice.lat_column_mat().transpose();
+            return static_cast<nlohmann::json>(json);
+          },
+          R"pbdoc(
+          Represent the Lattice as a Python dict
+
+          The Lattice dict format:
+
+          .. code-block:: Python
+
+              data = {
+                  "lattice_vectors": [
+                      [a1, a2, a3],
+                      [b1, b2, b3],
+                      [c1, c2, c3],
+                  ]
+              }
+
+          Returns
+          -------
+          data: dict
+              The Lattice as a Python dict.
+
+          )pbdoc");
 
   m.def("make_canonical_lattice", &make_canonical_lattice,
         py::arg("init_lattice"),
@@ -1642,6 +1836,14 @@ PYBIND11_MODULE(_xtal, m) {
 
   py::class_<xtal::AtomPosition>(m, "AtomComponent", R"pbdoc(
       An atomic component of a molecular :class:`Occupant`
+
+      .. rubric:: Special Methods
+
+      - AtomComponent may be copied with
+        :func:`AtomComponent.copy <libcasm.xtal.AtomComponent.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
+
+
       )pbdoc")
       .def(py::init(&make_atom_position), py::arg("name"),
            py::arg("coordinate"),
@@ -1683,13 +1885,143 @@ PYBIND11_MODULE(_xtal, m) {
            is placed.
            )pbdoc")
       .def("properties", &get_atom_position_properties,
-           "Returns the fixed properties of the atom");
+           "Returns the fixed properties of the atom")
+      .def(
+          "copy",
+          [](xtal::AtomPosition const &self) {
+            return xtal::AtomPosition(self);
+          },
+          R"pbdoc(
+          Returns a copy of the AtomComponent.
+          )pbdoc")
+      .def("__copy__",
+           [](xtal::AtomPosition const &self) {
+             return xtal::AtomPosition(self);
+           })
+      .def("__deepcopy__", [](xtal::AtomPosition const &self,
+                              py::dict) { return xtal::AtomPosition(self); })
+      .def("__repr__",
+           [](xtal::AtomPosition const &self) {
+             // Write in Cartesian coordinates
+             std::stringstream ss;
+             jsonParser json;
+             to_json(self, json, Eigen::Matrix3d::Identity());
+             ss << json;
+             return ss.str();
+           })
+      .def_static(
+          "from_dict",  // AtomComponent.from_dict
+          [](const nlohmann::json &data, bool frac,
+             std::optional<xtal::Lattice> lattice) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
+            jsonParser json{data};
+
+            Eigen::Matrix3d coord_mode_to_cart_M;
+            if (frac) {
+              if (!lattice.has_value()) {
+                throw std::runtime_error(
+                    "Error in AtomComponent.from_dict: Reading fractional "
+                    "coordinates requires a lattice.");
+              }
+              coord_mode_to_cart_M = lattice->lat_column_mat();
+            } else {
+              coord_mode_to_cart_M = Eigen::Matrix3d::Identity();
+            }
+
+            ParsingDictionary<AnisoValTraits> default_aniso_val_dict =
+                make_parsing_dictionary<AnisoValTraits>();
+            return jsonConstructor<xtal::AtomPosition>::from_json(
+                json, coord_mode_to_cart_M, default_aniso_val_dict);
+          },
+          R"pbdoc(
+          Construct an AtomComponent from a Python dict
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#atom-component-json-object>`_
+          documents the expected format:
+
+          .. code-block:: Python
+
+              data = {
+                  "coordinate": [r1, r2, r3],
+                  "name": "<atom_name>",
+                  "properties": {
+                    "<property_name>": {
+                      "value": [v1, ...],
+                    },
+                    ...
+                  }
+              }
+
+          Parameters
+          ----------
+          data: dict
+              The Python dict representation of the AtomComponent
+          frac: bool = False
+              If True, read coordinate as fractional.
+          lattice: Optional[Lattice] = None
+              The lattice, required if `frac` is True.
+
+          Returns
+          -------
+          lattice: Lattice
+              The Lattice.
+
+          )pbdoc",
+          py::arg("data"), py::arg("frac") = false,
+          py::arg("lattice") = std::nullopt)
+      .def(
+          "to_dict",
+          [](xtal::AtomPosition const &self, bool frac,
+             std::optional<xtal::Lattice> lattice) {
+            Eigen::Matrix3d cart_to_coord_mode_M;
+            if (frac) {
+              if (!lattice.has_value()) {
+                throw std::runtime_error(
+                    "Error in AtomComponent.to_dict: Writing fractional "
+                    "coordinates requires a lattice.");
+              }
+              cart_to_coord_mode_M = lattice->inv_lat_column_mat();
+            } else {
+              cart_to_coord_mode_M = Eigen::Matrix3d::Identity();
+            }
+            jsonParser json;
+            to_json(self, json, cart_to_coord_mode_M);
+            return static_cast<nlohmann::json>(json);
+          },
+          R"pbdoc(
+          Represent the AtomComponent as a Python dict
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#atom-component-json-object>`_
+          documents the AtomComponent format.
+
+          Parameters
+          ----------
+          frac: bool = False
+              If True, write fractional coordinates.
+          lattice: Optional[Lattice] = None
+              The lattice, required if `frac` is True.
+
+          Returns
+          -------
+          data: dict
+              The AtomComponent as a Python dict.
+
+          )pbdoc",
+          py::arg("frac") = false, py::arg("lattice") = std::nullopt);
 
   py::class_<xtal::Molecule>(m, "Occupant", R"pbdoc(
       A site occupant, which may be a vacancy, atom, or molecule
 
       The Occupant class is used to represent all chemical species,
       including single atoms, vacancies, and molecules.
+
+      .. rubric:: Special Methods
+
+      - Occupant may be copied with
+        :func:`Occupant.copy <libcasm.xtal.Occupant.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
 
       )pbdoc")
       .def(py::init(&make_molecule), py::arg("name"),
@@ -1777,7 +2109,130 @@ PYBIND11_MODULE(_xtal, m) {
             occupant: xtal.Occupant
             )pbdoc"
 
-      );
+          )
+      .def(
+          "copy",
+          [](xtal::Molecule const &self) { return xtal::Molecule(self); },
+          R"pbdoc(
+          Returns a copy of the Lattice.
+          )pbdoc")
+      .def("__copy__",
+           [](xtal::Molecule const &self) { return xtal::Molecule(self); })
+      .def("__deepcopy__", [](xtal::Molecule const &self,
+                              py::dict) { return xtal::Molecule(self); })
+      .def("__repr__",
+           [](xtal::Molecule const &self) {
+             // Write in Cartesian coordinates
+             std::stringstream ss;
+             jsonParser json;
+             to_json(self, json, Eigen::Matrix3d::Identity());
+             ss << json;
+             return ss.str();
+           })
+      .def_static(
+          "from_dict",  // Occupant.from_dict
+          [](const nlohmann::json &data, bool frac,
+             std::optional<xtal::Lattice> lattice) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
+            jsonParser json{data};
+
+            Eigen::Matrix3d coord_mode_to_cart_M;
+            if (frac) {
+              if (!lattice.has_value()) {
+                throw std::runtime_error(
+                    "Error in Occupant.from_dict: Reading fractional "
+                    "coordinates requires a lattice.");
+              }
+              coord_mode_to_cart_M = lattice->lat_column_mat();
+            } else {
+              coord_mode_to_cart_M = Eigen::Matrix3d::Identity();
+            }
+
+            ParsingDictionary<AnisoValTraits> default_aniso_val_dict =
+                make_parsing_dictionary<AnisoValTraits>();
+            return jsonConstructor<xtal::Molecule>::from_json(
+                json, coord_mode_to_cart_M, default_aniso_val_dict);
+          },
+          R"pbdoc(
+          Construct an Occupant from a Python dict
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#molecule-json-object>`_
+          documents the Occupant / Molecule format:
+
+          .. code-block:: Python
+
+              data = {
+                  "atoms": [
+                    {... AtomComponent ... },
+                    ...
+                  ],
+                  "name": "<chemical_name>",
+                  "properties": {
+                    "<property_name>": {
+                      "value": [v1, ...],
+                    },
+                    ...
+                  }
+              }
+
+          Parameters
+          ----------
+          data: dict
+              The Python dict representation of the AtomComponent
+          frac: bool = False
+              If True, read coordinate as fractional.
+          lattice: Optional[Lattice] = None
+              The lattice, required if `frac` is True.
+
+          Returns
+          -------
+          lattice: Lattice
+              The Lattice.
+
+          )pbdoc",
+          py::arg("data"), py::arg("frac") = false,
+          py::arg("lattice") = std::nullopt)
+      .def(
+          "to_dict",
+          [](xtal::Molecule const &self, bool frac,
+             std::optional<xtal::Lattice> lattice) {
+            Eigen::Matrix3d cart_to_coord_mode_M;
+            if (frac) {
+              if (!lattice.has_value()) {
+                throw std::runtime_error(
+                    "Error in Occupant.to_dict: Writing fractional "
+                    "coordinates requires a lattice.");
+              }
+              cart_to_coord_mode_M = lattice->inv_lat_column_mat();
+            } else {
+              cart_to_coord_mode_M = Eigen::Matrix3d::Identity();
+            }
+            jsonParser json;
+            to_json(self, json, cart_to_coord_mode_M);
+            return static_cast<nlohmann::json>(json);
+          },
+          R"pbdoc(
+          Represent the Occupant as a Python dict
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#molecule-json-object>`_
+          documents the Occupant / Molecule format.
+
+          Parameters
+          ----------
+          frac: bool = False
+              If True, write fractional coordinates.
+          lattice: Optional[Lattice] = None
+              The lattice, required if `frac` is True.
+
+          Returns
+          -------
+          data: dict
+              The Occupant as a Python dict.
+
+          )pbdoc",
+          py::arg("frac") = false, py::arg("lattice") = std::nullopt);
 
   m.def("make_vacancy", &xtal::Molecule::make_vacancy, R"pbdoc(
       Construct a Occupant object representing a vacancy
@@ -1832,6 +2287,12 @@ PYBIND11_MODULE(_xtal, m) {
       - `"Cmagspin"`: Collinear magnetic spin
       - `"SOmagspin"`: Non-collinear magnetic spin, with spin-orbit coupling
 
+      .. rubric:: Special Methods
+
+      - DoFSetBasis may be copied with
+        :func:`DoFSetBasis.copy <libcasm.xtal.Occupant.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
+
       .. _`Degrees of Freedom (DoF) and Properties`: https://prisms-center.github.io/CASMcode_docs/formats/dof_and_properties/
       )pbdoc")
       .def(py::init(&make_dofsetbasis), py::arg("dofname"),
@@ -1865,7 +2326,118 @@ PYBIND11_MODULE(_xtal, m) {
       )pbdoc")
       .def("dofname", &get_dofsetbasis_dofname, "Returns the DoF type name.")
       .def("axis_names", &get_dofsetbasis_axis_names, "Returns the axis names.")
-      .def("basis", &get_dofsetbasis_basis, "Returns the basis matrix.");
+      .def("basis", &get_dofsetbasis_basis, "Returns the basis matrix.")
+      .def(
+          "copy", [](DoFSetBasis const &self) { return DoFSetBasis(self); },
+          R"pbdoc(
+          Returns a copy of the DoFSetBasis.
+          )pbdoc")
+      .def("__copy__",
+           [](DoFSetBasis const &self) { return DoFSetBasis(self); })
+      .def("__deepcopy__",
+           [](DoFSetBasis const &self, py::dict) { return DoFSetBasis(self); })
+      .def("__repr__",
+           [](DoFSetBasis const &self) {
+             // Write in Cartesian coordinates
+             std::stringstream ss;
+             jsonParser json;
+             to_json(self, json);
+             ss << json;
+             return ss.str();
+           })
+      .def_static(
+          "from_dict",  // DoFSetBasis.from_dict
+          [](const nlohmann::json &data) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
+            jsonParser json{data};
+            ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
+            InputParser<std::vector<DoFSetBasis>> parser(json, aniso_val_dict);
+            std::runtime_error error_if_invalid{
+                "Error in libcasm.xtal.DoFSetBasis.from_dict"};
+            report_and_throw_if_invalid(parser, CASM::log(), error_if_invalid);
+            return std::move(*parser.value);
+          },
+          R"pbdoc(
+          Construct a list of DoFSetBasis from a Python dict
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#user-specified-dof-basis>`_
+          documents the DoFSetBasis format:
+
+          .. code-block:: Python
+
+              data = {
+                  "<dofname>": {
+                      "axis_names": ["<axis1_name>", "<axis2_name>", ...],
+                      "basis": [
+                        [b11, b12, ...],  # axis 1
+                        [b21, b22, ...],  # axis 2
+                        ...
+                      ]
+                  }
+              }
+
+          Parameters
+          ----------
+          data: dict
+              The Python dict representation of one or more DoFSetBasis
+
+          Returns
+          -------
+          dof: list[DoFSetBasis]
+              The list of DoFSetBasis.
+
+          )pbdoc",
+          py::arg("data"))
+      .def(
+          "to_dict",
+          [](DoFSetBasis const &self, py::dict data) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
+            jsonParser json;
+            to_json(self, json);
+            for (auto it = json.begin(); it != json.end(); ++it) {
+              data[it.name().c_str()] = nlohmann::json(*it);
+            }
+            return data;
+          },
+          R"pbdoc(
+          Update a Python dict with the DoFSetBasis
+
+          The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/#user-specified-dof-basis>`_
+          documents the DoFSetBasis format.
+
+          .. rubric:: Example usage
+
+          .. code-block:: Python
+
+              # prim: libcasm.xtal.Prim
+
+              global_dof_data = {}
+              for dof in prim.global_dof():
+                  dof.to_dict(global_dof_data)
+
+              basis_dof_data = []
+              for sublat_dof in prim.local_dof():
+                  site_dof_data = {}
+                  for dof in sublat_dof:
+                      dof.to_dict(site_dof_data)
+                  basis_dof_data.append(site_dof_data)
+
+          Parameters
+          ----------
+          data: dict
+              A dict to update with the DoFSetBasis.
+
+          Returns
+          -------
+          data: dict
+              The updated dict.
+
+          )pbdoc",
+          py::arg("data"));
 
   // Note: Prim is intended to be `std::shared_ptr<xtal::BasicStructure const>`,
   // but Python does not handle constant-ness directly as in C++. Therefore, do
@@ -1903,6 +2475,12 @@ PYBIND11_MODULE(_xtal, m) {
       :func:`make_canonical_prim` method may be used to find
       the equivalent with a Niggli cell lattice aligned in a CASM
       standard direction.
+
+      .. rubric:: Special Methods
+
+      - Prim may be copied with :func:`Prim.copy <libcasm.xtal.Prim.copy>`,
+        `copy.copy` or `copy.deepcopy`.
+
       )pbdoc")
       .def(py::init(&make_prim), py::arg("lattice"), py::arg("coordinate_frac"),
            py::arg("occ_dof"),
@@ -1972,9 +2550,39 @@ PYBIND11_MODULE(_xtal, m) {
       .def("labels", &get_prim_labels,
            "Returns the integer label associated with each basis site. If no "
            "labels were provided, it will be a list of -1.")
+      .def(
+          "copy",
+          [](std::shared_ptr<xtal::BasicStructure const> const &prim) {
+            return std::make_shared<xtal::BasicStructure const>(*prim);
+          },
+          R"pbdoc(
+           Returns a copy of the Prim.
+           )pbdoc")
+      .def("__copy__",
+           [](std::shared_ptr<xtal::BasicStructure const> const &prim) {
+             return std::make_shared<xtal::BasicStructure const>(*prim);
+           })
+      .def("__deepcopy__",
+           [](std::shared_ptr<xtal::BasicStructure const> const &prim,
+              py::dict) {
+             return std::make_shared<xtal::BasicStructure const>(*prim);
+           })
+      .def("__repr__",
+           [](std::shared_ptr<xtal::BasicStructure const> const &prim) {
+             std::stringstream ss;
+             jsonParser json;
+             COORD_TYPE mode = FRAC;
+             bool include_va = false;
+             write_prim(*prim, json, mode, include_va);
+             ss << json;
+             return ss.str();
+           })
       .def_static(
-          "from_dict",
+          "from_dict",  // Prim.from_dict
           [](const nlohmann::json &data, double xtal_tol) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
             jsonParser json{data};
             ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
             return std::make_shared<xtal::BasicStructure>(
@@ -2010,7 +2618,7 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             -------
-            data : json
+            data: dict
                 The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
 
             )pbdoc")
@@ -2446,9 +3054,31 @@ PYBIND11_MODULE(_xtal, m) {
             return copy_apply(op, simple);
           },
           py::arg("structure"), "Transform a Structure.", py::is_operator())
+      .def(
+          "copy", [](xtal::SymOp const &self) { return xtal::SymOp(self); },
+          R"pbdoc(
+           Returns a copy of the SymOp.
+           )pbdoc")
+      .def("__copy__",
+           [](xtal::SymOp const &self) { return xtal::SymOp(self); })
+      .def("__deepcopy__",
+           [](xtal::SymOp const &self, py::dict) { return xtal::SymOp(self); })
+      .def("__repr__",
+           [](xtal::SymOp const &op) {
+             std::stringstream ss;
+             jsonParser json;
+             json["matrix"] = xtal::get_matrix(op);
+             to_json_array(xtal::get_translation(op), json["tau"]);
+             json["time_reversal"] = xtal::get_time_reversal(op);
+             ss << json;
+             return ss.str();
+           })
       .def_static(
-          "from_dict",
+          "from_dict",  // SymOp.from_dict
           [](const nlohmann::json &data) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
             jsonParser json{data};
             Eigen::Matrix3d matrix;
             from_json(matrix, json["matrix"]);
@@ -2699,8 +3329,11 @@ PYBIND11_MODULE(_xtal, m) {
            "Returns continuous properties associated with the entire crystal, "
            "if present.")
       .def_static(
-          "from_dict",
+          "from_dict",  // Structure.from_dict
           [](const nlohmann::json &data) {
+            // print errors and warnings to sys.stdout
+            py::scoped_ostream_redirect redirect;
+
             jsonParser json{data};
             xtal::SimpleStructure simple;
             from_json(simple, json);
@@ -2738,9 +3371,19 @@ PYBIND11_MODULE(_xtal, m) {
 
           Returns
           -------
-          data : json
+          data: dict
               The `Structure reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/SimpleStructure/>`_ documents the format.
           )pbdoc")
+      .def("__repr__",
+           [](xtal::SimpleStructure const &simple) {
+             std::stringstream ss;
+             jsonParser json;
+             COORD_TYPE mode = FRAC;
+             std::set<std::string> excluded_species = {"Va", "VA", "va"};
+             to_json(simple, json, excluded_species, mode);
+             ss << json;
+             return ss.str();
+           })
       .def_static("from_json", &simplestructure_from_json, R"pbdoc(
           Construct a Structure from a JSON-formatted string.
 
@@ -2845,13 +3488,21 @@ PYBIND11_MODULE(_xtal, m) {
 
             Returns
             -------
-            struture : Structure
+            structure : Structure
                 A Structure
 
             )pbdoc",
           py::arg("sort") = true, py::arg("title") = "<title>",
           py::arg("ignore") = std::vector<std::string>{"VA", "Va", "va"},
           py::arg("cart_coordinate_mode") = false)
+      .def(
+          "copy",
+          [](xtal::SimpleStructure const &self) {
+            return xtal::SimpleStructure(self);
+          },
+          R"pbdoc(
+           Returns a copy of the Structure.
+           )pbdoc")
       .def("__copy__",
            [](xtal::SimpleStructure const &self) {
              return xtal::SimpleStructure(self);
@@ -3404,6 +4055,10 @@ PYBIND11_MODULE(_xtal, m) {
 
           assert str(site) == "0, 1 2 3"
 
+      - IntegralSiteCoordinate may be copied with
+        :func:`IntegralSiteCoordinate.copy <libcasm.xtal.IntegralSiteCoordinate.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
+
       )pbdoc");
 
   // IntegralSiteCoordinateRep -- declaration
@@ -3411,17 +4066,50 @@ PYBIND11_MODULE(_xtal, m) {
       m, "IntegralSiteCoordinateRep", R"pbdoc(
       Symmetry representation for transforming IntegralSiteCoordinate
 
+      An :class:`IntegralSiteCoordinateRep` is a symmetry representation for
+      transforming :class:`IntegralSiteCoordinate` objects equivalent to the
+      action of a :class:`SymOp` using only integer operations with:
+
+      .. math::
+
+          b^{\ after} = p_{b^{\ before}}
+
+      .. math::
+
+          \vec{u}^{\ after} = \mathbf{P} \vec{u}^{\ before} + \vec{t}_{b^{\ before}},
+
+      where :math:`\vec{p}` is a permutation that describes how the sublattice
+      index `b` transforms, and :math:`\mathbf{P}` is an 3x3 integer matrix and
+      :math:`\vec{t}_{b^{\ before}}` is a fractional coordinate translation
+      vector (which depends on the initial sublattice) describing the change in
+      the fractional coordinate :math:`\vec{u} = [i,j,k]` after application of
+      symmetry.
+
       .. rubric:: Special Methods
 
-      Transform an :class:`IntegralSiteCoordinate` via multiplication
-      operator ``*``:
+      Copy and transform an :class:`IntegralSiteCoordinate` via multiplication
+      operator ``*`` or the :func:`copy_apply` method; or apply in-place with
+      the :func:`apply` method:
 
       .. code-block:: Python
 
           from libcasm.xtal import IntegralSiteCoordinate, IntegralSiteCoordinateRep
           rep = IntegralSiteCoordinateRep(...)
-          integral_site_coordinate = IntegralSiteCoordinate(...)
-          transformed_integral_site_coordinate = rep * integral_site_coordinate
+          site = IntegralSiteCoordinate(...)
+
+          # copy and transform using `*` or `copy_apply`
+          transformed_site_1 = rep * site
+          transformed_site_2 = copy_apply(rep, site)
+          assert transformed_site_1 == transformed_site_2
+
+          # or copy, then transform in-place using `apply`
+          copied_site = site.copy()
+          apply(rep, copied_site)
+          assert copied_site == transformed_site_1
+
+      - IntegralSiteCoordinateRep may be copied with
+        :func:`IntegralSiteCoordinateRep.copy <libcasm.xtal.IntegralSiteCoordinateRep.copy>`,
+        `copy.copy`, or `copy.deepcopy`.
 
       )pbdoc");
 
@@ -3478,14 +4166,16 @@ PYBIND11_MODULE(_xtal, m) {
           "Returns the unit cell indices, :math:`(i,j,k)`, as a shape=(3,) "
           "integer array.")
       .def(
-          "__str__",
+          "__repr__",
           [](xtal::UnitCellCoord const &self) {
             std::stringstream ss;
-            ss << self;
+            jsonParser json;
+            to_json(self, json);
+            ss << json;
             return ss.str();
           },
-          "Represent IntegralSiteCoordinate as `b, i j k`, where `b` is the "
-          "sublattice index and `i j k` are the unit cell coordinates.")
+          "Represent IntegralSiteCoordinate as `[b, i, j, k]`, where `b` is "
+          "the sublattice index and `i, j, k` are the unit cell coordinates.")
       .def(
           "to_list",
           [](xtal::UnitCellCoord const &self) {
@@ -3572,7 +4262,22 @@ PYBIND11_MODULE(_xtal, m) {
            "Sorts coordinates by lexicographical order of :math:`(i,j,k)` then "
            "`b`")
       .def(py::self == py::self, "True if coordinates are equal")
-      .def(py::self != py::self, "True if coordinates are not equal");
+      .def(py::self != py::self, "True if coordinates are not equal")
+      .def(
+          "copy",
+          [](xtal::UnitCellCoord const &self) {
+            return xtal::UnitCellCoord(self);
+          },
+          R"pbdoc(
+           Returns a copy of the IntegralSiteCoordinate.
+           )pbdoc")
+      .def("__copy__",
+           [](xtal::UnitCellCoord const &self) {
+             return xtal::UnitCellCoord(self);
+           })
+      .def("__deepcopy__", [](xtal::UnitCellCoord const &self, py::dict) {
+        return xtal::UnitCellCoord(self);
+      });
 
   // IntegralSiteCoordinateRep -- definition
   pyIntegralSiteCoordinateRep
@@ -3596,7 +4301,37 @@ PYBIND11_MODULE(_xtal, m) {
             return copy_apply(rep, integral_site_coordinate);
           },
           py::arg("integral_site_coordinate"),
-          "Transform an :class:`IntegralSiteCoordinate`", py::is_operator());
+          "Transform an :class:`IntegralSiteCoordinate`", py::is_operator())
+      .def(
+          "copy",
+          [](xtal::UnitCellCoordRep const &self) {
+            return xtal::UnitCellCoordRep(self);
+          },
+          R"pbdoc(
+           Returns a copy of the IntegralSiteCoordinate.
+           )pbdoc")
+      .def("__copy__",
+           [](xtal::UnitCellCoordRep const &self) {
+             return xtal::UnitCellCoordRep(self);
+           })
+      .def("__deepcopy__",
+           [](xtal::UnitCellCoordRep const &self, py::dict) {
+             return xtal::UnitCellCoordRep(self);
+           })
+      .def("__repr__", [](xtal::UnitCellCoordRep const &self) {
+        std::stringstream ss;
+        jsonParser json;
+        json["sublattice_after"] = self.sublattice_index;
+        json["matrix_frac"] = self.point_matrix;
+        json["tau_frac"] = jsonParser::array();
+        for (auto const &tau_frac : self.unitcell_indices) {
+          jsonParser tjson;
+          to_json(tau_frac, tjson, jsonParser::as_array());
+          json["tau_frac"].push_back(tjson);
+        }
+        ss << json;
+        return ss.str();
+      });
 
   m.def(
       "apply",

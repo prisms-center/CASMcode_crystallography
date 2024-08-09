@@ -204,6 +204,100 @@ The crystal point group of a structure can be generated using the :func:`~libcas
 Structure manipulation
 ----------------------
 
+Move coordinates within the unit cell
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 The :func:`~libcasm.xtal.make_structure_within` method returns an equivalent :py:class:`~libcasm.xtal.Structure` with all atom and mol site coordinates within the unit cell.
 
-The :func:`~libcasm.xtal.make_superstructure` method can be used to create super structures.
+
+Make a superstructure
+^^^^^^^^^^^^^^^^^^^^^
+
+The :func:`~libcasm.xtal.make_superstructure` method can be used to create superstructures.
+
+
+Apply a transformation to a structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Rotations and other transformations can be applied to a :class:`Structure` using the :py:class:`~libcasm.xtal.SymOp` class. For example, to rotate a structure by 90 degrees counterclockwise about the z-axis, a :py:class:`~libcasm.xtal.SymOp` can be constructed with the rotation matrix and applied to the initial structure with the ``*`` operator:
+
+.. code-block:: Python
+
+    rotation_matrix = np.array(
+        [
+            [0, -1, 0],
+            [1, 0, 0],
+            [0, 0, 1],
+        ]
+    )
+    rotation_op = xtal.SymOp(rotation_matrix)
+    rotated_structure = rotation_op * structure
+
+
+Filter or sort atoms in a structure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are several methods provided in libcasm-xtal to help with filtering and sorting atoms in a :class:`Structure`:
+
+- :func:`~libcasm.xtal.filter_structure_by_atom_info`: Filter atoms by atom type, coordinate, or properties.
+- :func:`~libcasm.xtal.sort_structure_by_atom_coordinate_cart`: Sort atoms by Cartesian coordinates.
+- :func:`~libcasm.xtal.sort_structure_by_atom_coordinate_frac`: Sort atoms by fractional coordinates.
+- :func:`~libcasm.xtal.sort_structure_by_atom_type`: Sort atoms by type name.
+- :func:`~libcasm.xtal.sort_structure_by_atom_info`: Sort atoms by custom function of atom type, coordinate, or properties.
+
+
+Substitute species
+^^^^^^^^^^^^^^^^^^
+
+The method :func:`~libcasm.xtal.substitute_structure_species` can be used to quickly create a copy of a structure with atomic and molecular species renamed according to a dict containing the substitutions. For example, using ``substitutions = { "A": "Mg", "B": "Cd" }`` a generic A-B structure can be converted to a MgCd structure.
+
+
+Combine structures
+^^^^^^^^^^^^^^^^^^
+
+The method :func:`~libcasm.xtal.combine_structures` can be used to make superstructures of two or more atomic substructures. The resulting structure contains the species of all input structures with Cartesian coordinates fixed to the same values as in the input structures. All atom or molecule properties remain the same as in the input structures.
+
+
+Custom manipulations
+^^^^^^^^^^^^^^^^^^^^
+
+:class:`~libcasm.xtal.Structure` objects are immutable, so manipulations are performed by creating a copy.
+For atomic structures
+
+For atomic structures, the :func:`~libcasm.xtal.make_structure_atom_info` and :func:`~libcasm.xtal.make_structure_from_atom_info` methods can be used to:
+
+- iterate over the atoms in one or more structures,
+- perform some operation, and
+- create a new structure.
+
+The method :func:`~libcasm.xtal.make_structure_atom_info` takes a structure and creates a list of :class:`~libcasm.xtal.StructureAtomInfo` namedtuple which have atom type, coordinates, and properties. These can be iterated over, filterd, sorted, combined or otherwise manipulated and then passed to :func:`~libcasm.xtal.make_structure_from_atom_info` to create a new structure.
+
+For example, the :func:`~libcasm.xtal.combine_structures` method can be implemented as:
+
+.. code-block:: Python
+
+    import libcasm.xtal
+    import typing
+    import numpy as np
+
+    def combine_structures(
+        structures: list[libcasm.xtal.Structure],
+        lattice: typing.Optional[libcasm.xtal.Lattice] = None,
+        global_properties: dict[str, np.ndarray[np.float64]] = {},
+    ) -> libcasm.xtal.Structure:
+        """
+        Combine `structures` into a new `combined_structure`
+        with given `lattice` and `global_properties`.
+        If `lattice` is None, use the lattice of the first structure.
+        """
+        atoms = []
+        for structure in structures:
+            if lattice is None:
+                lattice = structure.lattice()
+            atoms += libcasm.xtal.make_structure_atom_info(structure)
+        return libcasm.xtal.make_structure_from_atom_info(
+            lattice=lattice,
+            atoms=atoms,
+            global_properties=global_properties,
+        )
+

@@ -154,11 +154,9 @@ std::vector<SymOp> make_point_group(Lattice const &_lat, double tol) {
   std::vector<SymOp> result;
   result.reserve(frac_point_group.size());
   Eigen::Matrix3d t_cart, t_diff;
-  Lattice symlat = symmetrized_with_fractional(tlat_reduced, frac_point_group);
   for (Eigen::Matrix3i const &frac : frac_point_group) {
-    t_cart = symlat.lat_column_mat() * frac.cast<double>() *
-             symlat.inv_lat_column_mat();
-    t_diff = t_cart * _lat.lat_column_mat() - _lat.lat_column_mat();
+    t_cart = tlat_reduced.lat_column_mat() * frac.cast<double>() *
+             tlat_reduced.inv_lat_column_mat();
     result.push_back(SymOp::point_operation(t_cart));
   }
   return result;
