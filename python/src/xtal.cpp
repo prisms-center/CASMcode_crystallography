@@ -381,6 +381,58 @@ std::map<std::string, Eigen::MatrixXd> get_molecule_properties(
   return result;
 }
 
+xtal::Molecule make_molecule_from_xyz_string(
+    std::string xyz_string, bool is_divisible = false,
+    std::map<std::string, Eigen::MatrixXd> properties = {}) {
+  std::istringstream xyz_string_stream(xyz_string);
+  std::vector<std::string> xyz_lines;
+
+  std::string first_line;
+  std::getline(xyz_string_stream, first_line);
+  // the first line in the xyz format will be number of atoms in the molecule
+  int number_of_atoms_in_molecule = std::stoi(first_line);
+
+  std::string name_of_molecule;
+  // the second line in the xyz format will be the name of the molecule
+  std::getline(xyz_string_stream, name_of_molecule);
+
+  // from 3rd line, the xyz fomat follows "atom_type cart_coord_x cart_coord_y
+  // cart_coord_z" notation
+
+  std::vector<xtal::AtomPosition> atom_positions;
+  for (std::string line; std::getline(xyz_string_stream, line);) {
+    // create a string stream for each line
+    // and parse atom_type and cartesian coordinates
+    std::stringstream line_stream(line);
+
+    std::string atom_type;
+    line_stream >> atom_type;
+
+    std::string cart_x_str;
+    line_stream >> cart_x_str;
+
+    double cart_coord_x = std::stod(cart_x_str);
+
+    std::string cart_y_str;
+    line_stream >> cart_y_str;
+    double cart_coord_y = std::stod(cart_y_str);
+
+    std::string cart_z_str;
+    line_stream >> cart_z_str;
+    double cart_coord_z = std::stod(cart_z_str);
+
+    xtal::AtomPosition atom_position(
+        Eigen::Vector3d(cart_coord_x, cart_coord_y, cart_coord_z), atom_type);
+
+    atom_positions.push_back(atom_position);
+  }
+
+  xtal::Molecule molecule(name_of_molecule, atom_positions, is_divisible);
+  molecule.set_properties(make_species_properties(properties));
+
+  return molecule;
+}
+
 // Prim
 
 std::shared_ptr<xtal::BasicStructure> make_prim(
@@ -1794,7 +1846,9 @@ PYBIND11_MODULE(_xtal, m) {
 
       )pbdoc")
       .def(py::init(&make_atom_position), py::arg("name"),
-           py::arg("coordinate"), py::arg("properties"), R"pbdoc(
+           py::arg("coordinate"),
+           py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{},
+           R"pbdoc(
 
       .. rubric:: Constructor
 
@@ -1808,7 +1862,7 @@ PYBIND11_MODULE(_xtal, m) {
           Position of the atom, in Cartesian coordinates, relative
           to the basis site at which the occupant containing this
           atom is placed.
-      properties : dict[str, array_like]
+      properties : dict[str, array_like], default={}
           Fixed properties of the atom, such as magnetic sping or
           selective dynamics flags. Keys must be the name of a
           CASM-supported property type. Values are arrays with
@@ -2018,6 +2072,44 @@ PYBIND11_MODULE(_xtal, m) {
            "True if occupant is a vacancy.")
       .def("is_atomic", &xtal::Molecule::is_atomic,
            "True if occupant is a single isotropic atom or vacancy")
+      .def_static(
+          "from_xyz_string", &make_molecule_from_xyz_string,
+          py::arg("xyz_string"), py::arg("is_divisible") = false,
+          py::arg("properties") = std::map<std::string, Eigen::MatrixXd>{},
+          R"pbdoc(
+	     Make xtal.Occupant by reading the atom types and coordinates 
+	     of individual atoms represented in the xyz format
+
+            Parameters
+            ----------
+            xyz_string: str
+	    	String containing the atom types and coordinates
+		of the molecule in the xyz format
+
+		xyz format for molecules uses the following notation:
+		```
+		<number of atoms>
+		comment line (will be used to set the name of the molecule)
+		<element_1> <cart_coord_x_1> <cart_coord_y_1> <cart_coord_z_1>
+		<element_2> <cart_coord_x_2> <cart_coord_y_2> <cart_coord_z_2>
+		...
+		```
+	    is_divisible: bool
+          	If True, indicates an Occupant that may split into components
+          	during kinetic Monte Carlo calculations.
+      	    properties : dict[str, array_like], default={}
+      	        Fixed properties of the occupant, such as magnetic
+      	        spin or selective dynamics flags. Keys must be the name of a
+      	        CASM-supported property type. Values are arrays with
+      	        dimensions matching the standard dimension of the property
+      	        type.
+
+            Returns
+            -------
+            occupant: xtal.Occupant
+            )pbdoc"
+
+          )
       .def(
           "copy",
           [](xtal::Molecule const &self) { return xtal::Molecule(self); },
