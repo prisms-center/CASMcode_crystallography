@@ -1278,6 +1278,60 @@ PYBIND11_MODULE(_xtal, m) {
       .def("volume", &xtal::Lattice::volume, R"pbdoc(
            Return the signed volume of the unit cell.
            )pbdoc")
+      .def("voronoi_table", &xtal::Lattice::voronoi_table, R"pbdoc(
+           Return the Voronoi table for the lattice.
+
+           Returns
+           -------
+           voronoi_table : numpy.ndarray[numpy.float64[n, 3]]
+               The Voronoi table, where each row is an outward-pointing normal
+               of the lattice Voronoi cell, defined such that if
+               ``np.max(voronoi_table @ cart_coord) > 1.0``, then
+               `cart_coord` is outside of the Voronoi cell.
+           )pbdoc")
+      .def("voronoi_inner_radius", &xtal::Lattice::inner_voronoi_radius,
+           R"pbdoc(
+           Return the radius of the largest sphere that fits wholly within the
+           Voronoi cell
+           )pbdoc")
+      .def(
+          "voronoi_number",
+          [](xtal::Lattice const &lattice, Eigen::Vector3d const &pos) {
+            int tnum = 0;
+            double tproj = 0;
+
+            Eigen::MatrixXd const &vtable = lattice.voronoi_table();
+
+            for (Index nv = 0; nv < vtable.rows(); nv++) {
+              tproj = vtable.row(nv) * pos;
+              if (almost_equal(tproj, 1.0, lattice.tol())) {
+                tnum++;
+              } else if (tproj > 1.0) {
+                return -1;
+              }
+            }
+
+            return tnum;
+          },
+          R"pbdoc(
+          Return the number of lattice points that `pos` is equally as
+          close to as the origin
+
+          Parameters
+          ----------
+          pos : array_like, shape=(3,)
+              The position to check, in Cartesian coordinates.
+
+          Returns
+          -------
+          n : int
+              If `n` is 0, then `pos` is within the Voronoi cell and the origin
+              is the nearest lattice site. If `n` is -1, then `pos` is outside
+              the Voronoi cell and there is a lattice site closer than the
+              origin. If `n` is in [1, 7], then `pos` is equally as close to
+              `n` lattice sites as the origin.
+          )pbdoc",
+          py::arg("pos"))
       .def_static("from_lengths_and_angles",
                   &xtal::Lattice::from_lengths_and_angles,
                   py::arg("lengths_and_angles"), py::arg("tol") = TOL,

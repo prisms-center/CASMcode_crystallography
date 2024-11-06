@@ -312,3 +312,72 @@ def test_Lattice_repr():
         print(lattice)
     out = f.getvalue()
     assert "lattice_vectors" in out
+
+
+def test_voronoi():
+    ### Simple cubic lattice test ###
+    x = 1.0
+    L = np.array(
+        [
+            [x, 0.0, 0.0],
+            [0.0, x, 0.0],
+            [0.0, 0.0, x],
+        ]
+    ).transpose()
+    cubic_lattice = xtal.Lattice(L)
+
+    voronoi_table = cubic_lattice.voronoi_table()
+    assert isinstance(voronoi_table, np.ndarray)
+    assert voronoi_table.shape == (26, 3)
+    assert cubic_lattice.voronoi_number([0.4, 0.2, 0.1]) == 0
+    assert cubic_lattice.voronoi_number([0.5, 0.2, 0.1]) == 1
+    assert cubic_lattice.voronoi_number([0.5, 0.5, 0.1]) == 3
+    assert cubic_lattice.voronoi_number([0.5, 0.5, 0.5]) == 7
+    assert cubic_lattice.voronoi_number([0.6, 0.2, 0.1]) == -1
+    assert np.isclose(cubic_lattice.voronoi_inner_radius(), 0.5)
+
+    ### FCC lattice test ###
+    x = 1.0 / math.sqrt(2.0)
+    L = np.array(
+        [
+            [0.0, x, x],
+            [x, 0.0, x],
+            [x, x, 0.0],
+        ]
+    ).transpose()
+    fcc_lattice = xtal.Lattice(L)
+
+    voronoi_table = fcc_lattice.voronoi_table()
+    assert isinstance(voronoi_table, np.ndarray)
+    assert voronoi_table.shape == (18, 3)
+    assert fcc_lattice.voronoi_number([0.0, x / 2.0 - 0.1, x / 2.0 - 0.1]) == 0
+    assert fcc_lattice.voronoi_number([0.0, x / 2.0, x / 2.0]) == 1
+    assert fcc_lattice.voronoi_number([0.0, x / 2.0 + 0.1, x / 2.0 + 0.1]) == -1
+    assert fcc_lattice.voronoi_number([x / 2.0, x / 2.0, x / 2.0]) == 3
+    assert fcc_lattice.voronoi_number([0.0, x, 0.0]) == 5
+    assert np.isclose(fcc_lattice.voronoi_inner_radius(), 0.5)
+
+    ### BCC lattice test ###
+    x = 1.0 / math.sqrt(3.0)
+    L = np.array(
+        [
+            [-x, x, x],
+            [x, -x, x],
+            [x, x, -x],
+        ]
+    ).transpose()
+    bcc_lattice = xtal.Lattice(L)
+
+    voronoi_table = bcc_lattice.voronoi_table()
+    assert isinstance(voronoi_table, np.ndarray)
+    assert voronoi_table.shape == (14, 3)
+    assert (
+        bcc_lattice.voronoi_number([x / 2.0 - 0.1, x / 2.0 - 0.1, x / 2.0 - 0.1]) == 0
+    )
+    assert bcc_lattice.voronoi_number([x / 2.0, x / 2.0, x / 2.0]) == 1
+    assert (
+        bcc_lattice.voronoi_number([x / 2.0 + 0.1, x / 2.0 + 0.1, x / 2.0 + 0.1]) == -1
+    )
+    assert bcc_lattice.voronoi_number([x, 0.0, 0.0]) == 1
+    assert bcc_lattice.voronoi_number([x / 2, x, 0.0]) == 3
+    assert np.isclose(bcc_lattice.voronoi_inner_radius(), 0.5)

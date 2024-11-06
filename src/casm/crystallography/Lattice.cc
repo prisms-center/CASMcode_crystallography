@@ -424,34 +424,47 @@ Lattice Lattice::hexagonal(double tol) {
       // originating from origin;
       EigenCounter<Eigen::Vector3i> combo_count(Eigen::Vector3i(-1, -1, -1), Eigen::Vector3i(1, 1, 1), Eigen::Vector3i(1, 1, 1));
 
-      // For each linear combination, check to see if it is on a face, edge, or vertex of the voronoi cell
-      for(; combo_count.valid(); ++combo_count) {
-        if(combo_count().isZero())
-          continue;
-        // A linear combination does not fall on the voronoi boundary if the angle between
-        // any two of the vectors forming that combination are acute
-        for(i = 0; i < 3; i++) {
-          if(combo_count[(i + 1) % 3] == 0 || combo_count[(i + 2) % 3] == 0)
-            continue;
-          if((180. / M_PI) * CASM::angle(combo_count[(i + 1) % 3] * tlat_reduced[(i + 1) % 3],
-                                         combo_count[(i + 2) % 3] * tlat_reduced[(i + 2) % 3]) +
-             TOL <
-             90.) {
+      Eigen::MatrixXi points(26, 3);
+      int r = 0;
+      for (; combo_count.valid(); ++combo_count) {
+        if (combo_count().isZero()) continue;
+        points.row(r) = combo_count();
+        ++r;
+      }
+
+      for (int i = 0; i < 26; i++) {
+        // The neighboring lattice point under consideration
+        Eigen::Vector3d frac_i = points.row(i).cast<double>();
+        Eigen::Vector3d point_i = tlat_reduced.lat_column_mat() * frac_i;
+
+        // The halfway point between the origin and the neighboring lattice point
+        Eigen::Vector3d halfway_to_point_i = point_i / 2.0;
+
+        // Find the distance from the origin to half-way-to-point-i
+        double origin_dist = halfway_to_point_i.norm();
+        if (origin_dist < m_inner_voronoi_radius) {
+          m_inner_voronoi_radius = origin_dist;
+        }
+
+        bool is_closer_point = false;
+        for (int j = 0; j < 26; j++) {
+          if (i == j) continue;
+          Eigen::Vector3d frac_j = points.row(j).cast<double>();
+          Eigen::Vector3d point_j = tlat_reduced.lat_column_mat() * frac_j;
+          double other_dist = (halfway_to_point_i - point_j).norm();
+          if (other_dist + this->tol() < origin_dist) {
+            is_closer_point = true;
             break;
           }
         }
 
-        if(i == 3) {
-          if(nrows > m_voronoi_table.rows())
+        if (!is_closer_point) {
+          if (nrows > m_voronoi_table.rows()) {
             m_voronoi_table.conservativeResize(nrows, Eigen::NoChange);
+          }
 
-          tpoint = tlat_reduced.lat_column_mat() * combo_count().cast<double>();
-
-          double t_rad = tpoint.norm();
-          if((t_rad / 2.) < m_inner_voronoi_radius)
-            m_inner_voronoi_radius = t_rad / 2.;
-
-          m_voronoi_table.row(nrows - 1) = (2. / (t_rad * t_rad)) * tpoint;
+          double t_rad = point_i.norm();
+          m_voronoi_table.row(nrows - 1) = (2. / (t_rad * t_rad)) * point_i;
           nrows++;
         }
       }

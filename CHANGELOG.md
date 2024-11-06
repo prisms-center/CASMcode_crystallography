@@ -5,6 +5,17 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+
+- Fixed `xtal::Lattice::_generate_voronoi_table()`. The acute angle test resulted in the FCC lattice missing a row for the normal that lies along a conventional unit cell lattice vector, so voronoi number was 4 instead of 5 for the octahedral interstitial coordinate).
+
+### Added
+
+- Added `Lattice.voronoi_table`, `Lattice.voronoi_number`, and `Lattice.voronoi_inner_radius`.
+
+
 ## [2.0a11] - 2024-08-09
 
 ### Added
