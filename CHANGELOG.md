@@ -5,7 +5,8 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+
+## [2.0a12] - 2024-12-10
 
 ### Fixed
 
@@ -14,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `Lattice.voronoi_table`, `Lattice.voronoi_number`, and `Lattice.voronoi_inner_radius`.
+
+### Changed
+
+- Build macos x86_64 wheels with macos-13 Github Actions runner
 
 
 ## [2.0a11] - 2024-08-09
