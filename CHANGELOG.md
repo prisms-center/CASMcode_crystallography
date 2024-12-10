@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `Lattice.voronoi_table`, `Lattice.voronoi_number`, and `Lattice.voronoi_inner_radius`.
 
+### Changed
+
+- Build macos x86_64 wheels with macos-13 Github Actions runner
+
 
 ## [2.0a11] - 2024-08-09
 

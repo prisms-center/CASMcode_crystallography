@@ -24,9 +24,9 @@ jobs:
           name: dist_linux
           path: ./wheelhouse/*.whl
 
-  build_wheels_macos12_x86_64:
-    name: Build x86_64 wheels on macos-12
-    runs-on: macos-12
+  build_wheels_macos13_x86_64:
+    name: Build x86_64 wheels on macos-13
+    runs-on: macos-13
 
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dist_macos12_x86_64
+          name: dist_macos13_x86_64
           path: ./wheelhouse/*.whl
 
   build_wheels_macos14_arm64:
