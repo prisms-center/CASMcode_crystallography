@@ -7,7 +7,7 @@ def test_integral_site_coordinate_constructor(ZrO_prim):
     b = 0
     unitcell = np.array([0, 0, 0])
     integral_site_coordinate = xtal.IntegralSiteCoordinate(b, unitcell)
-    assert type(integral_site_coordinate) == xtal.IntegralSiteCoordinate
+    assert isinstance(integral_site_coordinate, xtal.IntegralSiteCoordinate)
     assert b == integral_site_coordinate.sublattice()
     assert (unitcell == integral_site_coordinate.unitcell()).all()
 

@@ -1,4 +1,5 @@
 """CASM Crystallography"""
+
 from ._methods import (
     StructureAtomInfo,
     combine_structures,

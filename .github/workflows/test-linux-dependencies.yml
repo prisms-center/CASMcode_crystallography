@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Set up requirements & configuration variables
         run: |
@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: CASMcode_global/dist
-          key: ${{ runner.os }}-libcasm-global-v2-0-5
+          key: ${{ runner.os }}-libcasm-global-v2-0-6
 
       - name: checkout libcasm-global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
@@ -32,7 +32,7 @@ jobs:
         with:
           repository: prisms-center/CASMcode_global
           path: CASMcode_global
-          ref: v2.0.5
+          ref: v2.0.6
 
       - name: make global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
