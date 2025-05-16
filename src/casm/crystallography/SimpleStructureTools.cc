@@ -26,8 +26,9 @@ static SimpleStructure::Info _replicate(SimpleStructure::Info const &_info,
   for (auto const &p : _info.properties) {
     result.properties.emplace(
         p.first, Eigen::MatrixXd(p.second.rows(), mult * p.second.cols()));
+    Eigen::MatrixXd &result_p = result.properties.at(p.first);
     for (Index i = 0; i < p.second.cols(); ++i)
-      result.coords.block(0, i * mult, p.second.rows(), mult) =
+      result_p.block(0, i * mult, p.second.rows(), mult) =
           p.second.col(i).replicate(1, mult);
   }
 

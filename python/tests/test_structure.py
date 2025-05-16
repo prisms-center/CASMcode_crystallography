@@ -472,6 +472,73 @@ def test_make_superstructure_2():
     )
 
 
+def test_make_superstructure_3(example_structure_1):
+    struc = example_structure_1
+
+    transformation_matrix = np.eye(3, dtype=int)
+
+    superstructure = xtal.make_superstructure(
+        transformation_matrix_to_super=transformation_matrix,
+        structure=struc,
+    )
+    assert isinstance(superstructure, xtal.Structure)
+    assert np.allclose(
+        struc.atom_coordinate_cart(), superstructure.atom_coordinate_cart()
+    )
+
+
+def test_make_superstructure_4(example_structure_1):
+    struc = example_structure_1
+
+    transformation_matrix = np.array(
+        [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 2],
+        ],
+        dtype=int,
+    )
+
+    superstructure = xtal.make_superstructure(
+        transformation_matrix_to_super=transformation_matrix,
+        structure=struc,
+    )
+    assert isinstance(superstructure, xtal.Structure)
+
+    expected_coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 2.0],
+            [0.5, 0.5, 0.5],
+            [0.5, 0.5, 2.5],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 3.0],
+            [0.5, 0.5, 1.5],
+            [0.5, 0.5, 3.5],
+        ]
+    ).transpose()
+    assert np.allclose(superstructure.atom_coordinate_cart(), expected_coords)
+
+    expected_disp = np.array(
+        [
+            [0.1, 0.0, 0.0],
+            [0.1, 0.0, 0.0],
+            [0.0, 0.1, 0.0],
+            [0.0, 0.1, 0.0],
+            [0.0, 0.0, 0.1],
+            [0.0, 0.0, 0.1],
+            [0.1, 0.2, 0.3],
+            [0.1, 0.2, 0.3],
+        ]
+    ).transpose()
+    assert np.allclose(superstructure.atom_properties()["disp"], expected_disp)
+
+    assert np.allclose(
+        struc.global_properties()["Hstrain"],
+        superstructure.global_properties()["Hstrain"],
+    )
+
+
 def test_make_primitive_structure_1():
     struc = xtal_structures.BCC(r=1)
     transformation_matrix = np.array([[0, 1, 1], [2, 0, 1], [1, 1, 0]], dtype=int).T
