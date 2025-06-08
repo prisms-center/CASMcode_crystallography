@@ -175,6 +175,7 @@ html_css_files = [
     "css/custom.css",
 ]
 html_favicon = "_static/favicon-16x16.png"
+html_show_sourcelink = False
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
