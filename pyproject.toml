@@ -12,23 +12,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libcasm-xtal"
-version = "2.0.1"
+version = "2.1.0"
 authors = [
   { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
 ]
 description = "CASM crystallography"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
-license = {text = "LGPL2.1+"}
+license = "LGPL-2.1-or-later"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
     "Programming Language :: C++",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "libcasm-global>=2.0.6",
+  "libcasm-global>=2.1.0",
   "numpy",
 ]
 

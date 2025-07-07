@@ -5,6 +5,13 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-08-07
+
+### Changed
+
+- Build Linux wheels using manylinux_2_28 (previously manylinux2014)
+
+
 ## [2.0.1] - 2025-05-16
 
 ### Fixed
