@@ -3,5 +3,5 @@ setuptools>=42
 scikit-build
 cmake>=3.20
 ninja
-pybind11~=2.8
+pybind11>=2.8,<4.0
 libcasm-global>=2.1.0
