@@ -23,7 +23,7 @@ TEST(VersionTest, TestGlobalVersion) {
   std::vector<int> version_vec{std::stoi(v_match[1].str()),
                                std::stoi(v_match[2].str()),
                                std::stoi(v_match[3].str())};
-  std::vector<int> min_version{2, 1, 0};
+  std::vector<int> min_version{2, 2, 0};
   EXPECT_TRUE(version_vec >= min_version)
       << "version: " << version_vec << " min_version: " << min_version
       << std::endl;
@@ -38,10 +38,10 @@ TEST(VersionTest, TestXtalVersion) {
   // "beta.1", "beta.2", ...
   EXPECT_EQ(v_match.size(), 6);
   EXPECT_EQ(v_match[1].str(), "2");
-  EXPECT_EQ(v_match[2].str(), "1");
+  EXPECT_EQ(v_match[2].str(), "2");
   EXPECT_EQ(v_match[3].str(), "0");
   EXPECT_EQ(v_match[4].str(), "");
 
-  EXPECT_EQ(CASM::xtal::version(), "2.1.0");
+  EXPECT_EQ(CASM::xtal::version(), "2.2.0");
   EXPECT_EQ(CASM::xtal::version(), casm_crystallography_version());
 }
