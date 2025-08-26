@@ -28,7 +28,7 @@ jobs:
 
       - name: checkout libcasm-global
         if: steps.cache-libcasm-global-restore.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: prisms-center/CASMcode_global
           path: CASMcode_global
