@@ -454,3 +454,51 @@ def example_structure_2():
         ),
         atom_type=["A", "Va", "B", "A"],
     )
+
+
+@pytest.fixture
+def example_structure_3():
+    """Diamond cubic primitive structure."""
+    lattice = xtal.Lattice(
+        np.array([[0.0, 1.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0]]).transpose()
+    )
+
+    atom_coordinate_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.25, 0.25, 0.25],
+        ]
+    ).transpose()
+
+    return xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=atom_coordinate_frac,
+        atom_type=["A", "A"],
+    )
+
+
+@pytest.fixture
+def example_structure_4():
+    """Diamond cubic conventional structure."""
+    lattice = xtal.Lattice(
+        np.array([[2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 2.0]]).transpose()
+    )
+
+    atom_coordinate_frac = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.5, 0.5, 0.0],
+            [0.5, 0.0, 0.5],
+            [0.0, 0.5, 0.5],
+            [0.75, 0.75, 0.25],
+            [0.75, 0.25, 0.75],
+            [0.25, 0.75, 0.75],
+            [0.25, 0.25, 0.25],
+        ]
+    ).transpose()
+
+    return xtal.Structure(
+        lattice=lattice,
+        atom_coordinate_frac=atom_coordinate_frac,
+        atom_type=["A", "A", "A", "A", "A", "A", "A", "A"],
+    )
