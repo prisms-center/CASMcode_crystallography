@@ -5,6 +5,12 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-09-11
+
+### Fixed
+
+- Fixed a bug in `xtal.make_primitive_structure` that resulted in the wrong atom coordinates.
+
 ## [2.2.0] - 2025-08-14
 
 ### Changed
