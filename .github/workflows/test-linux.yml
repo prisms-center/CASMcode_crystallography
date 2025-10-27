@@ -66,7 +66,7 @@ jobs:
 
       - name: upload docs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: libcasm-xtal-docs
           path: python/doc/_build/html

@@ -40,7 +40,7 @@ jobs:
 
       - name: upload libcasm-xtal-macos-latest-x86_64-dist
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: libcasm-xtal-macos-latest-x86_64-dist
           path: dist

@@ -19,7 +19,7 @@ jobs:
         env:
           CIBW_ARCHS_LINUX: x86_64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist_linux_x86_64
           path: ./wheelhouse/*.whl
@@ -36,7 +36,7 @@ jobs:
         env:
           CIBW_ARCHS_LINUX: aarch64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist_linux_aarch64
           path: ./wheelhouse/*.whl
@@ -53,7 +53,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: x86_64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist_macos13_x86_64
           path: ./wheelhouse/*.whl
@@ -70,7 +70,7 @@ jobs:
         env:
           CIBW_ARCHS_MACOS: arm64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist_macos15_arm64
           path: ./wheelhouse/*.whl
@@ -99,7 +99,7 @@ jobs:
 
       - name: upload sdist
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dist_sdist
           path: dist/*.tar.gz
