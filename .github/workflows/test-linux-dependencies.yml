@@ -21,7 +21,7 @@ jobs:
       ### libcasm-global ###
       - name: restore libcasm-global cache
         id: cache-libcasm-global-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: CASMcode_global/dist
           key: ${{ runner.os }}-libcasm-global-v2-2-0
@@ -47,7 +47,7 @@ jobs:
 
       - name: save libcasm-global cache
         id: cache-libcasm-global-save
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: CASMcode_global/dist
           key: ${{ steps.cache-libcasm-global-restore.outputs.cache-primary-key }}
