@@ -33,7 +33,7 @@ jobs:
       ### libcasm-global ###
       - name: restore libcasm-global cache
         id: cache-libcasm-global-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: CASMcode_global/dist
           key: ${{ runner.os }}-libcasm-global-v2-2-0
