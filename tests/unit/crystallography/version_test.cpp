@@ -42,6 +42,6 @@ TEST(VersionTest, TestXtalVersion) {
   EXPECT_EQ(v_match[3].str(), "0");
   EXPECT_EQ(v_match[4].str(), "");
 
-  EXPECT_EQ(CASM::xtal::version(), "2.2.0");
+  EXPECT_EQ(CASM::xtal::version(), "2.3.0");
   EXPECT_EQ(CASM::xtal::version(), casm_crystallography_version());
 }

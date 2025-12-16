@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version")
 
-project(CASMcode_crystallography_tests VERSION 2.2.0 LANGUAGES CXX)
+project(CASMcode_crystallography_tests VERSION 2.3.0 LANGUAGES CXX)
 
 
 # set CMAKE_INSTALL_X variables
