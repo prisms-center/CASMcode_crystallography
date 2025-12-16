@@ -41,23 +41,6 @@ jobs:
           name: dist_linux_aarch64
           path: ./wheelhouse/*.whl
 
-  build_wheels_macos13_x86_64:
-    name: Build x86_64 wheels on macos-13
-    runs-on: macos-13
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.0
-        env:
-          CIBW_ARCHS_MACOS: x86_64
-
-      - uses: actions/upload-artifact@v6
-        with:
-          name: dist_macos13_x86_64
-          path: ./wheelhouse/*.whl
-
   build_wheels_macos15_arm64:
     name: Build arm64 wheels on macos-15
     runs-on: macos-15
