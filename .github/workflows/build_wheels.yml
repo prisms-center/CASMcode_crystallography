@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.1
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_ARCHS_LINUX: x86_64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist_linux_x86_64
           path: ./wheelhouse/*.whl
@@ -29,14 +29,14 @@ jobs:
     runs-on: ubuntu-24.04-arm
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.1
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_ARCHS_LINUX: aarch64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist_linux_aarch64
           path: ./wheelhouse/*.whl
@@ -46,14 +46,14 @@ jobs:
     runs-on: macos-13
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.1
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_ARCHS_MACOS: x86_64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist_macos13_x86_64
           path: ./wheelhouse/*.whl
@@ -63,14 +63,14 @@ jobs:
     runs-on: macos-15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.0.1
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_ARCHS_MACOS: arm64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist_macos15_arm64
           path: ./wheelhouse/*.whl
@@ -80,8 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -99,7 +99,7 @@ jobs:
 
       - name: upload sdist
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist_sdist
           path: dist/*.tar.gz

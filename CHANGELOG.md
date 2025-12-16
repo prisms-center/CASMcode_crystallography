@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.0] - 2025-12-15
 
+### Fixed
+
+- Fixed a bug in `xtal.make_primitive_structure` that resulted in the wrong atom coordinates.
+
 ### Changed
 
 - Build for Python 3.14

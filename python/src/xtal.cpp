@@ -963,7 +963,7 @@ xtal::SimpleStructure make_primitive_simplestructure(
     atom_type.push_back(site_names[0]);
   }
 
-  return make_simplestructure(prim->lattice(), get_prim_coordinate_cart(prim),
+  return make_simplestructure(prim->lattice(), get_prim_coordinate_frac(prim),
                               atom_type);
 }
 
