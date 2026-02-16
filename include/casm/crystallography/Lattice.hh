@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <mutex>
 #include <type_traits>
 #include <vector>
 
@@ -41,6 +42,18 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
   Lattice(Eigen::Ref<const Eigen::Matrix3d> const &lat_mat =
               Eigen::Matrix3d::Identity(),
           double xtal_tol = TOL);
+
+  /// Copy constructor (std::once_flag is not copyable)
+  Lattice(const Lattice &other);
+
+  /// Copy assignment (std::once_flag is not copyable)
+  Lattice &operator=(const Lattice &other);
+
+  /// Move constructor (std::once_flag is not movable)
+  Lattice(Lattice &&other);
+
+  /// Move assignment (std::once_flag is not movable)
+  Lattice &operator=(Lattice &&other);
 
   static Lattice from_lengths_and_angles(std::vector<double> lengths_and_angles,
                                          double xtal_tol = TOL);
@@ -95,9 +108,7 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
   /// (voronoi_table()*coord.cart()).maxCoeff()>1, then 'coord' is outside of
   /// the voronoi cell
   Eigen::MatrixXd const &voronoi_table() const {
-    if (!m_voronoi_table.size()) {
-      _generate_voronoi_table();
-    }
+    std::call_once(m_voronoi_once, &Lattice::_generate_voronoi_table, this);
     return m_voronoi_table;
   }
 
@@ -207,6 +218,7 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
   /// \brief populate voronoi information.
   void _generate_voronoi_table() const;
 
+  mutable std::once_flag m_voronoi_once;
   mutable double m_inner_voronoi_radius;
   mutable Eigen::MatrixXd m_voronoi_table;
 

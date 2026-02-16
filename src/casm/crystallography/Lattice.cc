@@ -12,9 +12,54 @@ namespace xtal {
 Lattice::Lattice(Eigen::Ref<const Eigen::Vector3d> const &vec1,
                  Eigen::Ref<const Eigen::Vector3d> const &vec2,
                  Eigen::Ref<const Eigen::Vector3d> const &vec3, double xtal_tol)
-    : m_tol(xtal_tol) {
+    : m_inner_voronoi_radius(0), m_tol(xtal_tol) {
   m_lat_mat << vec1, vec2, vec3;
   m_inv_lat_mat = m_lat_mat.inverse();
+}
+
+Lattice::Lattice(const Lattice &other)
+    : Comparisons<CRTPBase<Lattice>>(other),
+      m_inner_voronoi_radius(other.m_inner_voronoi_radius),
+      m_voronoi_table(other.m_voronoi_table),
+      m_lat_mat(other.m_lat_mat),
+      m_inv_lat_mat(other.m_inv_lat_mat),
+      m_tol(other.m_tol) {}
+
+Lattice &Lattice::operator=(const Lattice &other) {
+  if (this != &other) {
+    m_inner_voronoi_radius = other.m_inner_voronoi_radius;
+    m_voronoi_table = other.m_voronoi_table;
+    m_lat_mat = other.m_lat_mat;
+    m_inv_lat_mat = other.m_inv_lat_mat;
+    m_tol = other.m_tol;
+    // m_voronoi_once is left as-is for a fresh object, or reset via a new
+    // std::once_flag; since we can't reset it, we rely on the early-return
+    // guard in _generate_voronoi_table to avoid regenerating a copied table.
+    m_voronoi_once.~once_flag();
+    new (&m_voronoi_once) std::once_flag();
+  }
+  return *this;
+}
+
+Lattice::Lattice(Lattice &&other)
+    : Comparisons<CRTPBase<Lattice>>(other),
+      m_inner_voronoi_radius(other.m_inner_voronoi_radius),
+      m_voronoi_table(std::move(other.m_voronoi_table)),
+      m_lat_mat(std::move(other.m_lat_mat)),
+      m_inv_lat_mat(std::move(other.m_inv_lat_mat)),
+      m_tol(other.m_tol) {}
+
+Lattice &Lattice::operator=(Lattice &&other) {
+  if (this != &other) {
+    m_inner_voronoi_radius = other.m_inner_voronoi_radius;
+    m_voronoi_table = std::move(other.m_voronoi_table);
+    m_lat_mat = std::move(other.m_lat_mat);
+    m_inv_lat_mat = std::move(other.m_inv_lat_mat);
+    m_tol = other.m_tol;
+    m_voronoi_once.~once_flag();
+    new (&m_voronoi_once) std::once_flag();
+  }
+  return *this;
 }
 
 std::vector<Eigen::Matrix3d> _skew_transforms() {
@@ -69,7 +114,10 @@ std::vector<Eigen::Matrix3d> const &Lattice::skew_transforms() {
 ///(e.g., lat_mat is equivalent to lat_column_mat())
 Lattice::Lattice(const Eigen::Ref<const Eigen::Matrix3d> &lat_mat,
                  double xtal_tol)
-    : m_lat_mat(lat_mat), m_inv_lat_mat(lat_mat.inverse()), m_tol(xtal_tol) {}
+    : m_inner_voronoi_radius(0),
+      m_lat_mat(lat_mat),
+      m_inv_lat_mat(lat_mat.inverse()),
+      m_tol(xtal_tol) {}
 
 /// \brief Construct a Lattice from lengths and angles
 ///
@@ -427,6 +475,10 @@ int Lattice::voronoi_number(const Eigen::Vector3d &pos) const {
 }
 
 void Lattice::_generate_voronoi_table() const {
+  // Guard against regeneration when voronoi table was already populated
+  // (e.g., via copy constructor)
+  if (m_voronoi_table.size()) return;
+
   // There are no fewer than 12 points in the voronoi table
   m_voronoi_table.resize(12, 3);
 
