@@ -1,6 +1,7 @@
 #ifndef LATTICE_HH
 #define LATTICE_HH
 
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <mutex>
@@ -43,16 +44,12 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
               Eigen::Matrix3d::Identity(),
           double xtal_tol = TOL);
 
-  /// Copy constructor (std::once_flag is not copyable)
   Lattice(const Lattice &other);
 
-  /// Copy assignment (std::once_flag is not copyable)
   Lattice &operator=(const Lattice &other);
 
-  /// Move constructor (std::once_flag is not movable)
   Lattice(Lattice &&other);
 
-  /// Move assignment (std::once_flag is not movable)
   Lattice &operator=(Lattice &&other);
 
   static Lattice from_lengths_and_angles(std::vector<double> lengths_and_angles,
@@ -108,7 +105,13 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
   /// (voronoi_table()*coord.cart()).maxCoeff()>1, then 'coord' is outside of
   /// the voronoi cell
   Eigen::MatrixXd const &voronoi_table() const {
-    std::call_once(m_voronoi_once, &Lattice::_generate_voronoi_table, this);
+    if (!m_voronoi_table_is_ready.load(std::memory_order_acquire)) {
+      std::lock_guard<std::mutex> lock(m_voronoi_mutex);
+      if (!m_voronoi_table_is_ready.load(std::memory_order_relaxed)) {
+        _generate_voronoi_table();
+        m_voronoi_table_is_ready.store(true, std::memory_order_release);
+      }
+    }
     return m_voronoi_table;
   }
 
@@ -218,7 +221,8 @@ class Lattice : public Comparisons<CRTPBase<Lattice>> {
   /// \brief populate voronoi information.
   void _generate_voronoi_table() const;
 
-  mutable std::once_flag m_voronoi_once;
+  mutable std::atomic<bool> m_voronoi_table_is_ready{false};
+  mutable std::mutex m_voronoi_mutex;
   mutable double m_inner_voronoi_radius;
   mutable Eigen::MatrixXd m_voronoi_table;
 

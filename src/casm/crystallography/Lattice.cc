@@ -19,6 +19,8 @@ Lattice::Lattice(Eigen::Ref<const Eigen::Vector3d> const &vec1,
 
 Lattice::Lattice(const Lattice &other)
     : Comparisons<CRTPBase<Lattice>>(other),
+      m_voronoi_table_is_ready(
+          other.m_voronoi_table_is_ready.load(std::memory_order_acquire)),
       m_inner_voronoi_radius(other.m_inner_voronoi_radius),
       m_voronoi_table(other.m_voronoi_table),
       m_lat_mat(other.m_lat_mat),
@@ -27,37 +29,41 @@ Lattice::Lattice(const Lattice &other)
 
 Lattice &Lattice::operator=(const Lattice &other) {
   if (this != &other) {
+    m_voronoi_table_is_ready.store(
+        other.m_voronoi_table_is_ready.load(std::memory_order_acquire),
+        std::memory_order_release);
     m_inner_voronoi_radius = other.m_inner_voronoi_radius;
     m_voronoi_table = other.m_voronoi_table;
     m_lat_mat = other.m_lat_mat;
     m_inv_lat_mat = other.m_inv_lat_mat;
     m_tol = other.m_tol;
-    // m_voronoi_once is left as-is for a fresh object, or reset via a new
-    // std::once_flag; since we can't reset it, we rely on the early-return
-    // guard in _generate_voronoi_table to avoid regenerating a copied table.
-    m_voronoi_once.~once_flag();
-    new (&m_voronoi_once) std::once_flag();
   }
   return *this;
 }
 
 Lattice::Lattice(Lattice &&other)
     : Comparisons<CRTPBase<Lattice>>(other),
+      m_voronoi_table_is_ready(
+          other.m_voronoi_table_is_ready.load(std::memory_order_acquire)),
       m_inner_voronoi_radius(other.m_inner_voronoi_radius),
       m_voronoi_table(std::move(other.m_voronoi_table)),
       m_lat_mat(std::move(other.m_lat_mat)),
       m_inv_lat_mat(std::move(other.m_inv_lat_mat)),
-      m_tol(other.m_tol) {}
+      m_tol(other.m_tol) {
+  other.m_voronoi_table_is_ready.store(false, std::memory_order_release);
+}
 
 Lattice &Lattice::operator=(Lattice &&other) {
   if (this != &other) {
+    m_voronoi_table_is_ready.store(
+        other.m_voronoi_table_is_ready.load(std::memory_order_acquire),
+        std::memory_order_release);
     m_inner_voronoi_radius = other.m_inner_voronoi_radius;
     m_voronoi_table = std::move(other.m_voronoi_table);
     m_lat_mat = std::move(other.m_lat_mat);
     m_inv_lat_mat = std::move(other.m_inv_lat_mat);
     m_tol = other.m_tol;
-    m_voronoi_once.~once_flag();
-    new (&m_voronoi_once) std::once_flag();
+    other.m_voronoi_table_is_ready.store(false, std::memory_order_release);
   }
   return *this;
 }
@@ -475,10 +481,6 @@ int Lattice::voronoi_number(const Eigen::Vector3d &pos) const {
 }
 
 void Lattice::_generate_voronoi_table() const {
-  // Guard against regeneration when voronoi table was already populated
-  // (e.g., via copy constructor)
-  if (m_voronoi_table.size()) return;
-
   // There are no fewer than 12 points in the voronoi table
   m_voronoi_table.resize(12, 3);
 
