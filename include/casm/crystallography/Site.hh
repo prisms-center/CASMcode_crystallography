@@ -1,7 +1,9 @@
 #ifndef SITE_HH
 #define SITE_HH
 
+#include <atomic>
 #include <iostream>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 
@@ -38,6 +40,11 @@ class Site : public Coordinate {
   /// (occupants), and local degrees of freedom
   Site(const Coordinate &init_pos, const std::vector<Molecule> &site_occ,
        const std::vector<SiteDoFSet> &site_dof);
+
+  Site(const Site &other);
+  Site &operator=(const Site &other);
+  Site(Site &&other) noexcept;
+  Site &operator=(Site &&other) noexcept;
 
   ~Site();
 
@@ -94,17 +101,25 @@ class Site : public Coordinate {
   Site &operator-=(const Coordinate &translation);
 
  private:
-  // TODO: What is this?
+  // This enables caching of type IDs, which are used for quick comparison of
+  // site types (allowed DoF values).
   static std::vector<Site> &_type_prototypes() {
     static std::vector<Site> m_type_prototypes;
     return m_type_prototypes;
   }
 
+  static std::shared_mutex &_type_prototypes_mutex() {
+    static std::shared_mutex m_type_prototypes_mutex;
+    return m_type_prototypes_mutex;
+  }
+
   /// Integer label used to differentiate sites of otherwise identical type
   Index m_label;
 
-  // TODO: What is this?
-  mutable Index m_type_ID;
+  /// Cache of the index of this site's type (allowed DoF values) in the vector
+  /// of types. This is used to speed up type comparisons. A value of
+  /// -1 indicates that the type ID has not been calculated yet.
+  mutable std::atomic<Index> m_type_ID;
 
   // Configuration state is fundamentally different from most other degrees of
   // freedom, so we'll treat it separately. 'occupant' is the discrete degree of

@@ -61,6 +61,44 @@ Site::Site(const Coordinate &init_pos, const std::vector<Molecule> &site_occ,
            const std::vector<SiteDoFSet> &dofset_vec)
     : Site(init_pos, site_occ, make_dofset_map(dofset_vec)) {}
 
+Site::Site(const Site &other)
+    : Coordinate(other),
+      m_label(other.m_label),
+      m_type_ID(other.m_type_ID.load(std::memory_order_relaxed)),
+      m_occupant_dof(other.m_occupant_dof),
+      m_dof_map(other.m_dof_map) {}
+
+Site &Site::operator=(const Site &other) {
+  if (this != &other) {
+    Coordinate::operator=(other);
+    m_label = other.m_label;
+    m_type_ID.store(other.m_type_ID.load(std::memory_order_relaxed),
+                    std::memory_order_relaxed);
+    m_occupant_dof = other.m_occupant_dof;
+    m_dof_map = other.m_dof_map;
+  }
+  return *this;
+}
+
+Site::Site(Site &&other) noexcept
+    : Coordinate(std::move(other)),
+      m_label(other.m_label),
+      m_type_ID(other.m_type_ID.load(std::memory_order_relaxed)),
+      m_occupant_dof(std::move(other.m_occupant_dof)),
+      m_dof_map(std::move(other.m_dof_map)) {}
+
+Site &Site::operator=(Site &&other) noexcept {
+  if (this != &other) {
+    Coordinate::operator=(std::move(other));
+    m_label = other.m_label;
+    m_type_ID.store(other.m_type_ID.load(std::memory_order_relaxed),
+                    std::memory_order_relaxed);
+    m_occupant_dof = std::move(other.m_occupant_dof);
+    m_dof_map = std::move(other.m_dof_map);
+  }
+  return *this;
+}
+
 Site::~Site() {}
 
 //****************************************************
@@ -431,14 +469,40 @@ bool Site::_compare_type_no_ID(const Site &_other) const {
 //*******************************************************************************************
 
 Index Site::_type_ID() const {
-  if (!valid_index(m_type_ID)) {
-    for (m_type_ID = 0; m_type_ID < _type_prototypes().size(); m_type_ID++) {
-      if (_compare_type_no_ID(_type_prototypes()[m_type_ID])) return m_type_ID;
-    }
-
-    _type_prototypes().push_back(*this);
+  // Check cached value without lock
+  Index cached = m_type_ID.load(std::memory_order_relaxed);
+  if (valid_index(cached)) {
+    return cached;
   }
-  return m_type_ID;
+
+  // Search existing prototypes under shared (read) lock
+  {
+    std::shared_lock<std::shared_mutex> read_lock(_type_prototypes_mutex());
+    auto const &prototypes = _type_prototypes();
+    for (Index i = 0; i < static_cast<Index>(prototypes.size()); ++i) {
+      if (_compare_type_no_ID(prototypes[i])) {
+        m_type_ID.store(i, std::memory_order_relaxed);
+        return i;
+      }
+    }
+  }
+
+  // Not found — acquire exclusive (write) lock to add a new prototype
+  {
+    std::unique_lock<std::shared_mutex> write_lock(_type_prototypes_mutex());
+    auto &prototypes = _type_prototypes();
+    // Re-scan: another thread may have added it while we waited for the lock
+    for (Index i = 0; i < static_cast<Index>(prototypes.size()); ++i) {
+      if (_compare_type_no_ID(prototypes[i])) {
+        m_type_ID.store(i, std::memory_order_relaxed);
+        return i;
+      }
+    }
+    Index new_id = static_cast<Index>(prototypes.size());
+    prototypes.push_back(*this);
+    m_type_ID.store(new_id, std::memory_order_relaxed);
+    return new_id;
+  }
 }
 
 //****************************************************
