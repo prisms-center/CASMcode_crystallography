@@ -211,8 +211,6 @@ struct SiteDoFSetIsEquivalent_f : private DoFSetIsEquivalent_f {
   }
 
  private:
-  mutable Eigen::MatrixXd m_U;
-
   std::unordered_set<std::string> m_reference_excluded_occs;
 
   bool _excluded_occupants_match(const SiteDoFSet &other_value) const {
