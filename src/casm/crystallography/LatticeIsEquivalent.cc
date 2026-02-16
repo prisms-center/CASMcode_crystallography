@@ -1,6 +1,5 @@
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 
-#include "casm/crystallography/SymTools.hh"
 #include "casm/crystallography/SymType.hh"
 #include "casm/misc/CASM_Eigen_math.hh"
 
@@ -12,12 +11,9 @@ LatticeIsEquivalent::LatticeIsEquivalent(const Lattice &_lat) : m_lat(_lat) {}
 /// Checks if lat = other*U, with unimodular U
 bool LatticeIsEquivalent::operator()(const Lattice &other, double tol) const {
   tol = tol < 0 ? m_lat.tol() : tol;
-  m_U = other.lat_column_mat().inverse() * m_lat.lat_column_mat();
-  return is_unimodular(m_U, tol);
+  Eigen::Matrix3d U = other.lat_column_mat().inverse() * m_lat.lat_column_mat();
+  return is_unimodular(U, tol);
 }
-
-/// Returns U found for last check
-Eigen::Matrix3d LatticeIsEquivalent::U() const { return m_U; }
 
 IsPointGroupOp::IsPointGroupOp(const Lattice &lat) : m_lat(lat) {}
 
@@ -51,24 +47,16 @@ bool IsPointGroupOp::operator()(const Eigen::Matrix3i &tfrac_op) const {
   return _check(tfrac_op.cast<double>());
 }
 
-double IsPointGroupOp::map_error() const { return m_map_error; }
-
-Eigen::Matrix3d IsPointGroupOp::cart_op() const { return m_cart_op; }
-
-SymOp IsPointGroupOp::sym_op() const {
-  return SymOp::point_operation(cart_op());
-}
-
 /// Find the effect of applying symmetry to the lattice vectors
 bool IsPointGroupOp::_check(const Eigen::Matrix3d &tfrac_op) const {
   // If symmetry is perfect, then ->  cart_op * lat_column_mat() ==
   // lat_column_mat() * frac_op  by definition If we assum symmetry is
   // imperfect, then ->   cart_op * lat_column_mat() == F * lat_column_mat() *
   // frac_op where 'F' is the displacement gradient tensor imposed by frac_op
-  m_cart_op = lat_column_mat() * tfrac_op * inv_lat_column_mat();
+  Eigen::Matrix3d cart_op = lat_column_mat() * tfrac_op * inv_lat_column_mat();
 
   // tMat uses some matrix math to get F.transpose()*F*lat_column_mat();
-  Eigen::Matrix3d tMat = m_cart_op.transpose() * lat_column_mat() * tfrac_op;
+  Eigen::Matrix3d tMat = cart_op.transpose() * lat_column_mat() * tfrac_op;
 
   // Subtract lat_column_mat() from tMat, leaving us with (F.transpose()*F -
   // Identity)*lat_column_mat(). This is 2*E*lat_column_mat(), where E is the
@@ -83,7 +71,6 @@ bool IsPointGroupOp::_check(const Eigen::Matrix3d &tfrac_op) const {
 
   double sqr_tol = m_lat.tol() * m_lat.tol();
   if (tMat(0, 0) < sqr_tol && tMat(1, 1) < sqr_tol && tMat(2, 2) < sqr_tol) {
-    m_map_error = sqrt(tMat.diagonal().maxCoeff());
     return true;
   }
   return false;
