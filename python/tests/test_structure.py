@@ -573,8 +573,7 @@ def test_make_primitive_structure_4(example_structure_3, example_structure_4):
     conventional_struc = example_structure_4
     primitive_struc = xtal.make_primitive_structure(conventional_struc)
     assert primitive_struc.is_equivalent_to(struc)
-    
-    
+
 
 def test_make_canonical_structure_1():
     struc = xtal.Structure(
