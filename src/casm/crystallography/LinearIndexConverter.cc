@@ -95,11 +95,21 @@ Index UnitCellCoordIndexConverter::operator()(const UnitCellCoord &bijk) const {
     return m_bijk_to_linear_index.at(bijk);
   }
 
-  // Otherwise you have to bring the UnitCellCoord within the superlattice
-  // before checking, but maybe you already hit it
-  auto found_it = m_bijk_to_linear_index_outside_of_superlattice.find(bijk);
-  if (found_it != m_bijk_to_linear_index_outside_of_superlattice.end()) {
-    return found_it->second;
+  // Check the immutable map first (no lock needed, never modified after
+  // construction). This is the common case for coordinates within the
+  // superlattice and avoids lock overhead entirely.
+  auto found_within = m_bijk_to_linear_index.find(bijk);
+  if (found_within != m_bijk_to_linear_index.end()) {
+    return found_within->second;
+  }
+
+  // Otherwise check the mutable cache for coordinates outside the superlattice
+  {
+    std::shared_lock<std::shared_mutex> lock(m_cache_mutex);
+    auto found_it = m_bijk_to_linear_index_outside_of_superlattice.find(bijk);
+    if (found_it != m_bijk_to_linear_index_outside_of_superlattice.end()) {
+      return found_it->second;
+    }
   }
 
   // You've never seen this UnitCellCoord before. Bring it within the
@@ -107,7 +117,10 @@ Index UnitCellCoordIndexConverter::operator()(const UnitCellCoord &bijk) const {
   auto bijk_within = m_bring_within_f(bijk);
   auto ix_within = m_bijk_to_linear_index.at(bijk_within);
 
-  m_bijk_to_linear_index_outside_of_superlattice[bijk] = ix_within;
+  {
+    std::unique_lock<std::shared_mutex> lock(m_cache_mutex);
+    m_bijk_to_linear_index_outside_of_superlattice[bijk] = ix_within;
+  }
   return ix_within;
 }
 }  // namespace xtal

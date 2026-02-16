@@ -1,6 +1,7 @@
 #ifndef LINEARINDEXCONVERTER_HH
 #define LINEARINDEXCONVERTER_HH
 
+#include <shared_mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -50,6 +51,59 @@ class UnitCellCoordIndexConverter {
     this->always_bring_within();
   }
 
+  /// Copy constructor (each copy gets its own mutex and cache)
+  UnitCellCoordIndexConverter(const UnitCellCoordIndexConverter &other)
+      : m_linear_index_to_bijk(other.m_linear_index_to_bijk),
+        m_bijk_to_linear_index(other.m_bijk_to_linear_index),
+        m_bijk_to_linear_index_outside_of_superlattice(
+            other.m_bijk_to_linear_index_outside_of_superlattice),
+        m_basis_sites_in_prim(other.m_basis_sites_in_prim),
+        m_automatically_bring_bijk_within(
+            other.m_automatically_bring_bijk_within),
+        m_bring_within_f(other.m_bring_within_f) {}
+
+  /// Move constructor (each instance gets its own mutex)
+  UnitCellCoordIndexConverter(UnitCellCoordIndexConverter &&other)
+      : m_linear_index_to_bijk(std::move(other.m_linear_index_to_bijk)),
+        m_bijk_to_linear_index(std::move(other.m_bijk_to_linear_index)),
+        m_bijk_to_linear_index_outside_of_superlattice(
+            std::move(other.m_bijk_to_linear_index_outside_of_superlattice)),
+        m_basis_sites_in_prim(other.m_basis_sites_in_prim),
+        m_automatically_bring_bijk_within(
+            other.m_automatically_bring_bijk_within),
+        m_bring_within_f(std::move(other.m_bring_within_f)) {}
+
+  /// Copy assignment (each instance keeps its own mutex)
+  UnitCellCoordIndexConverter &operator=(
+      const UnitCellCoordIndexConverter &other) {
+    if (this != &other) {
+      m_linear_index_to_bijk = other.m_linear_index_to_bijk;
+      m_bijk_to_linear_index = other.m_bijk_to_linear_index;
+      m_bijk_to_linear_index_outside_of_superlattice =
+          other.m_bijk_to_linear_index_outside_of_superlattice;
+      m_basis_sites_in_prim = other.m_basis_sites_in_prim;
+      m_automatically_bring_bijk_within =
+          other.m_automatically_bring_bijk_within;
+      m_bring_within_f = other.m_bring_within_f;
+    }
+    return *this;
+  }
+
+  /// Move assignment (each instance keeps its own mutex)
+  UnitCellCoordIndexConverter &operator=(UnitCellCoordIndexConverter &&other) {
+    if (this != &other) {
+      m_linear_index_to_bijk = std::move(other.m_linear_index_to_bijk);
+      m_bijk_to_linear_index = std::move(other.m_bijk_to_linear_index);
+      m_bijk_to_linear_index_outside_of_superlattice =
+          std::move(other.m_bijk_to_linear_index_outside_of_superlattice);
+      m_basis_sites_in_prim = other.m_basis_sites_in_prim;
+      m_automatically_bring_bijk_within =
+          other.m_automatically_bring_bijk_within;
+      m_bring_within_f = std::move(other.m_bring_within_f);
+    }
+    return *this;
+  }
+
   /// Prevent the index converter from bringing UnitCellCoord within the
   /// supercell when querying for the index
   void never_bring_within();
@@ -83,6 +137,9 @@ class UnitCellCoordIndexConverter {
   /// superlattice
   mutable std::unordered_map<UnitCellCoord, Index>
       m_bijk_to_linear_index_outside_of_superlattice;
+
+  /// Protects concurrent access to the mutable cache
+  mutable std::shared_mutex m_cache_mutex;
 
   /// How many blocks of "b", i.e. number of atoms in the primitive cell, as
   /// specified at construction
