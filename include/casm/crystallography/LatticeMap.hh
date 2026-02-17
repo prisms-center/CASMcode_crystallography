@@ -52,9 +52,6 @@ class StrainCostCalculator {
  private:
   Eigen::MatrixXd m_gram_mat;
   bool m_sym_cost;
-
-  mutable Eigen::Matrix3d m_cache;
-  mutable Eigen::Matrix3d m_cache_inv;
 };
 
 /// Find the parent mapping of Lattice _parent onto Lattice _child
@@ -101,9 +98,9 @@ class LatticeMap {
 
   // Finds the smallest strain tensor (in terms of Frobenius norm) that deforms
   // (*this) into a lattice symmetrically equivalent to 'child_lattice'
-  LatticeMap const &best_strain_mapping() const;
+  LatticeMap &best_strain_mapping();
 
-  LatticeMap const &next_mapping_better_than(double max_cost) const;
+  LatticeMap &next_mapping_better_than(double max_cost);
 
   double strain_cost() const { return m_cost; }
 
@@ -153,10 +150,10 @@ class LatticeMap {
   bool m_symmetrize_strain_cost;
   double m_xtal_tol;
 
-  mutable double m_cost;
-  mutable Index m_currmat;
-  mutable DMatType m_deformation_gradient, m_N, m_dcache;
-  mutable IMatType m_icache;
+  double m_cost;
+  Index m_currmat;
+  DMatType m_deformation_gradient, m_N, m_dcache;
+  IMatType m_icache;
 
   ///\brief Returns the inverse of the current transformation matrix under
   /// consideration
@@ -168,9 +165,9 @@ class LatticeMap {
   Index n_mat() const { return m_mvec_ptr->size(); }
 
   /// \brief Returns true if current transformation is the canonical equivalent
-  bool _check_canonical() const;
+  bool _check_canonical();
 
-  LatticeMap const &_next_mapping_better_than(double max_cost) const;
+  LatticeMap &_next_mapping_better_than(double max_cost);
 
   // use m_deformation_gradient to calculate strain cost
   double _calc_strain_cost() const;

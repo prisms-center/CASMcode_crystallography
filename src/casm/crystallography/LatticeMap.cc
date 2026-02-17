@@ -6,8 +6,8 @@
 #include "casm/crystallography/LatticeIsEquivalent.hh"
 #include "casm/crystallography/Strain.hh"
 #include "casm/crystallography/SymType.hh"
-#include "casm/misc/CASM_Eigen_math.hh"
 #include "casm/external/Eigen/src/Core/Matrix.h"
+#include "casm/misc/CASM_Eigen_math.hh"
 
 namespace CASM {
 namespace xtal {
@@ -78,9 +78,11 @@ double StrainCostCalculator::strain_cost(
     const Eigen::Matrix3d &_deformation_gradient, double _vol_factor) const {
   if (m_sym_cost) {
     double cost = 0;
-    m_cache = polar_decomposition(_deformation_gradient / _vol_factor);
-    m_cache_inv = m_cache.inverse() - Eigen::Matrix3d::Identity(3, 3);
-    m_cache -= Eigen::Matrix3d::Identity(3, 3);
+    Eigen::Matrix3d stretch =
+        polar_decomposition(_deformation_gradient / _vol_factor);
+    Eigen::Matrix3d stretch_inv =
+        stretch.inverse() - Eigen::Matrix3d::Identity(3, 3);
+    stretch -= Eigen::Matrix3d::Identity(3, 3);
     Index m = 0;
     for (Index i = 0; i < 3; ++i) {
       for (Index j = i; j < 3; ++j, ++m) {
@@ -88,8 +90,8 @@ double StrainCostCalculator::strain_cost(
         for (Index k = 0; k < 3; ++k) {
           for (Index l = k; l < 3; ++l, ++n) {
             cost += m_gram_mat(m, n) *
-                    (m_cache(i, j) * m_cache(j, k) +
-                     m_cache_inv(i, j) * m_cache_inv(j, k)) /
+                    (stretch(i, j) * stretch(j, k) +
+                     stretch_inv(i, j) * stretch_inv(j, k)) /
                     6.;
           }
         }
@@ -272,7 +274,7 @@ void LatticeMap::reset(double _better_than) {
  */
 //*******************************************************************************************
 
-const LatticeMap &LatticeMap::best_strain_mapping() const {
+LatticeMap &LatticeMap::best_strain_mapping() {
   m_currmat = 0;
 
   // Get an upper bound on the best mapping by starting with no lattice
@@ -303,7 +305,7 @@ double LatticeMap::calc_strain_cost(
 
 //*******************************************************************************************
 
-const LatticeMap &LatticeMap::next_mapping_better_than(double max_cost) const {
+LatticeMap &LatticeMap::next_mapping_better_than(double max_cost) {
   m_cost = 1e20;
   return _next_mapping_better_than(max_cost);
 }
@@ -312,7 +314,7 @@ const LatticeMap &LatticeMap::next_mapping_better_than(double max_cost) const {
 // Implements the algorithm as above, with generalized inputs:
 //       -- m_inv_count saves the state between calls
 //       -- the search breaks when a mapping is found with cost < max_cost
-const LatticeMap &LatticeMap::_next_mapping_better_than(double max_cost) const {
+LatticeMap &LatticeMap::_next_mapping_better_than(double max_cost) {
   DMatType init_deformation_gradient(m_deformation_gradient);
   // tcost initial value shouldn't matter unles m_inv_count is invalid
   double tcost = max_cost;
@@ -356,7 +358,7 @@ const LatticeMap &LatticeMap::_next_mapping_better_than(double max_cost) const {
 
 //*******************************************************************************************
 
-bool LatticeMap::_check_canonical() const {
+bool LatticeMap::_check_canonical() {
   // Purpose of jmin is to exclude (i,j)=(0,0) element
   // jmin is set to 0 at end of i=0 pass;
   Index jmin = 1;
