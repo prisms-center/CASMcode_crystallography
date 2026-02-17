@@ -279,11 +279,11 @@ struct MappingNode {
 
   /// \brief true if assignment has been checked for physical validity and
   /// passes -- default false
-  mutable bool is_valid;
+  bool is_valid;
 
   /// \brief true if node has been partitioned into sub-nodes for generalized
   /// k-best assignment problem -- default false
-  mutable bool is_partitioned;
+  bool is_partitioned;
 
   /// \brief total, finalized cost, populated by a StrucMapCalculator.
   /// Not guaranteed to be a linear function of lattice_node.cost and
@@ -562,7 +562,7 @@ class StrucMapper {
 
   ///\brief clear the list of allowed parent superlattices;
   /// all superlattices will be generated automatically, as needed (default)
-  void clear_allowed_lattices() const { m_allowed_superlat_map.clear(); }
+  void clear_allowed_lattices() { m_allowed_superlat_map.clear(); }
 
   ///\brief returns true if the search of parent superlattices is constrained to
   /// a pre-specified list
@@ -577,14 +577,10 @@ class StrucMapper {
       std::function<bool(Lattice const &, Lattice const &)> _filter_f) {
     m_filtered = true;
     m_filter_f = _filter_f;
-    m_superlat_map.clear();
   }
 
   ///\brief specify not to use filtered lattice for mapping
-  void unset_filter() {
-    m_filtered = false;
-    m_superlat_map.clear();
-  }
+  void unset_filter() { m_filtered = false; }
 
   ///\brief k-best mappings of ideal child structure onto parent structure
   /// Assumes that child_struc and parent_struc have lattices related by an
@@ -796,9 +792,8 @@ class StrucMapper {
   bool m_filtered;
   std::function<bool(Lattice const &, Lattice const &)> m_filter_f;
 
-  /// Maps the supercell volume to a vector of Lattices with that volume
-  mutable LatMapType m_superlat_map;
-  mutable LatMapType m_allowed_superlat_map;
+  /// Maps the supercell volume to a vector of allowed Lattices with that volume
+  LatMapType m_allowed_superlat_map;
 
   std::vector<Lattice> _lattices_of_vol(Index prim_vol) const;
 };
