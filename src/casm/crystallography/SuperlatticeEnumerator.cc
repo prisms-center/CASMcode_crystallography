@@ -16,9 +16,7 @@ namespace xtal {
 SuperlatticeIterator::SuperlatticeIterator(
     const SuperlatticeEnumerator &enumerator, int volume, int dims)
     : m_enum(&enumerator),
-      m_current(notstd::make_cloneable<HermiteCounter>(volume, dims)),
-      m_super_updated(false),
-      m_matrix_updated(false) {
+      m_current(notstd::make_cloneable<HermiteCounter>(volume, dims)) {
   if (enumerator.begin_volume() > enumerator.end_volume()) {
     throw std::runtime_error(
         "The beginning volume of the SuperlatticeEnumerator cannot be greater "
@@ -30,17 +28,18 @@ SuperlatticeIterator::SuperlatticeIterator(
         "Dimensions to count over must be greater than 0!");
   }
 
+  _update_matrix();
   _advance_if_invalid();
+  _update_super();
 }
 
 SuperlatticeIterator &SuperlatticeIterator::operator=(
     const SuperlatticeIterator &B) {
   m_enum = B.m_enum;
   m_current = B.m_current;
-  m_super_updated = false;
-  m_matrix_updated = false;
-
+  m_super = B.m_super;
   m_canon_hist = B.m_canon_hist;
+  m_matrix = B.m_matrix;
   return *this;
 }
 
@@ -56,19 +55,11 @@ bool SuperlatticeIterator::operator!=(const SuperlatticeIterator &B) const {
 
 typename SuperlatticeIterator::reference SuperlatticeIterator::operator*()
     const {
-  if (!m_super_updated) {
-    m_super = make_superlattice(m_enum->unit(), matrix());
-    m_super_updated = true;
-  }
   return m_super;
 }
 
 typename SuperlatticeIterator::pointer SuperlatticeIterator::operator->()
     const {
-  if (!m_super_updated) {
-    m_super = make_superlattice(m_enum->unit(), matrix());
-    m_super_updated = true;
-  }
   return &m_super;
 }
 
@@ -94,6 +85,7 @@ void SuperlatticeIterator::_increment() {
   m_canon_hist.push_back(matrix());
   _advance_one();
   _advance_if_invalid();
+  _update_super();
 }
 
 /// \brief Advance m_current by one, updating flags and history
@@ -103,8 +95,7 @@ void SuperlatticeIterator::_advance_one() {
   if (last_determinant != m_current->determinant()) {
     m_canon_hist.clear();
   }
-  m_super_updated = false;
-  m_matrix_updated = false;
+  _update_matrix();
 }
 
 /// \brief Advance m_current if it is invalid, updating flags and history
@@ -117,14 +108,16 @@ void SuperlatticeIterator::_advance_if_invalid() {
   }
 }
 
-Eigen::Matrix3i const &SuperlatticeIterator::matrix() const {
-  if (!m_matrix_updated) {
-    Eigen::Matrix3i expanded = HermiteCounter_impl::_expand_dims(
-        m_current->current(), m_enum->gen_mat());
-    m_matrix = canonical_hnf(expanded, m_enum->point_group(), m_enum->unit());
-    m_matrix_updated = true;
-  }
-  return m_matrix;
+Eigen::Matrix3i const &SuperlatticeIterator::matrix() const { return m_matrix; }
+
+void SuperlatticeIterator::_update_matrix() {
+  Eigen::Matrix3i expanded = HermiteCounter_impl::_expand_dims(
+      m_current->current(), m_enum->gen_mat());
+  m_matrix = canonical_hnf(expanded, m_enum->point_group(), m_enum->unit());
+}
+
+void SuperlatticeIterator::_update_super() {
+  m_super = make_superlattice(m_enum->unit(), m_matrix);
 }
 
 /// \brief Check m_current for uniqueness and diagonal_only, fixed_shape

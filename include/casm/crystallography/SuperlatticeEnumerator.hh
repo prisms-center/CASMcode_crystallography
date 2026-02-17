@@ -194,6 +194,12 @@ class SuperlatticeIterator {
   /// \brief Advance m_current if it is invalid, updating flags and history
   void _advance_if_invalid();
 
+  /// \brief Update m_matrix from m_current
+  void _update_matrix();
+
+  /// \brief Update m_super from m_matrix
+  void _update_super();
+
   /// \brief Pointer to SuperlatticeEnumerator which holds the unit cell and
   /// point group
   const SuperlatticeEnumerator *m_enum;
@@ -202,22 +208,15 @@ class SuperlatticeIterator {
   /// enumerated
   notstd::cloneable_ptr<HermiteCounter> m_current;
 
-  /// \brief Indicates if m_super reflects the current m_current matrix
-  mutable bool m_super_updated;
-
   /// \brief A supercell, stored here so that iterator dereferencing will be OK.
-  /// Only used when requested.
-  mutable Lattice m_super;
+  Lattice m_super;
 
   /// \brief Keep track of the HNF matrices for the current determinant value
   std::vector<Eigen::Matrix3i> m_canon_hist;
 
-  /// \brief Indicates if m_matrix reflects the current m_current matrix
-  mutable bool m_matrix_updated;
-
   /// \brief The transformation matrix to m_super; m_super = m_enum->unit() *
   /// m_matrix
-  mutable Eigen::Matrix3i m_matrix;
+  Eigen::Matrix3i m_matrix;
 };
 
 /// \brief A fake container of supercell matrices
@@ -261,14 +260,8 @@ class SuperlatticeEnumerator {
   /// \brief Access the unit point group
   const SymOpVector &point_group() const;
 
-  /// \brief Set the beginning volume
-  void begin_volume(size_type _begin_volume);
-
   /// \brief Get the beginning volume
   size_type begin_volume() const;
-
-  /// \brief Set the end volume
-  void end_volume(size_type _end_volume);
 
   /// \brief Get the end volume
   size_type end_volume() const;
@@ -312,7 +305,7 @@ class SuperlatticeEnumerator {
   /* Lattice m_lat; */
 
   /// \brief The point group of the unit cell
-  SymOpVector m_point_group;
+  const SymOpVector m_point_group;
 
   /// \brief The first volume supercells to be iterated over (what cbegin uses)
   const int m_begin_volume;
@@ -330,13 +323,13 @@ class SuperlatticeEnumerator {
   const int m_dims;
 
   /// If true, restrict T to diagonal matrices, in S=P*G*T
-  bool m_diagonal_only;
+  const bool m_diagonal_only;
 
   /// \param fixed_shape If true, restrict T, in S=P*G*T, to diagonal matrices
   /// with
   ///     diagonal coefficients [m, 1, 1] (1d), [m, m, 1] (2d),
   ///     or [m, m, m] (3d).
-  bool m_fixed_shape;
+  const bool m_fixed_shape;
 };
 
 //********************************************************************************************************//
