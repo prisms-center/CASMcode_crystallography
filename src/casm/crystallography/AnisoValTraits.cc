@@ -1,6 +1,7 @@
 #include "casm/crystallography/AnisoValTraits.hh"
 
 #include <map>
+#include <shared_mutex>
 #include <string>
 
 #include "casm/misc/ParsingDictionary.hh"
@@ -129,7 +130,13 @@ static std::map<std::string, AnisoValTraits> &traits_map() {
   return map;
 }
 
+static std::shared_mutex &traits_mutex() {
+  static std::shared_mutex mutex;
+  return mutex;
+}
+
 static void register_traits(AnisoValTraits new_traits) {
+  std::unique_lock<std::shared_mutex> lock(traits_mutex());
   auto it = traits_map().find(new_traits.name());
   // Potential name collisiont if there is already entry with new_traits.name()
   // AND it does not carry 'default' designation. If it has 'default'
@@ -175,8 +182,10 @@ static int initialize() {
   return 1;
 }
 
-static AnisoValTraits const &traits(std::string const &name) {
+static AnisoValTraits traits(std::string const &name) {
   static int i = initialize();
+  (void)i;
+  std::shared_lock<std::shared_mutex> lock(traits_mutex());
   auto it = traits_map().find(name);
   if (it == traits_map().end()) {
     throw std::runtime_error(
@@ -187,7 +196,8 @@ static AnisoValTraits const &traits(std::string const &name) {
 }
 }  // namespace Local
 
-std::map<std::string, AnisoValTraits> const &AnisoValTraits::registered() {
+std::map<std::string, AnisoValTraits> AnisoValTraits::registered() {
+  std::shared_lock<std::shared_mutex> lock(Local::traits_mutex());
   return Local::traits_map();
 }
 
