@@ -149,7 +149,7 @@ void PrintPOSCAR::print(Log &sout) const {
   }
 
   // print coord mode
-  sout << sout.indent_str() << xtal::COORD_MODE::NAME(m_coord_mode) << "\n";
+  sout << sout.indent_str() << xtal::coord_mode_name(m_coord_mode) << "\n";
 
   // print all coordinates, and seletive dynamics settings, and atom names if
   // applicable

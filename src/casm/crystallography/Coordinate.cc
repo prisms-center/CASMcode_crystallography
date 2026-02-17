@@ -99,11 +99,6 @@ void Coordinate::read(std::istream &stream, COORD_TYPE mode) {
 
 //********************************************************************
 
-void Coordinate::print(std::ostream &stream, char term,
-                       Eigen::IOFormat format) const {
-  print(stream, COORD_MODE::CHECK(), term, format);
-}
-
 //********************************************************************
 
 void _formatted_print(std::ostream &stream, Eigen::Vector3d vec,
@@ -195,8 +190,6 @@ void Coordinate::set_lattice(const Lattice &new_lat,
 //********************************************************************
 
 bool Coordinate::within() {
-  if (PERIODICITY_MODE::IS_LOCAL()) return true;
-
   bool was_within = true;
   double tshift;
   for (int i = 0; i < 3; i++) {
@@ -215,7 +208,6 @@ bool Coordinate::within() {
 bool Coordinate::within(Coordinate &translation) {
   translation.m_home = m_home;
   assert(m_home && "home lattice pointer was set to null!");
-  if (PERIODICITY_MODE::IS_LOCAL()) return true;
 
   bool was_within = true;
 
@@ -301,11 +293,6 @@ bool Coordinate::voronoi_within(Coordinate &translation) {
 //********************************************************************
 
 bool Coordinate::is_lattice_shift(double tol) const {
-  // If mode is local, return true only if coordinate describes origin
-  if (PERIODICITY_MODE::IS_LOCAL())
-    return std::abs(m_frac_coord[0]) < tol && std::abs(m_frac_coord[1]) < tol &&
-           std::abs(m_frac_coord[2]) < tol;
-
   return (std::abs(m_frac_coord[0] - round(m_frac_coord[0])) < tol &&
           std::abs(m_frac_coord[1] - round(m_frac_coord[1])) < tol &&
           std::abs(m_frac_coord[2] - round(m_frac_coord[2])) < tol);
@@ -329,7 +316,7 @@ Coordinate operator*(const SymOp &LHS, const Coordinate &RHS) {
 //********************************************************************
 
 std::ostream &operator<<(std::ostream &stream, const Coordinate &coord) {
-  coord.print(stream);
+  coord.print(stream, FRAC);
   return stream;
 }
 

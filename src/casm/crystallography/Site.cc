@@ -276,14 +276,14 @@ void Site::set_label(Index new_ind) {
 
 //****************************************************
 //   read site, including all possible occupants
-void Site::read(std::istream &stream, bool SD_is_on) {
+void Site::read(std::istream &stream, COORD_TYPE mode, bool SD_is_on) {
   set_label(-1);
 
   char ch;
 
   Eigen::Vector3d SD_flag;
 
-  Coordinate::read(stream, COORD_MODE::CHECK());
+  Coordinate::read(stream, mode);
   if (SD_is_on) {
     for (int i = 0; i < 3; i++) {
       stream >> ch;
@@ -374,14 +374,15 @@ void Site::read(std::istream &stream, bool SD_is_on) {
 
 //****************************************************
 // read site, using 'elem' as site occupant domain
-void Site::read(std::istream &stream, std::string &elem, bool SD_is_on) {
+void Site::read(std::istream &stream, COORD_TYPE mode, std::string &elem,
+                bool SD_is_on) {
   char ch;
 
   set_label(-1);
 
   Eigen::Vector3d SD_flag;
 
-  Coordinate::read(stream, COORD_MODE::CHECK());
+  Coordinate::read(stream, mode);
   if (SD_is_on) {
     for (int i = 0; i < 3; i++) {
       stream >> ch;
@@ -422,7 +423,7 @@ void Site::read(std::istream &stream, std::string &elem, bool SD_is_on) {
 //****************************************************
 
 void Site::print(std::ostream &stream, Eigen::IOFormat format) const {
-  Coordinate::print(stream, 0, format);
+  Coordinate::print(stream, FRAC, 0, format);
   stream << " ";
   for (const Molecule &m : this->occupant_dof()) {
     stream << m.name() << "  ";

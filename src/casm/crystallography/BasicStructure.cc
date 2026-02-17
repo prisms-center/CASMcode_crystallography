@@ -202,7 +202,7 @@ void BasicStructure::read(std::istream &stream, double tol) {
   stream.get(ch);
 
   // fractional coordinates or cartesian
-  COORD_MODE input_mode(FRAC);
+  COORD_TYPE input_mode = FRAC;
 
   stream.get(ch);
   while (ch == ' ' || ch == '\t') {
@@ -219,9 +219,9 @@ void BasicStructure::read(std::istream &stream, double tol) {
   }
 
   if (ch == 'D' || ch == 'd') {
-    input_mode.set(FRAC);
+    input_mode = FRAC;
   } else if (ch == 'C' || ch == 'c') {
-    input_mode.set(CART);
+    input_mode = CART;
   } else if (!SD_flag) {
     throw std::runtime_error(std::string(
         "Error in line 7 of structure input file. Line 7 of structure input "
@@ -250,14 +250,14 @@ void BasicStructure::read(std::istream &stream, double tol) {
         sum_elem += num_elem[j];
       }
 
-      tsite.read(stream, elem_array[j], SD_flag);
+      tsite.read(stream, input_mode, elem_array[j], SD_flag);
       push_back(tsite);
     }
   } else {
     // read the site info
     m_basis.reserve(num_sites);
     for (i = 0; i < num_sites; i++) {
-      tsite.read(stream, SD_flag);
+      tsite.read(stream, input_mode, SD_flag);
       if ((stream.rdstate() & std::ifstream::failbit) != 0) {
         std::cerr << "Error reading site " << i + 1
                   << " from structure input file." << std::endl;

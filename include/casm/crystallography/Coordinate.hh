@@ -210,8 +210,6 @@ class Coordinate {
   void read(std::istream &stream, COORD_TYPE mode);
   void print(std::ostream &stream, COORD_TYPE mode, char term = 0,
              Eigen::IOFormat format = Eigen::IOFormat(7, 12)) const;
-  void print(std::ostream &stream, char term = 0,
-             Eigen::IOFormat format = Eigen::IOFormat(7, 12)) const;
 
   /// \brief Print normalized vector
   void print_axis(std::ostream &stream, COORD_TYPE mode, char term = 0,

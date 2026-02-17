@@ -8,7 +8,6 @@
 #include "casm/casm_io/json/jsonParser.hh"
 #include "casm/crystallography/BasicStructure.hh"
 #include "casm/crystallography/Coordinate.hh"
-#include "casm/crystallography/CoordinateSystems.hh"
 #include "casm/crystallography/Lattice.hh"
 #include "casm/crystallography/Site.hh"
 
@@ -19,7 +18,6 @@ namespace CASM {
 
 // TODO: Stop doing using
 using xtal::BasicStructure;
-using xtal::COORD_MODE;
 using xtal::Coordinate;
 using xtal::Lattice;
 using xtal::Site;
@@ -30,8 +28,9 @@ class SimpleJSonSiteStructure {
  public:
   typedef CASM_TMP::ConstSwitch<IsConst, BasicStructure> StrucType;
   SimpleJSonSiteStructure(StrucType &_struc,
-                          const std::string &_prefix = std::string())
-      : m_struc_ptr(&_struc), m_prefix(_prefix){};
+                          const std::string &_prefix = std::string(),
+                          COORD_TYPE _mode = FRAC)
+      : m_struc_ptr(&_struc), m_prefix(_prefix), m_mode(_mode) {};
 
   jsonParser &to_json(jsonParser &json) const;
   void from_json(const jsonParser &json) const {
@@ -49,11 +48,12 @@ class SimpleJSonSiteStructure {
 
   StrucType *m_struc_ptr;
   std::string m_prefix;
+  COORD_TYPE m_mode;
 };
 
 template <bool IsConst>
 jsonParser &SimpleJSonSiteStructure<IsConst>::to_json(jsonParser &json) const {
-  if (COORD_MODE::IS_FRAC())
+  if (m_mode == FRAC)
     json["coord_mode"] = "direct";
   else
     json["coord_mode"] = "cartesian";
@@ -123,13 +123,15 @@ jsonParser &to_json(const SimpleJSonSiteStructure<IsConst> &jstruc,
 }
 
 inline SimpleJSonSiteStructure<true> simple_json(const BasicStructure &struc,
-                                                 const std::string &prefix) {
-  return SimpleJSonSiteStructure<true>(struc, prefix);
+                                                 const std::string &prefix,
+                                                 COORD_TYPE mode = FRAC) {
+  return SimpleJSonSiteStructure<true>(struc, prefix, mode);
 }
 
 inline SimpleJSonSiteStructure<false> simple_json(BasicStructure &struc,
-                                                  const std::string &prefix) {
-  return SimpleJSonSiteStructure<false>(struc, prefix);
+                                                  const std::string &prefix,
+                                                  COORD_TYPE mode = FRAC) {
+  return SimpleJSonSiteStructure<false>(struc, prefix, mode);
 }
 
 /** @} */

@@ -91,8 +91,9 @@ class Site : public Coordinate {
   /// identical sites.
   void set_label(Index _new_label);
 
-  void read(std::istream &stream, bool SD_is_on = false);
-  void read(std::istream &stream, std::string &elem, bool SD_is_on);
+  void read(std::istream &stream, COORD_TYPE mode, bool SD_is_on = false);
+  void read(std::istream &stream, COORD_TYPE mode, std::string &elem,
+            bool SD_is_on);
 
   void print(std::ostream &stream,
              Eigen::IOFormat format = Eigen::IOFormat(7, 12)) const;

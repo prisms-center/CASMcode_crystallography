@@ -482,7 +482,7 @@ void write_prim(const xtal::BasicStructure &prim, jsonParser &json,
   json["lattice_vectors"] = prim.lattice().lat_column_mat().transpose();
 
   if (mode == COORD_DEFAULT) {
-    mode = xtal::COORD_MODE::CHECK();
+    mode = FRAC;
   }
 
   Eigen::Matrix3d c2f_mat;
