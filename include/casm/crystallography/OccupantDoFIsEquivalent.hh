@@ -27,14 +27,14 @@ class OccupantDoFIsEquivalent {
 
   /// returns true if m_dof and _other have matching labels, and m_dof =
   /// P.permute(_other)
-  bool operator()(std::vector<xtal::Molecule> const &_other) const;
+  bool operator()(std::vector<xtal::Molecule> const &_other);
 
   /// returns true if copy_apply(_op,m_dof) = P.permute(m_dof)
-  bool operator()(xtal::SymOp const &_op) const;
+  bool operator()(xtal::SymOp const &_op);
 
   /// returns true if copy_apply(_op,m_dof) =  P.permute(_other)
   bool operator()(xtal::SymOp const &_op,
-                  std::vector<xtal::Molecule> const &_other) const;
+                  std::vector<xtal::Molecule> const &_other);
 
   /// return transformation permutation P calculated during last successful
   /// comparison
@@ -51,8 +51,8 @@ class OccupantDoFIsEquivalent {
 
   double m_tol;
 
-  mutable Permutation m_P;
-  mutable std::vector<Permutation> m_atom_position_P;
+  Permutation m_P;
+  std::vector<Permutation> m_atom_position_P;
 };
 
 }  // namespace xtal

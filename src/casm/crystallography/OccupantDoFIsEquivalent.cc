@@ -9,7 +9,7 @@ namespace xtal {
 /// returns true if m_dof and _other have matching labels, and m_dof =
 /// P.permute(_other)
 bool OccupantDoFIsEquivalent::operator()(
-    std::vector<xtal::Molecule> const &_other) const {
+    std::vector<xtal::Molecule> const &_other) {
   if (_other.size() != m_dof.size()) return false;
   Index j;
   m_atom_position_P.clear();
@@ -30,7 +30,7 @@ bool OccupantDoFIsEquivalent::operator()(
 }
 
 /// returns true if copy_apply(_op,m_dof) = P.permute(m_dof)
-bool OccupantDoFIsEquivalent::operator()(xtal::SymOp const &_op) const {
+bool OccupantDoFIsEquivalent::operator()(xtal::SymOp const &_op) {
   Index j;
   m_atom_position_P.clear();
   for (Index i = 0; i < m_dof.size(); ++i) {
@@ -52,7 +52,7 @@ bool OccupantDoFIsEquivalent::operator()(xtal::SymOp const &_op) const {
 
 /// returns true if copy_apply(_op,m_dof) =  P.permute(_other)
 bool OccupantDoFIsEquivalent::operator()(
-    xtal::SymOp const &_op, std::vector<xtal::Molecule> const &_other) const {
+    xtal::SymOp const &_op, std::vector<xtal::Molecule> const &_other) {
   if (_other.size() != m_dof.size()) return false;
   Index j;
   m_atom_position_P.clear();
