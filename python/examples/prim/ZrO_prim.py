@@ -46,4 +46,4 @@ for op in factor_group:
 
 # Format as JSON
 with open("../../doc/examples/prim/json/ZrO_prim.json", "w") as f:
-    f.write(prim.to_json())
+    f.write(xtal.pretty_json(prim.to_dict()))

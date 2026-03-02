@@ -120,15 +120,6 @@ std::pair<OpIterator, Eigen::Matrix3d> is_equivalent_superlattice(
   return std::make_pair(end, res.second);
 }
 
-/// [deprecated] Equivalent to `make_minimal_commensurate_superduperlattice`
-template <typename LatIterator, typename SymOpIterator>
-Lattice make_equivalent_superduperlattice(LatIterator begin, LatIterator end,
-                                          SymOpIterator op_begin,
-                                          SymOpIterator op_end) {
-  return make_minimal_commensurate_superduperlattice(begin, end, op_begin,
-                                                     op_end);
-}
-
 /// Returns the Lattice that is a superlattice of all input Lattice
 template <typename LatIterator>
 Lattice make_commensurate_superduperlattice(LatIterator begin,

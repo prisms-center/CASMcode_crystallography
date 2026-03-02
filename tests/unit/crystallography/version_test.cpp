@@ -37,11 +37,11 @@ TEST(VersionTest, TestXtalVersion) {
   // or <major> "." <minor> "." <patch> "-" <pre-release> using "alpha",
   // "beta.1", "beta.2", ...
   EXPECT_EQ(v_match.size(), 6);
-  EXPECT_EQ(v_match[1].str(), "2");
-  EXPECT_EQ(v_match[2].str(), "3");
+  EXPECT_EQ(v_match[1].str(), "3");
+  EXPECT_EQ(v_match[2].str(), "0");
   EXPECT_EQ(v_match[3].str(), "0");
   EXPECT_EQ(v_match[4].str(), "");
 
-  EXPECT_EQ(CASM::xtal::version(), "2.3.0");
+  EXPECT_EQ(CASM::xtal::version(), "3.0.0");
   EXPECT_EQ(CASM::xtal::version(), casm_crystallography_version());
 }

@@ -1,4 +1,3 @@
-import json
 import os
 
 import numpy as np
@@ -319,68 +318,6 @@ def test_repr(simple_cubic_binary_va_disp_Hstrain_prim):
         print(prim)
     out = f.getvalue()
     assert "basis" in out
-
-
-def test_to_json(simple_cubic_binary_va_disp_Hstrain_prim):
-    prim = simple_cubic_binary_va_disp_Hstrain_prim
-
-    # convert to json string
-    json_str = prim.to_json()
-
-    data = json.loads(json_str)
-    assert "lattice_vectors" in data
-    assert "basis" in data
-    assert len(data["basis"]) == 1
-    assert "dofs" in data["basis"][0]
-    assert "disp" in data["basis"][0]["dofs"]
-    assert "coordinate_mode" in data
-    assert "dofs" in data
-    assert "Hstrain" in data["dofs"]
-
-
-def test_from_json():
-    L1 = np.array(
-        [
-            [1.0, 0.0, 0.0],  # v1
-            [-0.5, 1.0, 0.0],  # v2
-            [0.0, 0.0, 2.0],  # v3
-        ]
-    ).transpose()
-    basis_frac = np.array(
-        [
-            [0.0, 0.0, 0.0],  # b1
-        ]
-    ).transpose()
-    data = {
-        "title": "test",
-        "lattice_vectors": L1.transpose().tolist(),
-        "coordinate_mode": "Fractional",
-        "basis": [
-            {
-                "coordinate": basis_frac[:, 0].tolist(),
-                "occupants": ["A", "B", "Va"],
-                "dofs": {"disp": {}},
-            },
-        ],
-        "dofs": {"Hstrain": {}},
-    }
-
-    json_str = json.dumps(data)
-
-    prim = xtal.Prim.from_json(json_str)
-
-    assert np.allclose(prim.lattice().column_vector_matrix(), L1)
-    assert np.allclose(prim.coordinate_frac(), basis_frac)
-    assert prim.occ_dof() == [["A", "B", "Va"]]
-
-    prim_local_dof = prim.local_dof()
-    assert len(prim_local_dof) == 1
-    assert len(prim_local_dof[0]) == 1
-    assert prim_local_dof[0][0].dofname() == "disp"
-
-    prim_global_dof = prim.global_dof()
-    assert len(prim_global_dof) == 1
-    assert prim_global_dof[0].dofname() == "Hstrain"
 
 
 def test_prim_with_labels():

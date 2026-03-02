@@ -6,13 +6,13 @@ requires = [
     "cmake>=3.20",
     "ninja",
     "pybind11~=3.0",
-    "libcasm-global>=2.3.0",
+    "libcasm-global>=2.3.0,<3",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "libcasm-xtal"
-version = "2.3.0"
+version = "3.0a1"
 authors = [
   { name="CASM developers", email="casm-developers@lists.engr.ucsb.edu" },
 ]
@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-  "libcasm-global>=2.3.0",
+  "libcasm-global>=2.3.0,<3",
   "numpy",
 ]
 

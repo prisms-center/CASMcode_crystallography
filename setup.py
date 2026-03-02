@@ -2,7 +2,7 @@ from skbuild import setup
 
 setup(
     name="libcasm-xtal",
-    version="2.3.0",
+    version="3.0a1",
     packages=["libcasm", "libcasm.xtal"],
     package_dir={"": "python"},
     cmake_install_dir="python/libcasm",

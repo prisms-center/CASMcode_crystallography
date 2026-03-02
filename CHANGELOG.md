@@ -5,11 +5,18 @@ All notable changes to `libcasm-xtal` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.0a1] - 2026-03-02
 
 ### Changed
 
-- Make OccupantDoFIsEquivalent call operators non-const and remove mutable private members so that behvavior is clear for multithreaded use.
+- Changed C++ data structures to avoid mutable private cache members to enable multithreaded use of CASM crystallography methods. In particular, this required changes in LinearIndexConverter, Site, DoFSet, OccupantDoFIsEquivalent, LatticeIsEquivalent, Lattice, SuperlatticeIterator, SuperlatticeEnumerator, StrainCostCalculator, LatticeMap, MappingNode, StrucMapper, and AnisoValTraits.
+
+### Removed
+
+- Removed COORD_MODE/PERIODICITY_MODE, which cannot be used in a multithreaded context.
+- Removed depreacted `to_json` and `from_json` methods of `libcasm.xtal.Prim`, `libcasm.xtal.SymInfo`, `libcasm.xtal.Structure`. Use `to_dict` and `from_dict` instead.
+- Removed deprecated `xtal::make_factor_group(const BasicStructure &struc, double tol)`. Use `xtal::make_factor_group(const BasicStructure &struc)` which uses the Lattice's tol instead.
+- Removed deprecated `xtal::make_equivalent_superduperlattice`. Use `xtal::make_minimal_commensurate_superduperlattice` instead.
 
 
 ## [2.3.0] - 2025-12-15

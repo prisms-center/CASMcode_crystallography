@@ -18,30 +18,30 @@ TEST(BasicStructureToolsTest, MakeAsymmetricUnitTest) {
 
 TEST(BasicStructureToolsTest, MakeCrystalPointGroupTest) {
   EXPECT_EQ(xtal::make_crystal_point_group(
-                xtal::make_factor_group(test::no_basis_prim()), TOL)
+                xtal::make_factor_group(test::no_basis_prim()))
                 .size(),
             48);
   EXPECT_EQ(xtal::make_crystal_point_group(
-                xtal::make_factor_group(test::FCC_ternary_prim()), TOL)
+                xtal::make_factor_group(test::FCC_ternary_prim()))
                 .size(),
             48);
-  EXPECT_EQ(xtal::make_crystal_point_group(
-                xtal::make_factor_group(test::ZrO_prim()), TOL)
-                .size(),
-            24);
+  EXPECT_EQ(
+      xtal::make_crystal_point_group(xtal::make_factor_group(test::ZrO_prim()))
+          .size(),
+      24);
 }
 
 TEST(BasicStructureToolsTest, MakeInternalTranslationsTest) {
   EXPECT_EQ(xtal::make_internal_translations(
-                xtal::make_factor_group(test::no_basis_prim()), TOL)
+                xtal::make_factor_group(test::no_basis_prim()))
                 .size(),
             1);
   EXPECT_EQ(xtal::make_internal_translations(
-                xtal::make_factor_group(test::FCC_ternary_prim()), TOL)
+                xtal::make_factor_group(test::FCC_ternary_prim()))
                 .size(),
             1);
   EXPECT_EQ(xtal::make_internal_translations(
-                xtal::make_factor_group(test::ZrO_prim()), TOL)
+                xtal::make_factor_group(test::ZrO_prim()))
                 .size(),
             1);
 }

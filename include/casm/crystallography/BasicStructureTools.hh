@@ -63,9 +63,6 @@ void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat);
 /// Create the factor group of the given structure
 std::vector<SymOp> make_factor_group(const BasicStructure &struc);
 
-/// Create the factor group of the given structure (deprecated)
-std::vector<SymOp> make_factor_group(const BasicStructure &struc, double tol);
-
 /// Construct the crystal point group from the sorted factor group
 std::vector<SymOp> make_crystal_point_group(
     std::vector<SymOp> const &sorted_factor_group, double tol);

@@ -1,6 +1,7 @@
 #include "casm/crystallography/AnisoValTraits.hh"
 
 #include <map>
+#include <mutex>
 #include <shared_mutex>
 #include <string>
 

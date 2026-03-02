@@ -493,20 +493,6 @@ void init_prim(
   new (&obj) xtal::BasicStructure(*prim);
 }
 
-/// \brief Construct xtal::BasicStructure from JSON string
-std::shared_ptr<xtal::BasicStructure const> prim_from_json(
-    std::string const &prim_json_str, double xtal_tol) {
-  // print errors and warnings to sys.stdout
-  py::scoped_ostream_redirect redirect;
-  jsonParser json = jsonParser::parse(prim_json_str);
-  PyErr_WarnEx(PyExc_DeprecationWarning,
-               "Prim.from_json() is deprecated, use Prim.from_dict() instead.",
-               2);
-  ParsingDictionary<AnisoValTraits> const *aniso_val_dict = nullptr;
-  return std::make_shared<xtal::BasicStructure>(
-      read_prim(json, xtal_tol, aniso_val_dict));
-}
-
 /// \brief Construct xtal::BasicStructure from poscar stream
 std::shared_ptr<xtal::BasicStructure const> prim_from_poscar_stream(
     std::istream &poscar_stream,
@@ -577,20 +563,6 @@ xtal::SimpleStructure simplestructure_from_poscar_str(std::string &poscar_str,
                                                       std::string mode) {
   std::istringstream poscar_stream(poscar_str);
   return _simplestructure_from_poscar(poscar_stream, mode);
-}
-
-/// \brief Format xtal::BasicStructure as JSON string
-std::string prim_to_json(
-    std::shared_ptr<xtal::BasicStructure const> const &prim, bool frac,
-    bool include_va) {
-  PyErr_WarnEx(PyExc_DeprecationWarning,
-               "Prim.to_json() is deprecated, use Prim.to_dict() instead.", 2);
-  jsonParser json;
-  COORD_TYPE mode = frac ? FRAC : CART;
-  write_prim(*prim, json, mode, include_va);
-  std::stringstream ss;
-  ss << json;
-  return ss.str();
 }
 
 bool is_same_prim(xtal::BasicStructure const &first,
@@ -790,24 +762,6 @@ std::string get_syminfo_brief_frac(xtal::SymInfo const &syminfo) {
   return to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC));
 }
 
-std::string syminfo_to_json(xtal::SymInfo const &syminfo) {
-  PyErr_WarnEx(
-      PyExc_DeprecationWarning,
-      "SymInfo.to_json() is deprecated, use SymInfo.to_dict() instead.", 2);
-
-  jsonParser json;
-  to_json(syminfo, json);
-
-  to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(CART)),
-          json["brief"]["CART"]);
-  to_json(to_brief_unicode(syminfo, xtal::SymInfoOptions(FRAC)),
-          json["brief"]["FRAC"]);
-
-  std::stringstream ss;
-  ss << json;
-  return ss.str();
-}
-
 xtal::SimpleStructure make_simplestructure(
     xtal::Lattice const &lattice,
     Eigen::MatrixXd const &atom_coordinate_frac = Eigen::MatrixXd(),
@@ -895,30 +849,6 @@ std::map<std::string, Eigen::MatrixXd> get_simplestructure_mol_properties(
 std::map<std::string, Eigen::MatrixXd> get_simplestructure_global_properties(
     xtal::SimpleStructure const &simple) {
   return simple.properties;
-}
-
-xtal::SimpleStructure simplestructure_from_json(std::string const &json_str) {
-  // print errors and warnings to sys.stdout
-  py::scoped_ostream_redirect redirect;
-  PyErr_WarnEx(
-      PyExc_DeprecationWarning,
-      "Structure.from_json() is deprecated, use Structure.from_dict() instead.",
-      2);
-  jsonParser json = jsonParser::parse(json_str);
-  xtal::SimpleStructure simple;
-  from_json(simple, json);
-  return simple;
-}
-
-std::string simplestructure_to_json(xtal::SimpleStructure const &simple) {
-  PyErr_WarnEx(
-      PyExc_DeprecationWarning,
-      "Structure.to_json() is deprecated, use Structure.to_dict() instead.", 2);
-  jsonParser json;
-  to_json(simple, json);
-  std::stringstream ss;
-  ss << json;
-  return ss.str();
 }
 
 std::vector<xtal::SymOp> make_simplestructure_factor_group(
@@ -2584,18 +2514,6 @@ PYBIND11_MODULE(_xtal, m) {
                 The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected format.
 
             )pbdoc")
-      .def_static("from_json", &prim_from_json,
-                  R"pbdoc(
-          Construct a Prim from a JSON-formatted string.
-
-          .. deprecated:: 2.0a8
-                Use :func:`Prim.from_dict` instead.
-
-          The
-          `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_
-          documents the expected JSON format.
-          )pbdoc",
-                  py::arg("prim_json_str"), py::arg("xtal_tol") = TOL)
       .def_static("from_poscar", &prim_from_poscar,
                   R"pbdoc(
             Construct a Prim from a VASP POSCAR file
@@ -2693,30 +2611,7 @@ PYBIND11_MODULE(_xtal, m) {
           -------
           prim : Prim
                 A Prim
-          )pbdoc")
-      .def("to_json", &prim_to_json, py::arg("frac") = true,
-           py::arg("include_va") = false, R"pbdoc(
-            Represent the Prim as a JSON-formatted string.
-
-            .. deprecated:: 2.0a8
-                Use :func:`Prim.to_dict` instead.
-
-            Parameters
-            ----------
-            frac : boolean, default=True
-                By default, basis site positions are written in fractional coordinates
-                relative to the lattice vectors. If False, write basis site positions
-                in Cartesian coordinates.
-            include_va : boolean, default=False
-                If a basis site only allows vacancies, it is not printed by default.
-                If this is True, basis sites with only vacancies will be included.
-
-            Returns
-            -------
-            data : dict
-                The `Prim reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/BasicStructure/>`_ documents the expected JSON format.
-
-            )pbdoc");
+          )pbdoc");
 
   m.def("_is_same_prim", &is_same_prim, py::arg("first"), py::arg("second"),
         R"pbdoc(
@@ -3196,15 +3091,7 @@ PYBIND11_MODULE(_xtal, m) {
           "Information reference "
           "<https://prisms-center.github.io/CASMcode_docs/formats/casm/"
           "symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents the "
-          "format.")
-      .def("to_json", &syminfo_to_json, R"pbdoc(
-          Represent the symmetry operation information as a JSON-formatted string.
-
-          .. deprecated:: 2.0a8
-                Use :func:`SymInfo.to_dict` instead.
-
-          The `Symmetry Operation Information JSON Object reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/symmetry/SymGroup/#symmetry-operation-json-object/>`_ documents JSON format, except conjugacy class and inverse operation are not currently included.
-          )pbdoc");
+          "format.");
 
   pyStructure
       .def(
@@ -3346,17 +3233,6 @@ PYBIND11_MODULE(_xtal, m) {
              ss << json;
              return ss.str();
            })
-      .def_static("from_json", &simplestructure_from_json, R"pbdoc(
-          Construct a Structure from a JSON-formatted string.
-
-          .. deprecated:: 2.0a8
-                Use :func:`Structure.from_dict` instead.
-
-          The
-          `Structure reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/SimpleStructure/>`_
-          documents the expected JSON format.
-          )pbdoc",
-                  py::arg("structure_json_str"))
       .def_static("from_poscar", &simplestructure_from_poscar,
                   R"pbdoc(
             Construct a Structure from a VASP POSCAR file
@@ -3399,16 +3275,6 @@ PYBIND11_MODULE(_xtal, m) {
 
             )pbdoc",
                   py::arg("poscar_str"), py::arg("mode") = std::string("atoms"))
-      .def("to_json", &simplestructure_to_json,
-           R"pbdoc(
-          Represent the Structure as a JSON-formatted string.
-
-          .. deprecated:: 2.0a8
-              Use :func:`Structure.to_dict` instead.
-
-          The `Structure reference <https://prisms-center.github.io/CASMcode_docs/formats/casm/crystallography/SimpleStructure/>`_
-          documents the expected JSON format.
-          ")pbdoc")
       .def(
           "to_poscar_str",
           [](xtal::SimpleStructure const &structure, bool sort,

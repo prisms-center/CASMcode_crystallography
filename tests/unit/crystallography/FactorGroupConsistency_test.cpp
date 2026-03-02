@@ -96,7 +96,7 @@ class CrystalGroupTest : public testing::Test {
   void compare_factor_groups(const xtal::BasicStructure &struc) {
     xtal::SymOpVector mapping_factor_group =
         ::make_factor_group_via_mapping(struc, tol);
-    xtal::SymOpVector factor_group = xtal::make_factor_group(struc, tol);
+    xtal::SymOpVector factor_group = xtal::make_factor_group(struc);
 
     EXPECT_EQ(mapping_factor_group.size(), factor_group.size());
 
@@ -111,7 +111,7 @@ class CrystalGroupTest : public testing::Test {
 
 TEST_F(CrystalGroupTest, PrimitiveFactorGroupSizes) {
   for (int i = 0; i < primitive_structures.size(); ++i) {
-    auto factor_group = xtal::make_factor_group(primitive_structures[i], tol);
+    auto factor_group = xtal::make_factor_group(primitive_structures[i]);
     int expected_size = expected_primitive_factor_group_size[i];
     EXPECT_EQ(factor_group.size(), expected_size);
   }

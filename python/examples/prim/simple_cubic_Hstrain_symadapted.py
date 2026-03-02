@@ -54,4 +54,4 @@ for op in factor_group:
 with open(
     "../../doc/examples/prim/json/simple_cubic_Hstrain_symadapted.json", "w"
 ) as f:
-    f.write(prim.to_json())
+    f.write(xtal.pretty_json(prim.to_dict()))

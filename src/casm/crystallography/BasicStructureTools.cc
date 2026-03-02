@@ -454,7 +454,7 @@ void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat) {
   }
 }
 
-/// Create the factor group of the given structure
+/// Create the factor group of the given structure.
 ///
 /// \param struct BasicStructure for which the factor group is constructed
 ///
@@ -466,23 +466,9 @@ void sort_factor_group(std::vector<SymOp> &factor_group, const Lattice &lat) {
 /// time reversal
 /// - For consistency, uses `struc.lattice().tol()` for comparing lattice
 /// vectors and site coordinates.
+///
 std::vector<SymOp> make_factor_group(const BasicStructure &struc) {
-  return make_factor_group(struc, struc.lattice().tol());
-}
-
-/// Create the factor group of the given structure. (deprecated)
-///
-/// \param struct BasicStructure for which the factor group is constructed
-/// \param tol Crystallography tolerance used for comparing lattice vectors and
-/// site coordinates. Should use `struc.lattice().tol()` for consistency.
-///
-/// \returns The sorted factor group
-///
-/// Notes:
-/// - If the structure has no degrees of freedom affected by time reversal,
-/// time reversal is ignored. Otherwise symmetry operations are checked for
-/// time reversal
-std::vector<SymOp> make_factor_group(const BasicStructure &struc, double tol) {
+  double tol = struc.lattice().tol();
   auto prim_factor_group_pair = ::make_primitive_factor_group(struc, tol);
   const BasicStructure &primitive_struc = prim_factor_group_pair.first;
   const std::vector<SymOp> &primitive_factor_group =
@@ -661,8 +647,7 @@ std::set<std::set<Index>> make_asymmetric_unit(
 /// \endcode
 std::set<std::set<Index>> make_asymmetric_unit(
     const xtal::BasicStructure &struc) {
-  std::vector<SymOp> factor_group =
-      make_factor_group(struc, struc.lattice().tol());
+  std::vector<SymOp> factor_group = make_factor_group(struc);
   return make_asymmetric_unit(struc, factor_group);
 }
 

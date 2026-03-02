@@ -51,4 +51,4 @@ for op in factor_group:
 
 # Format as JSON
 with open("../../doc/examples/prim/json/simple_cubic_SOmagspin.json", "w") as f:
-    f.write(prim.to_json())
+    f.write(xtal.pretty_json(prim.to_dict()))
