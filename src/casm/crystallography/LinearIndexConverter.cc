@@ -1,6 +1,7 @@
 #include "casm/crystallography/LinearIndexConverter.hh"
 
 #include <exception>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <vector>
