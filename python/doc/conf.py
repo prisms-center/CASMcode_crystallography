@@ -10,8 +10,8 @@ github_url = "https://github.com/prisms-center/CASMcode_crystallography/"
 pypi_url = "https://pypi.org/project/libcasm-xtal/"
 intersphinx_libcasm_packages = [
     ("global", "2.0"),
-    ("configuration", "2.0"),
-    ("mapping", "2.0"),
+    ("configuration", "3"),
+    ("mapping", "3"),
 ]
 
 
