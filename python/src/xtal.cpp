@@ -1499,6 +1499,9 @@ PYBIND11_MODULE(_xtal, m) {
 
     Notes
     -----
+    The canonical lattice has the same lattice points as the input and is
+    always right-handed. It can be used to compare and deduplicate lattices.
+
     The returned lattice is not canonical in the context of Prim supercell
     lattices, in which case the crystal point group must be used in
     determining the canonical orientation of the supercell lattice.
@@ -2699,6 +2702,17 @@ PYBIND11_MODULE(_xtal, m) {
             occupants and equivalent local degrees of freedom (DoF), if they
             exist.
 
+            Notes
+            -----
+            The primitive lattice is selected by Niggli reduction and basis
+            positions are moved into the unit cell. The resulting prim will be
+            right-handed and is not guaranteed to be canonical or to preserve
+            the original lattice vectors, even if the input was already
+            primitive. However, the lattice is never rotated. Use
+            :func:`make_canonical_prim` after calling
+            :func:`make_primitive_prim` in order to make a prim that is
+            canonical and primitive.
+
             Parameters
             ----------
             init_prim : Prim
@@ -2721,6 +2735,14 @@ PYBIND11_MODULE(_xtal, m) {
           diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
 
           .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+
+          Notes
+          -----
+          Only the lattice is made canonical using
+          :func:`make_canonical_lattice`. Cartesian coordinates are unchanged.
+          The result is not guaranteed to be primitive, coordinates are not
+          moved into the unit cell, and canonical form alone is not sufficient
+          for comparing or deduplicating prims.
 
           Parameters
           ----------
@@ -3476,6 +3498,14 @@ PYBIND11_MODULE(_xtal, m) {
         The default CASM tolerance is used for comparisons. To consider molecules
         or properties, or to use a different tolerance, use a Prim.
 
+        The primitive lattice is selected by Niggli reduction and atom positions
+        are moved into the unit cell. The resulting structure will be right-handed
+        and is not guaranteed to be canonical or to preserve the original lattice
+        vectors, even if the input was already primitive. However, the lattice is
+        never rotated. Use :func:`make_canonical_structure` after calling
+        :func:`make_primitive_structure` in order to make a structure that is
+        canonical and primitive.
+
         Parameters
         ----------
         init_structure: _xtal.Structure
@@ -3498,6 +3528,17 @@ PYBIND11_MODULE(_xtal, m) {
         diagonal and small values off the diagonal. See also `Lattice Canonical Form`_.
 
         .. _`Lattice Canonical Form`: https://prisms-center.github.io/CASMcode_docs/formats/lattice_canonical_form/
+
+        Notes
+        -----
+        Only the lattice is made canonical using :func:`make_canonical_lattice`.
+        Cartesian coordinates are unchanged. The result is not guaranteed to be
+        primitive, coordinates are not moved into the unit cell, and canonical
+        form alone is not sufficient for comparing or deduplicating structures.
+
+        See :func:`Structure.is_equivalent_to <libcasm.xtal.Structure.is_equivalent_to>`
+        and :func:`libcasm.mapping.methods.map_structures` for more information
+        about comparing structures.
 
         Parameters
         ----------

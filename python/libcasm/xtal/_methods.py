@@ -21,6 +21,14 @@ def make_primitive(
     The default CASM tolerance is used for comparisons. To consider molecules
     or properties, or to use a different tolerance, use a Prim.
 
+    The primitive lattice is selected by Niggli reduction and basis or atom positions
+    are moved into the unit cell. The resulting prim or structure will be right-handed
+    and is not guaranteed to be canonical or to preserve the original lattice vectors,
+    even if the input was already primitive. However, the lattice is never rotated.
+    Use :func:`~libcasm.xtal.make_canonical` after calling
+    :func:`~libcasm.xtal.make_primitive` in order to make a prim or structure that is
+    canonical and primitive.
+
     Parameters
     ----------
     obj: Union[ _xtal.Prim, _xtal.Structure]
@@ -30,7 +38,7 @@ def make_primitive(
 
     Returns
     -------
-    canonical_obj : Union[_xtal.Prim, _xtal.Structure]
+    primitive_obj : Union[_xtal.Prim, _xtal.Structure]
         The primitive equivalent Prim or atomic Structure.
     """
     if isinstance(obj, _xtal.Prim):
@@ -46,6 +54,19 @@ def make_canonical(
 ) -> Any:
     """Make an equivalent Lattice, Prim, or Structure with the canonical form
     of the lattice
+
+    Notes
+    -----
+    Only the lattice is made canonical using
+    :func:`~libcasm.xtal.make_canonical_lattice`. Cartesian coordinates are unchanged.
+    The result is not guaranteed to be primitive, coordinates are not moved into the
+    unit cell, and canonical form alone is not sufficient for comparing or
+    deduplicating prims or structures.
+
+    See :func:`Lattice.is_equivalent_to <libcasm.xtal.Lattice.is_equivalent_to>`,
+    :func:`Structure.is_equivalent_to <libcasm.xtal.Structure.is_equivalent_to>`, and
+    :func:`libcasm.mapping.methods.map_structures` for more information about
+    comparing structures.
 
     Parameters
     ----------
